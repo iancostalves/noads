@@ -11,7 +11,6 @@ Created on Thu Jan 20 20:20:20 2020
          AircraftOperation & Systems, Air Transport Department, ENAC
 """
 
-import numpy as np
 from jax import config
 from jax.numpy import array
 from jax.numpy import exp
@@ -19,20 +18,15 @@ from jax.numpy import interp
 from jax.numpy import log
 from jax.numpy import pi
 from jax.numpy import sqrt
-from jax.numpy import min
-from chex import assert_scalar_positive
 
 import matplotlib.pyplot as plt
 from jax.numpy import where
-from optimistix import RecursiveCheckpointAdjoint
 
-from utils import physical_data as phd
-from utils import unit
-import utils.data_analysis as uda
+from gam_jax.utils import physical_data as phd
+from gam_jax.utils import unit
+import gam_jax.utils.data_analysis as uda
 
 from optimistix import Newton, root_find
-# from optimistix import BFGS
-# from optimistix import minimise
 
 #-----------------------------------------------------------------------------------------------------------------------
 #
@@ -41,6 +35,7 @@ from optimistix import Newton, root_find
 #-----------------------------------------------------------------------------------------------------------------------
 
 config.update("jax_enable_x64", True)
+
 
 class GAM(object):  # Data Driven Modelling
 
