@@ -21,8 +21,9 @@ The usual burdens associated with nonlinear optimization with high-dimensional v
 
 The [Generic Airplane Model (GAM)](https://gitlab.com/m6029/genericairplanemodel) code was re-written in JAX together with Yri Amandine KAMBIRI. For more information on the GAM model please check [Kambiri et al., *Energy consumption of Aircraft with new propulsion systems and storage media*, Scitech Forum, Orlando, January 2024](https://doi.org/10.2514/6.2024-1707).
 
-Furthermore, open-access data are also used for calibration of air traffic demand (World Bank) and for linking the background with a scenario from the IPCC's 6th Assessment Report (AR6 scenario database):
+Furthermore, open-access data are also used for calibration of air traffic demand (World Bank, ICAO) and for linking the background with a scenario from the IPCC's 6th Assessment Report (AR6 scenario database):
 - Population, total, SP.POP.TOTL; GDP (current US$), NY.GDP.MKTP.CD; Air transport, registered carrier departures worldwide, IS.AIR.DPRT. World Development Indicators. World Bank Group Archives, Washington, D.C., United States.
+- RPK. World Airlines Traffic and Capacity, Airlines for America. Source: ICAO. url: https://www.airlines.org/dataset/world-airlines-traffic-and-capacity/
 - Primary Energy (Biomass); Final Energy (Electricity); Emissions Energy Supply (Electricity); GDP; Population. Variables are taken for a select scenario range, C1 (limit warming to 1.5°C with no or limited overshoot) to C6 (limit warming to 3°C), and can be vizualized [here](https://data.ece.iiasa.ac.at/ar6//#/workspaces/share/3b43eae5-2f6f-494d-8376-146fd252c11d). Source: Byers et al, 2022. AR6 Scenarios Database hosted by IIASA. International Institute for Applied Systems Analysis, 2022. doi: 10.5281/zenodo.5886911 | url: data.ece.iiasa.ac.at/ar6/
 
 ## Installation
