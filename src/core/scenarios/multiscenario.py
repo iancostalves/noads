@@ -7,8 +7,8 @@ from jax.numpy import stack
 
 from gemseo_jax.jax_discipline import JAXDiscipline
 
-from noads.model import Model
-from noads.scenarios.temporalscenario import TemporalScenario
+from core.model import Model
+from core.scenarios.temporalscenario import TemporalScenario
 
 
 class MultiScenario(Model):

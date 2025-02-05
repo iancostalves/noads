@@ -1,8 +1,8 @@
 from collections.abc import Mapping
 
-from noads.model import JAXModel
-from noads.model import Model
-from noads.models.energy.energy import EnergyCarrier
+from core.model import JAXModel
+from core.model import Model
+from core.models.energy.energy import EnergyCarrier
 
 from jax.numpy import log
 from jax.numpy import exp

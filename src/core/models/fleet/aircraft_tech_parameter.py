@@ -1,6 +1,6 @@
 from jax.numpy import array
 
-from noads.models.util import InterpolatedUnivariateSpline
+from core.models.util import InterpolatedUnivariateSpline
 
 
 class AircraftTechParameter:

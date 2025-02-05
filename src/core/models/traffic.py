@@ -3,7 +3,7 @@ from __future__ import annotations
 from jax.numpy import divide
 from jax.numpy import exp
 
-from noads.model import AutoModel
+from core.model import AutoModel
 
 
 def generalised_logistic(

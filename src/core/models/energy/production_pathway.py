@@ -4,10 +4,10 @@ from jax.numpy import array
 from jax.numpy import atleast_1d
 from jax.numpy import sum
 
-from noads.model import JAXModel
-from noads.model import Model
-from noads.models.energy.streams import Impact
-from noads.models.energy.streams import Stream
+from core.model import JAXModel
+from core.model import Model
+from core.models.energy.streams import Impact
+from core.models.energy.streams import Stream
 
 
 class ProductionPathway:

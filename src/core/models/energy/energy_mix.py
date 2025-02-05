@@ -7,12 +7,12 @@ from jax.numpy import array
 from jax.numpy import sum
 from jax.numpy import where
 
-from noads.model import JAXModel
-from noads.model import Model
-from noads.models.energy.energy import ProducedEnergy
-from noads.models.energy.energy import ProducedEnergyCarrier
-from noads.models.energy.streams import Impact
-from noads.models.energy.streams import Stream
+from core.model import JAXModel
+from core.model import Model
+from core.models.energy.energy import ProducedEnergy
+from core.models.energy.energy import ProducedEnergyCarrier
+from core.models.energy.streams import Impact
+from core.models.energy.streams import Stream
 
 
 class EnergyMix:

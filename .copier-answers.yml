@@ -7,8 +7,8 @@ gemseo_min_version: '6'
 package_is_a_gemseo_plugin: true
 project_is_open_source: true
 project_name: numerical-optimization-of-aviation-decarbonization-scenarios
-project_name_suffix: noads
-project_slug: noads
+project_name_suffix: core
+project_slug: core
 short_description: Numerical Optimization of Aviation Decarbonization Scenarios with
     GEMSEO-JAX
 use_gemseo_develop: false

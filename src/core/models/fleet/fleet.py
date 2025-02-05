@@ -5,12 +5,12 @@ from collections.abc import Sequence
 from jax.numpy import array
 from jax.numpy import sum
 
-from noads.models.fleet.aircraft_design import AircraftDesign
-from noads.model import JAXModel
-from noads.model import Model
-from noads.models.energy.energy import EnergyCarrier
-from noads.models.energy.energy import Energy
-from noads.models.fleet.aircraft_operation import AircraftOperation
+from core.models.fleet.aircraft_design import AircraftDesign
+from core.model import JAXModel
+from core.model import Model
+from core.models.energy.energy import EnergyCarrier
+from core.models.energy.energy import Energy
+from core.models.fleet.aircraft_operation import AircraftOperation
 
 
 class Fleet:

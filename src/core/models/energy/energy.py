@@ -4,12 +4,12 @@ from jax.numpy import append
 from jax.numpy import array
 from jax.numpy import sum
 
-from noads.model import JAXModel
-from noads.model import Model
-from noads.models.energy.production_pathway import ProductionPathway
-from noads.models.energy.streams import Impact
-from noads.models.energy.streams import MaterialStream
-from noads.models.energy.streams import Stream
+from core.model import JAXModel
+from core.model import Model
+from core.models.energy.production_pathway import ProductionPathway
+from core.models.energy.streams import Impact
+from core.models.energy.streams import MaterialStream
+from core.models.energy.streams import Stream
 
 
 class Energy(Stream):

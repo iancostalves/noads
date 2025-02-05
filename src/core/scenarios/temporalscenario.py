@@ -22,8 +22,8 @@ from numpy import append
 from numpy import arange
 from strenum import StrEnum
 
-from noads.model import Model
-from noads.models.util import InterpolatedUnivariateSpline
+from core.model import Model
+from core.models.util import InterpolatedUnivariateSpline
 from gemseo_jax.jax_chain import JAXChain
 from gemseo_jax.jax_discipline import DataType
 from gemseo_jax.jax_discipline import JAXDiscipline

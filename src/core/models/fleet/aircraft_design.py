@@ -4,9 +4,9 @@ from collections.abc import Mapping
 
 from jax.numpy import array
 
-from noads.models.fleet.aircraft_operation import AircraftOperation
-from noads.models.fleet.aircraft_tech_parameter import AircraftTechParameter
-from noads.model import JAXModel
+from core.models.fleet.aircraft_operation import AircraftOperation
+from core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+from core.model import JAXModel
 from gam_jax.models.generic_airplane_model import GAM
 
 

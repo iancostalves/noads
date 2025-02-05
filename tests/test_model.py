@@ -7,9 +7,9 @@ from gemseo_jax.jax_discipline import NumberLike
 from numpy import array
 from numpy.testing import assert_equal
 
-from noads.model import AutoModel
-from noads.model import JAXModel
-from noads.model import Model
+from core.model import AutoModel
+from core.model import JAXModel
+from core.model import Model
 
 
 @pytest.fixture(scope="module")

@@ -5,13 +5,13 @@ from gemseo import generate_coupling_graph
 from AeroMAX.aviation_mix import battery
 from AeroMAX.aviation_mix import drop_in
 from AeroMAX.aviation_mix import lh2
-from noads.models import AircraftOperation
+from core.models import AircraftOperation
 
-from noads.models import PropulsionSystem
+from core.models import PropulsionSystem
 
 # Propulsion systems
-from noads.models.fleet.fleet import Fleet
-from noads.models.fleet.fleet import FleetAssembly
+from core.models.fleet.fleet import Fleet
+from core.models.fleet.fleet import FleetAssembly
 
 turbofan = PropulsionSystem("turbofan", {drop_in: 1.0})
 turboprop = PropulsionSystem("turboprop", {drop_in: 1.0})
