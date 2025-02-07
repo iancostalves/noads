@@ -29,25 +29,7 @@ from numpy import append
 from numpy import linspace
 
 # WLD calibration on departures per capita (y) from GDP per capita (x)
-
-
-def generalised_logistic(
-    x,
-    left_asymptote=0.00213893,
-    capacity=0.01722169,
-    growth_rate=0.000285,
-    logistic_nu=0.28062093,
-    # exp_coeff=1.55734294,
-    asymptote_coeff=1.54134406,
-    x_inflection=1988.78900381,
-):
-    y = left_asymptote + divide(
-        capacity - left_asymptote,
-        (asymptote_coeff + exp(
-            -growth_rate * (x - x_inflection)
-        )) ** (1 / logistic_nu)
-    )
-    return y
+from core.models.traffic import generalised_logistic
 
 
 def error_measure(y, y_data):
@@ -108,11 +90,7 @@ def plot_calibration_result(
     x_ordered = linspace(min(x_data), max(x_data), 100)
 
     # Disciplines and Chain with gemseo-jax
-    model = AutoJAXDiscipline(
-        function=generalised_logistic,
-        grammar_type=MDODiscipline.GrammarType.SIMPLER,
-        cache_type=MDODiscipline.CacheType.NONE,
-    )
+    model = AutoJAXDiscipline(generalised_logistic)
     opt_result.update({"x": x_data})
     results = model.execute(opt_result)
 
@@ -131,7 +109,7 @@ def plot_calibration_result(
     ax.set_ylabel("y data")
     ax.set_xlabel("y modeled")
     ax.legend(loc="upper left")
-    savefig(f"./calib_{region}.png")
+    fig.show()
     close(fig)
 
     opt_result.update({"x": x_ordered})
@@ -158,7 +136,7 @@ def plot_calibration_result(
     ax.set_ylabel("RPK per capita")
     ax.set_xlabel("GDP per capita [current US$/hab.]")
     ax.legend(loc="upper left")
-    savefig(f"./per_capita_logistic_{region}.png")
+    fig.show()
     close(fig)
 
     opt_result.update({"x": x_raw})
@@ -182,12 +160,11 @@ def plot_calibration_result(
         "o",
         label="calibration data",
     )
-    ax.set_ylabel("RPK per capita")
+    ax.set_ylabel("departures per capita")
     ax.set_xlabel("year")
     ax.legend(loc="upper left")
-    savefig(f"./time_series_logistic_{region}.png")
+    fig.show()
     close(fig)
-    # todo montrer des critères quantitatifs (error_max, ecart type, rmse)
 
 
 def run_region_calibration(region, plot_calibration=True):
@@ -207,20 +184,10 @@ def run_region_calibration(region, plot_calibration=True):
     dy_max = max(dy)
 
     # Disciplines and Chain with gemseo-jax
-    model = AutoJAXDiscipline(
-        function=generalised_logistic,
-        static_args={"x": x_data},
-        grammar_type=MDODiscipline.GrammarType.SIMPLER,
-    )
-    measure = AutoJAXDiscipline(
-        function=error_measure,
-        static_args={"y_data": y_data},
-        grammar_type=MDODiscipline.GrammarType.SIMPLER,
-    )
+    model = AutoJAXDiscipline(generalised_logistic)
+    measure = AutoJAXDiscipline(error_measure, static_args={"y_data": y_data})
 
-    jax_chain = JAXChain(
-        [model, measure], cache_type=MDODiscipline.CacheType.MEMORY_FULL
-    )
+    jax_chain = JAXChain([model, measure])
 
     jax_chain.add_differentiated_outputs(["mse"])
     jax_chain.compile_jit(False)
@@ -236,9 +203,6 @@ def run_region_calibration(region, plot_calibration=True):
     design_space.add_variable(
         "growth_rate", l_b=0.2 * dy_max, u_b=1.8 * dy_max, value=np_array(dy_max)
     )
-    # design_space.add_variable(
-    #     "exp_coeff", l_b=0.0, u_b=5.0, value=np_array(0.1)
-    # )
     design_space.add_variable(
         "x_inflection", l_b=0.0, u_b=3.0 * x_max, value=np_array(0.5 * x_max)
     )
@@ -267,7 +231,6 @@ def run_region_calibration(region, plot_calibration=True):
         variable_names,
         ["mse", "y"],
         set_x0_before_opt=True,
-        grammar_type=MDODiscipline.GrammarType.SIMPLER,
     )
 
     # Make DOE scenario from adapter
@@ -281,24 +244,21 @@ def run_region_calibration(region, plot_calibration=True):
     )
     scenario_doe.execute({"n_samples": 15, "algo": "OT_OPT_LHS"})
     # print(output_data)
-
-    # Post-process the DOE results
-    # scenario_doe.post_process(
-    #     "BasicHistory", variable_names=["mse"], save=False, show=True
-    # )
-    # scenario.post_process(
-    #     "ScatterPlotMatrix",
-    #     variable_names=variable_names,
-    #     save=False,
-    #     show=True,
-    # )
-
     cache_entries = list(jax_chain.cache)
     mse_entries = [entry.outputs["mse"] for entry in cache_entries]
     idx_opt = mse_entries.index(min(mse_entries))
     best_fit = cache_entries[idx_opt].inputs
-    print(region, "best fit:", best_fit)
     if plot_calibration:
+        print(region, "best fit:", best_fit)
+        scenario_doe.post_process(
+            "BasicHistory", variable_names=["mse"], save=False, show=True
+        )
+        scenario.post_process(
+            "ScatterPlotMatrix",
+            variable_names=variable_names,
+            save=False,
+            show=True,
+        )
         plot_calibration_result(
             best_fit, region, years_data, x_data, y_data, years_raw, x_raw, y_raw
         )
@@ -306,57 +266,3 @@ def run_region_calibration(region, plot_calibration=True):
     return (
             best_fit, region, years_data, x_data, y_data, years_raw, x_raw, y_raw
         )
-
-
-def main():
-    configure_logger()
-    countries = [
-        "USA", "GBR", "EUU", "BOL", "BRA", "CHN", "IND"
-    ]
-
-    fig, ax = subplots(figsize=(7, 4), layout="constrained")
-    for country in countries:
-        (
-            best_fit, region, years_data, x_data, y_data, years_raw, x_raw, y_raw
-        ) = run_region_calibration(country, plot_calibration=True)
-        x_ordered = linspace(min(x_data), max(x_data), 100)
-        # Disciplines and Chain with gemseo-jax
-        model = AutoJAXDiscipline(
-            function=generalised_logistic,
-            grammar_type=MDODiscipline.GrammarType.SIMPLER,
-            cache_type=MDODiscipline.CacheType.NONE,
-        )
-        best_fit.update({"x": x_ordered})
-        results = model.execute(best_fit)
-        lines = ax.plot(
-            x_ordered,
-            results["y"],
-            "-",
-            label=f"{country} - modelled",
-        )
-        ax.plot(
-            x_data,
-            y_data,
-            ".",
-            label=f"{country} - observed",
-            color=lines[-1].get_color(),
-        )
-    ax.set_ylabel("departures per capita")
-    ax.set_xlabel("GDP per capita\n[current US$/hab.]")
-    ax.legend(bbox_to_anchor=(1.1, 0.9))
-    ax.set_ylim(bottom=1e-4)
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-    fig.savefig("./dep_countries.pdf")
-    close(fig)
-
-
-if __name__ == "__main__":
-    main()
-    # plot_calibration_result(
-    #     {'x_inflection': array([1923.88835173]), 'exp_coeff': array([0.55007268]),
-    #         'asymptote_coeff': array([1.09240442]), 'logistic_nu': array([0.14623451]),
-    #         'left_asymptote': array([0.00219871]), 'growth_rate': array([0.00028066]),
-    #         'capacity': array([0.00795385])
-    #     }
-    # )

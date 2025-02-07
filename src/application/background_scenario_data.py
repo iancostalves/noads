@@ -64,15 +64,15 @@ def get_scenario_color(scenario_name: str):
 
 
 def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
-    population_data = read_csv("../ar6_scenario_database/population.csv", index_col=1)
-    gdp_data = read_csv("../ar6_scenario_database/gdp.csv", index_col=1)
+    population_data = read_csv("../ar6_scenarios_data/population.csv", index_col=1)
+    gdp_data = read_csv("../ar6_scenarios_data/gdp.csv", index_col=1)
     electricity_emissions_data = read_csv(
-        "../ar6_scenario_database/electricity_emissions.csv", index_col=1
+        "../ar6_scenarios_data/electricity_emissions.csv", index_col=1
     )
     final_electricity_data = read_csv(
-        "../ar6_scenario_database/final_electricity.csv", index_col=1
+        "../ar6_scenarios_data/final_electricity.csv", index_col=1
     )
-    biomass_data = read_csv("../ar6_scenario_database/biomass_total.csv", index_col=1)
+    biomass_data = read_csv("../ar6_scenarios_data/biomass_total.csv", index_col=1)
 
     all_years = [
         int(year) for year in list(electricity_emissions_data.keys())[5:]

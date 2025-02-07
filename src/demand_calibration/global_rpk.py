@@ -33,25 +33,7 @@ from numpy import append
 from numpy import linspace
 
 # WLD calibration on departures per capita (y) from GDP per capita (x)
-
-
-def generalised_logistic(
-    x,
-    left_asymptote=0.00213893,
-    capacity=0.01722169,
-    growth_rate=0.000285,
-    logistic_nu=0.28062093,
-    # exp_coeff=1.55734294,
-    asymptote_coeff=1.54134406,
-    x_inflection=1988.78900381,
-):
-    y = left_asymptote + divide(
-        capacity - left_asymptote,
-        (asymptote_coeff + exp(
-            -growth_rate * (x - x_inflection)
-        )) ** (1 / logistic_nu)
-    )
-    return y
+from core.models.traffic import generalised_logistic
 
 
 def error_measure(y, y_data, weights=1.0):
@@ -120,11 +102,7 @@ def plot_calibration_result(
     x_ordered = linspace(min(x_data), 2.5 * max(x_data), 100)
 
     # Disciplines and Chain with gemseo-jax
-    model = AutoJAXDiscipline(
-        function=generalised_logistic,
-        grammar_type=MDODiscipline.GrammarType.SIMPLER,
-        cache_type=MDODiscipline.CacheType.NONE,
-    )
+    model = AutoJAXDiscipline(generalised_logistic)
     opt_result.update({"x": x_data})
     results = model.execute(opt_result)
 
