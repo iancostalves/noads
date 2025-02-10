@@ -7,10 +7,18 @@ from jax.numpy import concatenate
 from jax.numpy import diag
 from jax.numpy import diff
 from jax.numpy import digitize
+from jax.numpy import interp
 from jax.numpy import ones
 from jax.numpy import zeros
 from jax.numpy import cumsum
 from jax.numpy.linalg import solve
+
+
+def interpolate_data(x, x_data, y_data, cubic=False):
+    """Cubic or linear interpolation function with JAX."""
+    if cubic:
+        return InterpolatedUnivariateSpline(x_data, y_data)(x)
+    return interp(x, x_data, y_data)
 
 
 class InterpolatedUnivariateSpline:  # noqa: D101

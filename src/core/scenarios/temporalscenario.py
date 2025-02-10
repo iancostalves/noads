@@ -29,13 +29,6 @@ from gemseo_jax.jax_discipline import DataType
 from gemseo_jax.jax_discipline import JAXDiscipline
 
 
-def interpolate_data(x, x_data, y_data, cubic=False):
-    """Cubic or linear interpolation function with JAX."""
-    if cubic:
-        return InterpolatedUnivariateSpline(x_data, y_data)(x)
-    return interp(x, x_data, y_data)
-
-
 def delay1_rhs(t, y, args):
     """Right-hand side function of a 1st order delay."""
     delay_state = y

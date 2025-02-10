@@ -1,5 +1,3 @@
-from matplotlib.pyplot import close
-from matplotlib.pyplot import savefig
 from matplotlib.pyplot import subplots
 from numpy import isnan
 from numpy import ndarray
@@ -9,17 +7,17 @@ scenario_to_model = {
     # "SSP1-34": "MESSAGE-GLOBIOM 1.0",
     # "SSP1-19": "WITCH-GLOBIOM 3.1",
     "SSP1-45": "IMAGE 3.0.1",
-    "SSP1-26": "IMAGE 3.0.1",
+    # "SSP1-26": "IMAGE 3.0.1",
     "SSP2-45": "MESSAGE-GLOBIOM 1.0",
     "SSP2-34": "MESSAGE-GLOBIOM 1.0",
     "SSP2-26": "MESSAGE-GLOBIOM 1.0",
     "SSP2-19": "MESSAGE-GLOBIOM 1.0",
     "SSP3-45": "MESSAGE-GLOBIOM 1.0",
-    "SSP3-34": "MESSAGE-GLOBIOM 1.0",
+    # "SSP3-34": "MESSAGE-GLOBIOM 1.0",
     "SSP4-45": "AIM/CGE 2.0",
-    "SSP4-26": "AIM/CGE 2.0",
+    # "SSP4-26": "AIM/CGE 2.0",
     "SSP5-45": "REMIND-MAgPIE 1.5",
-    "SSP5-34": "REMIND-MAgPIE 1.5",
+    # "SSP5-34": "REMIND-MAgPIE 1.5",
     # "SSP2-34": "MESSAGE-GLOBIOM 1.0",
     # "SSP2-19": "MESSAGE-GLOBIOM 1.0",
     # "SSP2-45": "MESSAGE-GLOBIOM 1.0",
@@ -64,15 +62,15 @@ def get_scenario_color(scenario_name: str):
 
 
 def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
-    population_data = read_csv("../ar6_scenarios_data/population.csv", index_col=1)
-    gdp_data = read_csv("../ar6_scenarios_data/gdp.csv", index_col=1)
+    population_data = read_csv("../../../src/application/ar6_scenarios_data/population.csv", index_col=1)
+    gdp_data = read_csv("../../../src/application/ar6_scenarios_data/gdp.csv", index_col=1)
     electricity_emissions_data = read_csv(
-        "../ar6_scenarios_data/electricity_emissions.csv", index_col=1
+        "../../../src/application/ar6_scenarios_data/electricity_emissions.csv", index_col=1
     )
     final_electricity_data = read_csv(
-        "../ar6_scenarios_data/final_electricity.csv", index_col=1
+        "../../../src/application/ar6_scenarios_data/final_electricity.csv", index_col=1
     )
-    biomass_data = read_csv("../ar6_scenarios_data/biomass_total.csv", index_col=1)
+    biomass_data = read_csv("../../../src/application/ar6_scenarios_data/biomass_total.csv", index_col=1)
 
     all_years = [
         int(year) for year in list(electricity_emissions_data.keys())[5:]
@@ -212,8 +210,8 @@ def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
                     axes[i].set_ylabel(var_units_name_convert[name][0])
                     axes[i].set_xlabel("Year")
             axes[0].legend(loc="upper right")
-            savefig(f"./ar6_{group_name}.png")
-            close(fig)
+            fig.show()
+            # close(fig)
 
     del ar6_data["gdp"]
     return ar6_data, years
