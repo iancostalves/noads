@@ -22,7 +22,8 @@ dynamic = ["version"]
 requires-python = ">=3.9, <3.13"
 dependencies = [
     "gemseo-jax >=2, <3",
-    "diffrax >=0.6.0, <0.6.1"
+    "diffrax >=0.6.0, <0.6.1",
+    "xrld >=2.0.1, <2.1"
 ]
 
 [project.optional-dependencies]

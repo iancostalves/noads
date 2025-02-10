@@ -27,13 +27,13 @@ def filter_nans(data_iterable, exclude_covid=True):
 def get_rpk_data(y_start):
     # Socio-economic indicators
     gdp_data = read_excel(
-        "./data/GDP.xls",
+        "../../../src/demand_calibration/calibration_data/GDP.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "./data/Population.xls",
+        "../../../src/demand_calibration/calibration_data/Population.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -41,7 +41,7 @@ def get_rpk_data(y_start):
 
     # Air traffic indicators
     rpk_data = read_excel(
-        "./data/Traffic_1929_to_2021.xlsx",
+        "../../../src/demand_calibration/calibration_data/Traffic_1929_to_2021.xlsx",
         decimal=",",
     )
 
@@ -70,13 +70,13 @@ def get_rpk_data(y_start):
 def get_departures_data(region):
     # Socio-economic indicators
     gdp_data = read_excel(
-        "./data/GDP.xls",
+        "../../../src/demand_calibration/calibration_data/GDP.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "./data/Population.xls",
+        "../../../src/demand_calibration/calibration_data/Population.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -84,7 +84,7 @@ def get_departures_data(region):
 
     # Air traffic indicators
     dep_data = read_excel(
-        "./data/AirTraffic-carrier-departures.xls",
+        "../../../src/demand_calibration/calibration_data/AirTraffic-carrier-departures.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
