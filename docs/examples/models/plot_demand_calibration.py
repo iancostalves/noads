@@ -65,3 +65,6 @@ fig.show()
 # Now, we explore ICAO data on Revenue Passenger-Kilometers. The data here is only
 # available on the global level.
 run_global_rpk_calibration(plot_calibration=True)
+# %%
+# The parameters obtained in this calibration are set as default for the air traffic
+# estimation based on socioeconomic drivers (population, income) from the AR6 scenarios.

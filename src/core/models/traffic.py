@@ -8,12 +8,12 @@ from core.model import AutoModel
 
 def generalised_logistic(
     x,
-    left_asymptote=0.,
-    capacity=0.00556283,
-    growth_rate=0.00011641,
-    logistic_nu=0.21666014,
-    asymptote_coeff=1.17810123,
-    x_lag=492.0691946,
+    left_asymptote=0.0,
+    capacity=0.01118996,
+    growth_rate=0.00010489,
+    logistic_nu=0.18720497,
+    asymptote_coeff=1.27603214,
+    x_lag=0.0,
 ):
     y = left_asymptote + divide(
         capacity - left_asymptote,
