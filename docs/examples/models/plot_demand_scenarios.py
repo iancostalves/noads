@@ -1,6 +1,8 @@
 """Air traffic demand estimation from AR6 scenarios."""
 from jax import vmap
+from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
+from numpy import array as np_array
 from numpy import linspace
 from numpy import ones
 
@@ -18,24 +20,26 @@ scenario_data, years_data = get_ar6_data(start_year=2000, end_year=2100, plot_da
 # capita. Now we interpolate, for each scenario, to get values yearly.
 years = linspace(2000, 2100, 101)
 population = {
-    scenario: interpolate_data(years, years_data, scenario_data["population"][scenario])
-    for scenario in scenario_data["population"].keys()
+    scenario: interpolate_data(
+        years, np_array(years_data), np_array(scenario_data["population"][scenario])
+    ) for scenario in scenario_data["population"].keys()
 }
 gdp_per_capita = {
     scenario: interpolate_data(
-        years, years_data, scenario_data["gdp_per_capita"][scenario]
-    )
-    for scenario in scenario_data["gdp_per_capita"].keys()
+        years, np_array(years_data), np_array(scenario_data["gdp_per_capita"][scenario])
+    ) for scenario in scenario_data["gdp_per_capita"].keys()
 }
+
 # %%
 # Also, we consider COVID effects by delaying trend traffic of a fixed amount of years,
 # here we must also include the assumption of end of COVID related traffic constraints.
 year_covid_end = 2024
 gdp_per_capita_end_covid = {
     scenario: interpolate_data(
-        year_covid_end, years_data, scenario_data["gdp_per_capita"][scenario]
-    )
-    for scenario in scenario_data["gdp_per_capita"].keys()
+        year_covid_end,
+        np_array(years_data),
+        np_array(scenario_data["gdp_per_capita"][scenario]),
+    ) for scenario in scenario_data["gdp_per_capita"].keys()
 }
 
 # %%
@@ -46,7 +50,7 @@ gdp_per_capita_end_covid = {
 model = AirTraffic()
 model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
 outputs = {}
-fig, axes = subplots(1, 3, figsize=(7, 4), layout="constrained")
+fig, axes = subplots(2, 2, figsize=(7, 4), layout="constrained")
 for scenario in population.keys():
     vones = ones(years.shape)
     model_input = {
@@ -58,7 +62,25 @@ for scenario in population.keys():
         "end_year": 2075.0 * vones,
     }
     model_output = model.discipline.execute(model_input)
+    outputs[scenario] = model_output
+    axes[0, 0].plot(years, model_output["rpk_per_capita"], label=scenario)
+    axes[0, 1].plot(years, 1.0e-12 * model_output["rpk_trend"])
+    axes[1, 0].plot(years, model_output["load_factor"])
+    axes[1, 1].plot(years, 1.0e-12 * model_output["ask_trend"])
 
+axes[0, 0].set_xlabel("Year")
+axes[0, 0].set_ylabel("pax-km per hab.")
+axes[0, 0].set_title("RPK per capita")
+axes[0, 1].set_xlabel("Year")
+axes[0, 1].set_ylabel("trillion pax-km")
+axes[0, 1].set_title("RPK")
+axes[1, 0].set_xlabel("Year")
+axes[1, 0].set_ylabel("pax/seat [%]")
+axes[1, 0].set_title("Load factor")
+axes[1, 1].set_xlabel("Year")
+axes[1, 1].set_ylabel("trillion seat-km")
+axes[1, 1].set_title("ASK")
+show()
 
 
 
