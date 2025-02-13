@@ -86,7 +86,7 @@ nav:
   - Licenses: licenses.md
 - User guide: user_guide/
 # - Examples:
-- API documentation: reference/core/
+- API documentation: reference/noads/
 
 markdown_extensions:
 - admonition
@@ -111,7 +111,7 @@ extra_javascript:
 - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 watch:
-  - src/core
+  - src/noads
   - README.md
   - CHANGELOG.md
 
