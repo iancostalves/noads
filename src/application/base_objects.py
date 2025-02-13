@@ -1,10 +1,26 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from numpy import array
 
+from core.models.energy.energy import Energy
 from core.models.energy.energy import ProducedEnergy
 from core.models.energy.energy import ProducedEnergyCarrier
 from core.models.energy.energy_mix import EnergyMix
 from core.models.energy.production_pathway import ProductionPathway
-from core.models.energy.energy import Energy
 from core.models.energy.streams import Impact
 from core.models.fleet.aircraft_design import AircraftDesign
 from core.models.fleet.aircraft_operation import AircraftOperation
@@ -12,7 +28,6 @@ from core.models.fleet.aircraft_operation import PropulsionSystem
 from core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from core.models.fleet.fleet import Fleet
 from core.models.fleet.fleet import FleetAssembly
-
 
 aeroscope_category_conso = {
     "general": 1.87014607,
@@ -121,19 +136,21 @@ tech_params_lower_upper_2020_2040_2060 = {
 
 
 def initialize_aeromax_objects(
-    drop_in_only=False, technology_index=0,
+    drop_in_only=False,
+    technology_index=0,
 ):
     if technology_index < 0 or technology_index > 2:
-        raise RuntimeError("Please enter 0, 1 or 2 as technology index (low, mid, up)")
+        msg = "Please enter 0, 1 or 2 as technology index (low, mid, up)"
+        raise RuntimeError(msg)
 
     co2 = Impact(name="CO2", unit="gCO2", budget=900e15)
 
-    ## ENERGY MIX ______________________________________________________________________
+    # ENERGY MIX ______________________________________________________________________
     # Non-produced energies ............................................................
     oil = Energy("OIL")
     biomass = Energy("BIOMASS")
     electricity = Energy("ELECTRICITY")
-    natural_gas = Energy("NATURAL_GAS")
+    Energy("NATURAL_GAS")
 
     # Production Pathways and their associated Secondary energies ......................
 
@@ -285,13 +302,11 @@ def initialize_aeromax_objects(
     }
     if not drop_in_only:
         energies.extend([lh2, battery])
-        prop_systems.update(
-            {
-                "lH2-FuelCell": PropulsionSystem("lh2_fuel_cell", {lh2: 1.0}),
-                "lH2-GasTurbine": PropulsionSystem("lh2_burn", {lh2: 1.0}),
-                "Battery-Electric": PropulsionSystem("electric_propulsion", {battery: 1.0}),
-            }
-        )
+        prop_systems.update({
+            "lH2-FuelCell": PropulsionSystem("lh2_fuel_cell", {lh2: 1.0}),
+            "lH2-GasTurbine": PropulsionSystem("lh2_burn", {lh2: 1.0}),
+            "Battery-Electric": PropulsionSystem("electric_propulsion", {battery: 1.0}),
+        })
         #     energies.extend([gch4, lch4])
         #     prop_systems.update(
         #         {
@@ -312,7 +327,7 @@ def initialize_aeromax_objects(
         )
 
     fleets = []
-    for cat_i, (cat_name, cat_mission) in enumerate(categories_mission.items()):
+    for _cat_i, (cat_name, _cat_mission) in enumerate(categories_mission.items()):
         # List of aircraft within category
         aircraft = []
 
@@ -321,19 +336,20 @@ def initialize_aeromax_objects(
             propulsion=prop_systems["JetA-GasTurbine"],
             energy_per_ask=aeroscope_category_conso[cat_name],
             recent=True,
-            lifetime=20.,
+            lifetime=20.0,
         )
         aircraft.append(aircraft_reference_2019)
 
         # Add new aircraft to be entering the fleet
-        for prop_name, prop_sys in prop_systems.items():
+        for prop_name in prop_systems:
             mission = {
-                **categories_mission[cat_name], **propulsion_mission[prop_name],
+                **categories_mission[cat_name],
+                **propulsion_mission[prop_name],
                 "category": cat_name,
             }
             if "Electric" in prop_name:
                 if cat_name == "general" or (
-                        cat_name == "commuter" and technology_index > 0
+                    cat_name == "commuter" and technology_index > 0
                 ):
                     aircraft.append(
                         AircraftDesign(

@@ -1,6 +1,22 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from gemseo import generate_coupling_graph
 from jax.numpy import array
@@ -11,8 +27,12 @@ from core.model import JAXModel
 from core.model import Model
 from core.models.energy.energy import ProducedEnergy
 from core.models.energy.energy import ProducedEnergyCarrier
-from core.models.energy.streams import Impact
-from core.models.energy.streams import Stream
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from core.models.energy.streams import Impact
+    from core.models.energy.streams import Stream
 
 
 class EnergyMix:
@@ -41,12 +61,12 @@ class EnergyMix:
         plot_coupling_graph=False,
     ):
         self.produced_energies = set(energies)
-        self.impacts = list(set(
-            [impact for energy in self.produced_energies for impact in energy.impacts]
-        ))
-        self.constrained_inputs = list(set(
-            inputs_to_constrain if inputs_to_constrain is not None else []
-        ))
+        self.impacts = list({
+            impact for energy in self.produced_energies for impact in energy.impacts
+        })
+        self.constrained_inputs = list(
+            set(inputs_to_constrain if inputs_to_constrain is not None else [])
+        )
 
         # add missing impacts for all pathways
         if extra_impacts is not None:
@@ -63,28 +83,25 @@ class EnergyMix:
                     if impact not in pathway.impacts:
                         pathway.impacts.append(impact)
 
-        self.final_energies = list(set(
-            [
-                energy for energy in self.produced_energies
-                if isinstance(energy, ProducedEnergyCarrier)
-            ]
-        ))
-        self.input_streams = list(set(
-            [
-                stream for energy in self.produced_energies
-                for pathway in energy.pathways
-                for stream in pathway.input_streams
-                if stream not in self.produced_energies
-            ]
-        ))
-        self.secondary_energy = list(set(
-            [
-                stream for energy in self.produced_energies
-                for pathway in energy.pathways
-                for stream in pathway.input_streams
-                if stream in self.produced_energies
-            ]
-        ))
+        self.final_energies = list({
+            energy
+            for energy in self.produced_energies
+            if isinstance(energy, ProducedEnergyCarrier)
+        })
+        self.input_streams = list({
+            stream
+            for energy in self.produced_energies
+            for pathway in energy.pathways
+            for stream in pathway.input_streams
+            if stream not in self.produced_energies
+        })
+        self.secondary_energy = list({
+            stream
+            for energy in self.produced_energies
+            for pathway in energy.pathways
+            for stream in pathway.input_streams
+            if stream in self.produced_energies
+        })
         for energy_to_be_consumed in self.produced_energies:
             for energy in self.produced_energies:
                 if energy_to_be_consumed in energy.input_streams:
@@ -108,12 +125,11 @@ class EnergyMix:
         impact_models = []
         prod_conso_models = []
         for energy in self.produced_energies:
-            impact_models.extend(
-                [energy.impact_index_model()]
-            )
-            prod_conso_models.extend(
-                [energy.production_model(), energy.consumption_model()]
-            )
+            impact_models.extend([energy.impact_index_model()])
+            prod_conso_models.extend([
+                energy.production_model(),
+                energy.consumption_model(),
+            ])
             for pathway in energy.pathways:
                 impact_models.append(pathway.impact_index_model())
                 prod_conso_models.append(pathway.consumption_model())
@@ -135,19 +151,20 @@ class EnergyMix:
     def input_streams_model(self):
         default_values_units = {
             f"{energy.name}.{stream.name}.consumption": (0.0, stream.unit)
-            for stream in self.input_streams for energy in self.produced_energies
+            for stream in self.input_streams
+            for energy in self.produced_energies
             if stream in energy.input_streams
         }
         output_units = {
             f"{stream.name}.consumption": stream.unit for stream in self.input_streams
         }
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._inputs_consumption,
@@ -165,24 +182,26 @@ class EnergyMix:
         consumption_per_stream_per_energy = {
             stream.name: {
                 energy.name: input_data[f"{energy.name}.{stream.name}.consumption"]
-                if stream in energy.input_streams else 0.0
+                if stream in energy.input_streams
+                else 0.0
                 for energy in self.produced_energies
             }
             for stream in self.input_streams
         }
         consumption_per_stream = {
-            stream.name: sum(array([
-                consumption_per_stream_per_energy[stream.name][energy.name]
-                for energy in self.produced_energies
-            ]))
+            stream.name: sum(
+                array([
+                    consumption_per_stream_per_energy[stream.name][energy.name]
+                    for energy in self.produced_energies
+                ])
+            )
             for stream in self.input_streams
         }
 
-        output_data = {
+        return {
             f"{stream.name}.consumption": consumption_per_stream[stream.name]
             for stream in self.input_streams
         }
-        return output_data
 
     def total_impacts_model(self):
         default_values_units = {
@@ -196,12 +215,12 @@ class EnergyMix:
         })
         output_units = {f"{impact.name}": impact.unit for impact in self.impacts}
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._impact_production,
@@ -219,7 +238,8 @@ class EnergyMix:
         impact_index = {
             energy.name: {
                 impact.name: input_data[f"{energy.name}.{impact.name}_index"]
-                if impact in energy.impacts else 0.0
+                if impact in energy.impacts
+                else 0.0
                 for impact in self.impacts
             }
             for energy in self.final_energies
@@ -228,13 +248,15 @@ class EnergyMix:
             energy.name: input_data[f"{energy.name}.consumption"]
             for energy in self.final_energies
         }
-        output_data = {
-            impact.name: sum(array([
-                consumption[energy.name] * impact_index[energy.name][impact.name]
-                for energy in self.final_energies
-            ])) for impact in self.impacts
+        return {
+            impact.name: sum(
+                array([
+                    consumption[energy.name] * impact_index[energy.name][impact.name]
+                    for energy in self.final_energies
+                ])
+            )
+            for impact in self.impacts
         }
-        return output_data
 
     def constraint_model(self):
         default_inputs = {
@@ -251,15 +273,18 @@ class EnergyMix:
         })
         default_inputs.update({
             f"{energy.pathways[-1].name}.share": 0.0
-            for energy in self.produced_energies if len(energy.pathways) > 1
+            for energy in self.produced_energies
+            if len(energy.pathways) > 1
         })
         output_names = [
             f"{energy.name}.constraint"
-            for energy in self.produced_energies if len(energy.pathways) > 1
+            for energy in self.produced_energies
+            if len(energy.pathways) > 1
         ]
         output_names.extend([
             f"{energy.name}.constraint_violation"
-            for energy in self.produced_energies if len(energy.pathways) > 1
+            for energy in self.produced_energies
+            if len(energy.pathways) > 1
         ])
         output_names.extend([
             f"{input_stream.name}.consumed_share"
@@ -269,12 +294,10 @@ class EnergyMix:
             f"{input_stream.name}.constraint"
             for input_stream in self.constrained_inputs
         ])
-        output_names.extend(
-            [
-                f"{input_stream.name}.constraint_violation"
-                for input_stream in self.constrained_inputs
-            ]
-        )
+        output_names.extend([
+            f"{input_stream.name}.constraint_violation"
+            for input_stream in self.constrained_inputs
+        ])
         return JAXModel(
             function=self._constraint,
             input_names=list(default_inputs.keys()),
@@ -286,16 +309,20 @@ class EnergyMix:
     def _constraint(self, input_data):
         last_share = {
             energy.name: input_data[f"{energy.pathways[-1].name}.share"]
-            for energy in self.produced_energies if len(energy.pathways) > 1
+            for energy in self.produced_energies
+            if len(energy.pathways) > 1
         }
         output_data = {
             f"{energy.name}.constraint": -last_share[energy.name]
-            for energy in self.produced_energies if len(energy.pathways) > 1
+            for energy in self.produced_energies
+            if len(energy.pathways) > 1
         }
         output_data.update({
             f"{energy.name}.constraint_violation": where(
                 last_share[energy.name] < 0, -last_share[energy.name], 0.0
-            ) for energy in self.produced_energies if len(energy.pathways) > 1
+            )
+            for energy in self.produced_energies
+            if len(energy.pathways) > 1
         })
 
         global_production = {
@@ -308,8 +335,8 @@ class EnergyMix:
         }
 
         consumed_share = {
-            input_stream.name:
-                consumption[input_stream.name] / global_production[input_stream.name]
+            input_stream.name: consumption[input_stream.name]
+            / global_production[input_stream.name]
             for input_stream in self.constrained_inputs
         }
         output_data.update({
@@ -322,8 +349,8 @@ class EnergyMix:
             for input_stream in self.constrained_inputs
         }
         input_constraint = {
-            f"{input_stream.name}.constraint":
-                consumed_share[input_stream.name] - fair_share[input_stream.name]
+            f"{input_stream.name}.constraint": consumed_share[input_stream.name]
+            - fair_share[input_stream.name]
             for input_stream in self.constrained_inputs
         }
         input_constraint.update({

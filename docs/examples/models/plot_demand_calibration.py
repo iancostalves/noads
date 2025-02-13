@@ -1,4 +1,22 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This work is licensed under a BSD 0-Clause License.
+#
+# Permission to use, copy, modify, and/or distribute this software
+# for any purpose with or without fee is hereby granted.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+# WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL
+# THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT,
+# OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING
+# FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+# NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+# WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 """Calibration of air traffic demand models: global and regionalized."""
+
 from gemseo import configure_logger
 from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
 from matplotlib.pyplot import subplots
@@ -26,14 +44,12 @@ run_region_calibration("WLD", plot_calibration=True)
 
 # %%
 # ## Regional
-countries = [
-    "USA", "GBR", "EUU", "BOL", "BRA", "CHN", "IND"
-]
+countries = ["USA", "GBR", "EUU", "BOL", "BRA", "CHN", "IND"]
 fig, ax = subplots(figsize=(7, 4), layout="constrained")
 for country in countries:
-    (
-        best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw
-    ) = run_region_calibration(country, plot_calibration=False)
+    (best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw) = (
+        run_region_calibration(country, plot_calibration=False)
+    )
     x_ordered = linspace(min(x_data), max(x_data), 100)
     # Disciplines and Chain with gemseo-jax
     model = AutoJAXDiscipline(generalised_logistic)
@@ -56,8 +72,8 @@ ax.set_ylabel("departures per capita")
 ax.set_xlabel("GDP per capita\n[current US$/hab.]")
 ax.legend(bbox_to_anchor=(1.1, 0.9))
 ax.set_ylim(bottom=1e-4)
-ax.set_yscale('log')
-ax.set_xscale('log')
+ax.set_yscale("log")
+ax.set_xscale("log")
 fig.show()
 
 # %%

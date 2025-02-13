@@ -1,23 +1,36 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from gemseo import create_design_space
 from gemseo import create_scenario
-from gemseo.algos.opt.multi_start.settings.multi_start_settings import \
-    MultiStart_Settings
-
+from gemseo.algos.opt.multi_start.settings.multi_start_settings import (
+    MultiStart_Settings,
+)
+from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
+from gemseo_jax.jax_chain import JAXChain
 from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
 from matplotlib.pyplot import yscale
-from numpy import mean
-from numpy import sqrt
-
-
-from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
-from gemseo_jax.jax_chain import JAXChain
-
-from numpy import diff
-from numpy import max
-from numpy import min
 from numpy import array as np_array
+from numpy import diff
 from numpy import linspace
+from numpy import max
+from numpy import mean
+from numpy import min
+from numpy import sqrt
 
 from core.models.traffic import generalised_logistic
 from demand_calibration.calibration_utils import error_measure
@@ -52,14 +65,11 @@ def plot_calibration_result(
     axes[0].set_ylabel("Model")
     axes[0].set_xlabel("Data")
     axes[0].legend(loc="upper left")
-    rmse = sqrt((1 / y_data.size) * sum(((y_data - results["y"]) * 1e6) ** 2))
-    print(f"RMSE:{rmse}")
-    r2_pc = 1 - sum((y_data - results["y"]) ** 2) / (sum((y_data - mean(y_data)) ** 2))
-    print(f"R2pc:{r2_pc}")
-    r2 = 1 - sum(((y_data - results["y"]) * pop_data) ** 2) / (
+    sqrt((1 / y_data.size) * sum(((y_data - results["y"]) * 1e6) ** 2))
+    1 - sum((y_data - results["y"]) ** 2) / (sum((y_data - mean(y_data)) ** 2))
+    1 - sum(((y_data - results["y"]) * pop_data) ** 2) / (
         sum((y_data * pop_data - mean(y_data * pop_data)) ** 2)
     )
-    print(f"R2:{r2}")
     # axes[0].text(1, 1, f"RMSE:{rmse:.3}\nR2:{r2:.3}")
 
     opt_result.update({"x": x_ordered})
@@ -151,7 +161,10 @@ def run_global_rpk_calibration(plot_calibration=True):
         "capacity", lower_bound=y_min, upper_bound=10 * y_max, value=np_array(y_max)
     )
     design_space.add_variable(
-        "growth_rate", lower_bound=0.2 * dy_max, upper_bound=1.8 * dy_max, value=np_array(dy_max)
+        "growth_rate",
+        lower_bound=0.2 * dy_max,
+        upper_bound=1.8 * dy_max,
+        value=np_array(dy_max),
     )
     design_space.add_variable(
         "x_lag", lower_bound=0.0, upper_bound=3.0 * x_max, value=np_array(0.1 * x_max)
@@ -162,7 +175,6 @@ def run_global_rpk_calibration(plot_calibration=True):
     design_space.add_variable(
         "asymptote_coeff", lower_bound=0.5, upper_bound=2.0, value=np_array(1.0)
     )
-    variable_names = design_space.variable_names
 
     # Create the MDO scenario with an MDF formulation:
     scenario = create_scenario(
@@ -183,7 +195,6 @@ def run_global_rpk_calibration(plot_calibration=True):
 
     best_fit = scenario.optimization_result.x_opt_as_dict
     if plot_calibration:
-        print("best fit:", best_fit)
         scenario.post_process(
             post_name="BasicHistory", variable_names=["mse"], save=False, show=False
         )
@@ -191,9 +202,15 @@ def run_global_rpk_calibration(plot_calibration=True):
         show()
 
         plot_calibration_result(
-            best_fit, years_data, x_data, y_data, pop_data, years_raw, x_raw, y_raw, pop_raw
+            best_fit,
+            years_data,
+            x_data,
+            y_data,
+            pop_data,
+            years_raw,
+            x_raw,
+            y_raw,
+            pop_raw,
         )
 
-    return (
-            best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw
-        )
+    return (best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw)

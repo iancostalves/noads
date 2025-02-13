@@ -1,3 +1,20 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This work is licensed under a BSD 0-Clause License.
+#
+# Permission to use, copy, modify, and/or distribute this software
+# for any purpose with or without fee is hereby granted.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+# WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL
+# THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT,
+# OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING
+# FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+# NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+# WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
 from numpy import array
@@ -22,13 +39,16 @@ data_sources = {
     "IATA": {
         "battery_specific_energy": array([[2020, 2030, 2035], [200, 225, 400]]),
         "emotor_specific_power": array([[], []]),
-        "lh2tank_gravimetric_index": array([[2025, 2035, 2035, 2050], [20, 35, 50, 70]]),
+        "lh2tank_gravimetric_index": array([
+            [2025, 2035, 2035, 2050],
+            [20, 35, 50, 70],
+        ]),
         "fuelcell_specific_power": array([[2025, 2040, 2050], [4, 8, 10]]),
         "fuelcell_efficiency": array([[], []]),
         "electronics_specific_power": array([[], []]),
         "struct_weight_factor": array([
             [2030, 2030, 2030, 2030, 2030, 2050, 2050, 2050, 2050, 2050, 2050, 2050],
-            [86, 80, 88, 83, 90, 80, 72, 68, 70, 83, 73, 61]
+            [86, 80, 88, 83, 90, 80, 72, 68, 70, 83, 73, 61],
         ]),
     },
     "ATI": {
@@ -38,7 +58,10 @@ data_sources = {
             [2035, 2035, 2040, 2040, 2040, 2050, 2050, 2050],
             [47, 58, 61, 66, 72, 64, 69, 75],
         ]),
-        "fuelcell_specific_power": array([[2025, 2030, 2035, 2050], [1.5, 2.0, 2.5, 5.0]]),
+        "fuelcell_specific_power": array([
+            [2025, 2030, 2035, 2050],
+            [1.5, 2.0, 2.5, 5.0],
+        ]),
         "fuelcell_efficiency": array([[2025, 2030, 2035, 2050], [60, 65, 70, 75]]),
         "electronics_specific_power": array([[2026, 2030, 2050], [8.92, 20, 30]]),
         "struct_weight_factor": array([[2025, 2030, 2035, 2050], [80, 75, 70, 60]]),
@@ -54,7 +77,7 @@ data_sources = {
     },
     "EASA": {
         "battery_specific_energy": array([[2022], [210]]),
-        "emotor_specific_power": array([[2022, 2022], [57.6/22.7, 73.5/56.6]]),
+        "emotor_specific_power": array([[2022, 2022], [57.6 / 22.7, 73.5 / 56.6]]),
         "lh2tank_gravimetric_index": array([[], []]),
         "fuelcell_specific_power": array([[], []]),
         "fuelcell_efficiency": array([[], []]),
@@ -69,7 +92,7 @@ data_sources = {
         "fuelcell_efficiency": array([[2035, 2050], [60, 75]]),
         "electronics_specific_power": array([[], []]),
         "struct_weight_factor": array([[], []]),
-    }
+    },
 }
 markers_sources = {
     "NASA": "o",
@@ -100,8 +123,10 @@ name_to_fullname = {
 
 years = linspace(2020, 2060, 41)
 fig1, axes1 = subplots(
-    4, 2,
-    figsize=(8, 15), layout="constrained",
+    4,
+    2,
+    figsize=(8, 15),
+    layout="constrained",
 )
 tech_params = {}
 for i, (name, values) in enumerate(tech_params_lower_upper_2020_2040_2060.items()):
@@ -117,8 +142,11 @@ for i, (name, values) in enumerate(tech_params_lower_upper_2020_2040_2060.items(
 
     ax = axes1.flat[i]
     ax.fill_between(
-        years, lower_values, upper_values,
-        alpha=0.2, color="k",
+        years,
+        lower_values,
+        upper_values,
+        alpha=0.2,
+        color="k",
         label="Upper-to-Lower",
     )
     ax.plot(years, lower_values, "k-", linewidth=2, label="Lower")
@@ -161,9 +189,6 @@ for cat, category in enumerate(categories):
     for prop, propulsion in enumerate(propulsion_architectures.keys()):
         lower_design = AircraftDesign()
 
-
-
-
         reference_ask_per_energy = 0
         for scen, (scenario, aircraft_tech) in enumerate(tech_scenario.items()):
             print("p", propulsion)
@@ -189,19 +214,22 @@ for cat, category in enumerate(categories):
             else:
                 label = "_"
             if scen == 2:
-                if prop == 0:
-                    label = f"{propulsion} (full range)"
-                else:
-                    label = "_"
+                label = f"{propulsion} (full range)" if prop == 0 else "_"
                 ax.fill_between(
-                    years, reference_ask_per_energy, yearly_ask_per_energy,
-                    alpha=0.2, color=propulsion_colors_markers[propulsion][0],
+                    years,
+                    reference_ask_per_energy,
+                    yearly_ask_per_energy,
+                    alpha=0.2,
+                    color=propulsion_colors_markers[propulsion][0],
                     label=label,
                 )
                 if category in categories_resumed:
                     ax_r.fill_between(
-                        years, reference_ask_per_energy, yearly_ask_per_energy,
-                        alpha=0.2, color=propulsion_colors_markers[propulsion][0],
+                        years,
+                        reference_ask_per_energy,
+                        yearly_ask_per_energy,
+                        alpha=0.2,
+                        color=propulsion_colors_markers[propulsion][0],
                         label=label,
                     )
             else:
@@ -228,7 +256,8 @@ for cat, category in enumerate(categories):
     ref_ask_per_energy = aeroscope_category_conso[category] ** -1
     ax.hlines(
         y=ref_ask_per_energy,
-        xmin=years[0], xmax=years[-1],
+        xmin=years[0],
+        xmax=years[-1],
         colors="k",
         linestyles="--",
         label="2019 reference",
@@ -237,7 +266,8 @@ for cat, category in enumerate(categories):
     if category in categories_resumed:
         ax_r.hlines(
             y=ref_ask_per_energy,
-            xmin=years[0], xmax=years[-1],
+            xmin=years[0],
+            xmax=years[-1],
             colors="k",
             linestyles="--",
             label="2019 reference",
@@ -258,7 +288,6 @@ axes[-1, -1].legend(
         Patch(color=tup_color_marker[0], label=prop_name)
         for prop_name, tup_color_marker in propulsion_colors_markers.items()
     ],
-    loc='center',
+    loc="center",
 )
 axes[-1, 0].set_xlabel("Entry-Into-Service")
-

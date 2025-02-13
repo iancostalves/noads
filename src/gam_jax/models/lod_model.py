@@ -1,28 +1,41 @@
 #!/usr/bin/env python3
-"""
-Created on Thu Jan 20 20:20:20 2020
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+"""Created on Thu Jan 20 20:20:20 2020.
 
 :author: Conceptual Airplane Design & Operations (CADO team)
          Nicolas PETEILH, Pascal ROCHES, Nicolas MONROLIN, Thierry DRUOT
          AircraftOperation & Systems, Air Transport Department, ENAC
 """
 
-from utils import unit
 from generic_airplane_model import GAM
 from utils import data_analysis as uda
+from utils import unit
 
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     path_to_data_base = "../database/airplane_database.xlsx"
 
-    df,un = uda.read_db(path_to_data_base)
+    df, un = uda.read_db(path_to_data_base)
 
     # Remove A380-800 row and reset index
     # df = df[df['name']!='A380-800'].reset_index(drop=True)
 
     # Remove business aircraft
-    df1 = df[df['airplane_type']!='business'].reset_index(drop=True).copy()
+    df1 = df[df["airplane_type"] != "business"].reset_index(drop=True).copy()
     un1 = un.copy()
 
     # Design Analysis
@@ -58,8 +71,17 @@ if __name__ == '__main__':
 
         mass = 0.90 * mtow
 
-        lod = gam.lod_model(fuselage_length, fuselage_width, wing_span, wing_area, htp_area, vtp_area,
-              cruise_altp, cruise_speed, mass)
+        lod = gam.lod_model(
+            fuselage_length,
+            fuselage_width,
+            wing_span,
+            wing_area,
+            htp_area,
+            vtp_area,
+            cruise_altp,
+            cruise_speed,
+            mass,
+        )
 
         df1.at[n, ord1] = lod
 
@@ -69,15 +91,20 @@ if __name__ == '__main__':
 
         title = "Theoretical L/D"
 
+    dict1 = uda.draw_reg(
+        df1,
+        un1,
+        abs,
+        ord1,
+        [[200.0, 40000.0, 200000.0, 400000.0, 1.0e6], [13.0, 16, 19, 20.0, 20.0]],
+        gam.colors,
+        title=title,
+    )
 
-    dict1 = uda.draw_reg(df1, un1, abs, ord1, [[200., 40000., 200000., 400000., 1.e6], [13., 16, 19, 20., 20.]], gam.colors, title=title)
-
-    dict2 = uda.draw_reg(df1, un1, ord1, ord2, [[0, 20],[0, 20]], gam.colors)
-
+    dict2 = uda.draw_reg(df1, un1, ord1, ord2, [[0, 20], [0, 20]], gam.colors)
 
     # Test on Duo Discus XLT
-    #------------------------------------------------------------------------------------------------------------------
-    print("")
+    # ------------------------------------------------------------------------------------------------------------------
     fuselage_length = 7.5
     fuselage_width = 0.9
     wing_span = 20
@@ -87,27 +114,28 @@ if __name__ == '__main__':
     cruise_altp = 1000
     cruise_speed = unit.mps_kmph(85)
     mass = 485
-    design = {"surface_quality": 1,
-              "fuselage_shape": 1,
-              "fuselage_surface":0.5,
-              "wing_laminar_ratio": 0.5}
-    dict = gam.lod_model(fuselage_length, fuselage_width, wing_span, wing_area, htp_area, vtp_area,
-                         cruise_altp, cruise_speed, mass, design, full_output=True)
-
-    print(" L/D = ", "%.2f" % dict["lift_to_drag"])
-    print(" cz = ", "%.2f" % dict["cz"])
-    print(" cx = ", "%.4f" % dict["cx"])
-    print(" cx0 = ", "%.4f" % dict["cx0"])
-    print(" cxi = ", "%.4f" % dict["cxi"])
-    print(" cxc = ", "%.4f" % dict["cxc"])
-    print(" cxf = ", "%.4f" % dict["cxf"])
-    print(" cx_par = ", "%.4f" % dict["cx_par"])
-    print(" cx_tap = ", "%.4f" % dict["cx_tap"])
-
+    design = {
+        "surface_quality": 1,
+        "fuselage_shape": 1,
+        "fuselage_surface": 0.5,
+        "wing_laminar_ratio": 0.5,
+    }
+    dict = gam.lod_model(
+        fuselage_length,
+        fuselage_width,
+        wing_span,
+        wing_area,
+        htp_area,
+        vtp_area,
+        cruise_altp,
+        cruise_speed,
+        mass,
+        design,
+        full_output=True,
+    )
 
     # Test on Duo Discus XLT
-    #------------------------------------------------------------------------------------------------------------------
-    print("")
+    # ------------------------------------------------------------------------------------------------------------------
     fuselage_length = 7.1
     fuselage_width = 1.19
     wing_span = 8.72
@@ -117,20 +145,22 @@ if __name__ == '__main__':
     cruise_altp = 1000
     cruise_speed = unit.mps_kmph(240)
     mass = 1000
-    design = {"surface_quality": 0,
-              "fuselage_shape": 0,
-              "fuselage_surface":0,
-              "wing_laminar_ratio": 0}
-    dict = gam.lod_model(fuselage_length, fuselage_width, wing_span, wing_area, htp_area, vtp_area,
-                         cruise_altp, cruise_speed, mass, design, full_output=True)
-
-    print(" L/D = ", "%.2f" % dict["lift_to_drag"])
-    print(" cz = ", "%.2f" % dict["cz"])
-    print(" cx = ", "%.4f" % dict["cx"])
-    print(" cx0 = ", "%.4f" % dict["cx0"])
-    print(" cxi = ", "%.4f" % dict["cxi"])
-    print(" cxc = ", "%.4f" % dict["cxc"])
-    print(" cxf = ", "%.4f" % dict["cxf"])
-    print(" cx_par = ", "%.4f" % dict["cx_par"])
-    print(" cx_tap = ", "%.4f" % dict["cx_tap"])
-
+    design = {
+        "surface_quality": 0,
+        "fuselage_shape": 0,
+        "fuselage_surface": 0,
+        "wing_laminar_ratio": 0,
+    }
+    dict = gam.lod_model(
+        fuselage_length,
+        fuselage_width,
+        wing_span,
+        wing_area,
+        htp_area,
+        vtp_area,
+        cruise_altp,
+        cruise_speed,
+        mass,
+        design,
+        full_output=True,
+    )

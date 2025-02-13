@@ -1,24 +1,36 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+from json import dump
 from json import load
 from os import mkdir
 from os import walk
 from os.path import isdir
-from json import dump
-
-from gemseo import MDODiscipline
-from gemseo import configure_logger
-from gemseo import create_scenario
-from numpy import argmax
-
-from numpy import array as np_array
-from numpy import sum as np_sum
-from numpy import interp
-from numpy import trapz
-from numpy import vstack
 
 from aviation_scenarios.scenario_data import co2_budget_2p0deg_66percent
 from aviation_scenarios.scenario_setup import single_scenario_setup
 from aviation_scenarios.visualization import plot_single_scenario_result
-from aviation_scenarios.visualization import plot_tech_scenario_comparison
+from gemseo import MDODiscipline
+from gemseo import configure_logger
+from gemseo import create_scenario
+from numpy import array as np_array
+from numpy import interp
+from numpy import sum as np_sum
+from numpy import trapz
+from numpy import vstack
 
 
 def single_policy_scenario_optimization(
@@ -56,7 +68,7 @@ def single_policy_scenario_optimization(
         mkdir(f"{formulation_name}/{scenario_name}")
     start_year = 2025.0
     end_year = 2075.0
-    aeromax_scenario, design_space, constraints, energy_mix, fleet = \
+    aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         single_scenario_setup(
             global_scenario_name,
             start_year=start_year,
@@ -68,6 +80,7 @@ def single_policy_scenario_optimization(
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
         )
+    )
 
     # if gemseo_scenario is None:
     gemseo_scenario = create_scenario(
@@ -75,7 +88,8 @@ def single_policy_scenario_optimization(
         formulation="DisciplinaryOpt",
         objective_name=(
             "cumulative.discounted_relative_price_change"
-            if low_demand_formulation else "cumulative.CO2"
+            if low_demand_formulation
+            else "cumulative.CO2"
         ),
         design_space=design_space,
         grammar_type=MDODiscipline.GrammarType.SIMPLE,
@@ -83,48 +97,52 @@ def single_policy_scenario_optimization(
     time_period = end_year - start_year
     allocated_co2_budget = co2_budget_2p0deg_66percent * carbon_budget_percent * 1.0e-2
     if low_demand_formulation:
-        gemseo_scenario.formulation.optimization_problem.objective *= \
-            1.0 / time_period
+        gemseo_scenario.formulation.optimization_problem.objective *= 1.0 / time_period
         gemseo_scenario.add_constraint(
             "cumulative.CO2", "ineq", value=allocated_co2_budget
         )
-        gemseo_scenario.formulation.optimization_problem.constraints[-1] *= \
+        gemseo_scenario.formulation.optimization_problem.constraints[-1] *= (
             1.0 / allocated_co2_budget
+        )
     else:
-        gemseo_scenario.formulation.optimization_problem.objective *= \
+        gemseo_scenario.formulation.optimization_problem.objective *= (
             1.0 / allocated_co2_budget
+        )
 
     for name, (value, positive) in constraints.items():
         gemseo_scenario.add_constraint(name, "ineq", value=value, positive=positive)
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
-
     # else:
     #     gemseo_scenario.formulation._disciplines = \
     #         aeromax_scenario.discipline.default_inputs
 
     gemseo_scenario.execute({
-        "max_iter": 700, "algo": "NLOPT_SLSQP",
+        "max_iter": 700,
+        "algo": "NLOPT_SLSQP",
         "algo_options": {
-            "ftol_rel": 1e-14, "ftol_abs": 1e-14, "ineq_tolerance": 1e-6,
-            "xtol_rel": 1e-11, "xtol_abs": 1e-11,
+            "ftol_rel": 1e-14,
+            "ftol_abs": 1e-14,
+            "ineq_tolerance": 1e-6,
+            "xtol_rel": 1e-11,
+            "xtol_abs": 1e-11,
         },
     })
     gemseo_scenario.post_process(
-        "OptHistoryView", save=True, show=False,
+        "OptHistoryView",
+        save=True,
+        show=False,
         directory_path=f"{formulation_name}/{scenario_name}",
     )
 
     input_optimal = gemseo_scenario.optimization_result.x_opt_as_dict
-    result = {"inputs": {
-        name: value.tolist() for name, value in input_optimal.items()
-    }}
+    result = {"inputs": {name: value.tolist() for name, value in input_optimal.items()}}
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
-    result.update({"outputs": {
-        name: value.tolist() for name, value in output_optimal.items()
-    }})
-    dump(result, open(f"{formulation_name}/{scenario_name}/opt_result.json", 'w'))
+    result.update({
+        "outputs": {name: value.tolist() for name, value in output_optimal.items()}
+    })
+    dump(result, open(f"{formulation_name}/{scenario_name}/opt_result.json", "w"))
 
     if plot_optimum:
         plot_single_scenario_result(
@@ -139,7 +157,7 @@ def single_policy_scenario_optimization(
 
 
 def single_scenario_synthesis():
-    directory = f"./single_policy"
+    directory = "./single_policy"
     variables_units_conversion = {
         "rpk": (1e-12, "trillion pax-km / yr"),
         "ask": (1e-12, "trillion pax-km / yr"),
@@ -149,47 +167,38 @@ def single_scenario_synthesis():
         "OIL.consumption": (1e-12, "EJ / yr"),
     }
     aircraft_agregation_names = [
-        "Current", "JetA", "Battery", "lH2",
+        "Current",
+        "JetA",
+        "Battery",
+        "lH2",
     ]
     observed_years = np_array([2030, 2050, 2070])
 
-    for path, folders, files in walk(directory):
+    for _path, folders, _files in walk(directory):
         for folder_name in folders:
-            print(folder_name)
-            with open(f"{directory}/{folder_name}/opt_result.json", 'r') as f:
+            with open(f"{directory}/{folder_name}/opt_result.json") as f:
                 result = load(f)
                 io_dict = {**result["inputs"], **result["outputs"]}
                 simulation_years = io_dict["year"]
-                for i, (var, (factor, unit)) in enumerate(variables_units_conversion.items()):
-                    print("     ", var, "[", unit, "]")
-                    observed_variable = interp(
-                        observed_years, simulation_years, io_dict[var]
-                    ) * factor
-                    print("         decades:", observed_variable)
-                    cumulative_variable = trapz(io_dict[var], simulation_years) * factor
-                    print("         cumulative:", cumulative_variable)
-                    print("         max:", max(io_dict[var]) * factor)
-                    print("         y max:", simulation_years[argmax(io_dict[var])])
+                for _i, (var, (factor, _unit)) in enumerate(
+                    variables_units_conversion.items()
+                ):
+                    interp(observed_years, simulation_years, io_dict[var]) * factor
+                    trapz(io_dict[var], simulation_years) * factor
                 for aircraft_name in aircraft_agregation_names:
-                    if any([
-                        ".ask" in var and aircraft_name in var for var in io_dict.keys()
-                    ]):
-                        print(
-                            "     ", aircraft_name, "ASK [",
-                            variables_units_conversion["rpk"][1], "]"
-                        )
+                    if any(".ask" in var and aircraft_name in var for var in io_dict):
                         asks = vstack([
-                            np_array(value) for var, value in io_dict.items()
+                            np_array(value)
+                            for var, value in io_dict.items()
                             if ".ask" in var and aircraft_name in var
                         ])
                         sum_ask = np_sum(asks, axis=0)
-                        decadal_ask = interp(
+                        interp(
                             observed_years, simulation_years, sum_ask
                         ) * variables_units_conversion["rpk"][0]
-                        cumulative_ask = trapz(sum_ask, simulation_years) * \
-                                         variables_units_conversion["rpk"][0]
-                        print("         decades:", decadal_ask)
-                        print("         cumulative:", cumulative_ask)
+                        trapz(sum_ask, simulation_years) * variables_units_conversion[
+                            "rpk"
+                        ][0]
 
 
 def single_policy_robust_scenario_optimization(
@@ -227,7 +236,7 @@ def single_policy_robust_scenario_optimization(
         mkdir(f"{formulation_name}/{scenario_name}")
     start_year = 2025.0
     end_year = 2075.0
-    aeromax_scenario, design_space, constraints, energy_mix, fleet = \
+    aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         multi_scenario_setup(
             global_scenario_names,
             start_year=start_year,
@@ -240,13 +249,15 @@ def single_policy_robust_scenario_optimization(
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
         )
+    )
 
     gemseo_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
         formulation="DisciplinaryOpt",
         objective_name=(
             "mean.cumulative.discounted_relative_price_change"
-            if low_demand_formulation else "mean.cumulative.CO2"
+            if low_demand_formulation
+            else "mean.cumulative.CO2"
         ),
         design_space=design_space,
         grammar_type=MDODiscipline.GrammarType.SIMPLE,
@@ -259,11 +270,13 @@ def single_policy_robust_scenario_optimization(
             gemseo_scenario.add_constraint(
                 f"{global_scenario}.cumulative.CO2", "ineq", value=allocated_co2_budget
             )
-            gemseo_scenario.formulation.optimization_problem.constraints[-1] *= \
+            gemseo_scenario.formulation.optimization_problem.constraints[-1] *= (
                 1.0 / allocated_co2_budget
+            )
     else:
-        gemseo_scenario.formulation.optimization_problem.objective *= \
+        gemseo_scenario.formulation.optimization_problem.objective *= (
             1.0 / allocated_co2_budget
+        )
 
     for name, (value, positive) in constraints.items():
         gemseo_scenario.add_constraint(name, "ineq", value=value, positive=positive)
@@ -271,14 +284,20 @@ def single_policy_robust_scenario_optimization(
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
     gemseo_scenario.execute({
-        "max_iter": 1500, "algo": "NLOPT_SLSQP",
+        "max_iter": 1500,
+        "algo": "NLOPT_SLSQP",
         "algo_options": {
-            "ftol_rel": 1e-14, "ftol_abs": 1e-14, "ineq_tolerance": 1e-6,
-            "xtol_rel": 1e-11, "xtol_abs": 1e-11,
+            "ftol_rel": 1e-14,
+            "ftol_abs": 1e-14,
+            "ineq_tolerance": 1e-6,
+            "xtol_rel": 1e-11,
+            "xtol_abs": 1e-11,
         },
     })
     gemseo_scenario.post_process(
-        "OptHistoryView", save=True, show=False,
+        "OptHistoryView",
+        save=True,
+        show=False,
         directory_path=f"{formulation_name}/{scenario_name}",
     )
 
@@ -333,7 +352,7 @@ def multi_policy_scenario_optimization(
         mkdir(f"{formulation_name}/{scenario_name}")
     start_year = 2025.0
     end_year = 2075.0
-    aeromax_scenario, design_space, constraints, energy_mix, fleet = \
+    aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         single_scenario_setup(
             global_scenario_name,
             start_year=start_year,
@@ -347,6 +366,7 @@ def multi_policy_scenario_optimization(
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
         )
+    )
 
     min_co2_trend_traffic_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
@@ -356,63 +376,55 @@ def multi_policy_scenario_optimization(
         grammar_type=MDODiscipline.GrammarType.SIMPLE,
     )
     co2_budget_ref = 3.0e-2 * co2_budget_2p0deg_66percent
-    min_co2_trend_traffic_scenario.formulation.optimization_problem.objective *= \
+    min_co2_trend_traffic_scenario.formulation.optimization_problem.objective *= (
         1.0 / co2_budget_ref
+    )
     for name, (value, positive) in constraints.items():
-        min_co2_trend_traffic_scenario.add_constraint(name, "ineq", value=value, positive=positive)
+        min_co2_trend_traffic_scenario.add_constraint(
+            name, "ineq", value=value, positive=positive
+        )
         if "cumulative" in name or "Electric" in name:
-            min_co2_trend_traffic_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
+            min_co2_trend_traffic_scenario.formulation.optimization_problem.constraints[
+                -1
+            ] *= 0.1
 
     if not isdir(f"{formulation_name}/{scenario_name}/0"):
         mkdir(f"{formulation_name}/{scenario_name}/0")
 
-    min_co2_trend_traffic_scenario.execute(
-        {
-            "max_iter": 700, "algo": "NLOPT_SLSQP",
-            "algo_options": {
-                "ftol_rel": 1e-14, "ftol_abs": 1e-14, "ineq_tolerance": 1e-6,
-                "xtol_rel": 1e-11, "xtol_abs": 1e-11,
-            },
-        }
-    )
+    min_co2_trend_traffic_scenario.execute({
+        "max_iter": 700,
+        "algo": "NLOPT_SLSQP",
+        "algo_options": {
+            "ftol_rel": 1e-14,
+            "ftol_abs": 1e-14,
+            "ineq_tolerance": 1e-6,
+            "xtol_rel": 1e-11,
+            "xtol_abs": 1e-11,
+        },
+    })
     min_co2_trend_traffic_scenario.post_process(
-        "OptHistoryView", save=True, show=False,
+        "OptHistoryView",
+        save=True,
+        show=False,
         directory_path=f"{formulation_name}/{scenario_name}/0",
     )
 
     input_optimal = min_co2_trend_traffic_scenario.optimization_result.x_opt_as_dict
-    result = {
-        "inputs": {
-            name: value.tolist() for name, value in input_optimal.items()
-        }
-    }
+    result = {"inputs": {name: value.tolist() for name, value in input_optimal.items()}}
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
-    input_optimal.update(
-        {
-            key: value for key, value in
-            aeromax_scenario.discipline.default_inputs.items()
-            if key not in input_optimal.keys()
-        }
-    )
+    input_optimal.update({
+        key: value
+        for key, value in aeromax_scenario.discipline.default_inputs.items()
+        if key not in input_optimal
+    })
     max_budget = output_optimal["cumulative.CO2"]
-    result.update(
-        {
-            "outputs": {
-                name: value.tolist() for name, value in output_optimal.items()
-            }
-        }
-    )
-    dump(
-        result, open(
-            f"{formulation_name}/{scenario_name}/0/opt_result.json", 'w'
-        )
-    )
+    result.update({
+        "outputs": {name: value.tolist() for name, value in output_optimal.items()}
+    })
+    dump(result, open(f"{formulation_name}/{scenario_name}/0/opt_result.json", "w"))
 
     inout_optimal = {**input_optimal, **output_optimal}
-    pareto_outputs = {
-        f"0.{name}": value
-        for name, value in inout_optimal.items()
-    }
+    pareto_outputs = {f"0.{name}": value for name, value in inout_optimal.items()}
 
     if plot_optimum:
         plot_single_scenario_result(
@@ -426,7 +438,7 @@ def multi_policy_scenario_optimization(
 
     time_period = end_year - start_year
 
-    aeromax_scenario, design_space, constraints, energy_mix, fleet = \
+    aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         single_scenario_setup(
             global_scenario_name,
             start_year=start_year,
@@ -440,6 +452,7 @@ def multi_policy_scenario_optimization(
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
         )
+    )
     min_co2_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
         formulation="DisciplinaryOpt",
@@ -448,8 +461,7 @@ def multi_policy_scenario_optimization(
         grammar_type=MDODiscipline.GrammarType.SIMPLE,
     )
     co2_budget_ref = 3.0e-2 * co2_budget_2p0deg_66percent
-    min_co2_scenario.formulation.optimization_problem.objective *= \
-        1.0 / co2_budget_ref
+    min_co2_scenario.formulation.optimization_problem.objective *= 1.0 / co2_budget_ref
     for name, (value, positive) in constraints.items():
         min_co2_scenario.add_constraint(name, "ineq", value=value, positive=positive)
         if "cumulative" in name or "Electric" in name:
@@ -458,52 +470,44 @@ def multi_policy_scenario_optimization(
     if not isdir(f"{formulation_name}/{scenario_name}/{n_sub_optim}"):
         mkdir(f"{formulation_name}/{scenario_name}/{n_sub_optim}")
 
-    min_co2_scenario.execute(
-        {
-            "max_iter": 700, "algo": "NLOPT_SLSQP",
-            "algo_options": {
-                "ftol_rel": 1e-14, "ftol_abs": 1e-14, "ineq_tolerance": 1e-6,
-                "xtol_rel": 1e-11, "xtol_abs": 1e-11,
-            },
-        }
-    )
+    min_co2_scenario.execute({
+        "max_iter": 700,
+        "algo": "NLOPT_SLSQP",
+        "algo_options": {
+            "ftol_rel": 1e-14,
+            "ftol_abs": 1e-14,
+            "ineq_tolerance": 1e-6,
+            "xtol_rel": 1e-11,
+            "xtol_abs": 1e-11,
+        },
+    })
     min_co2_scenario.post_process(
-        "OptHistoryView", save=True, show=False,
+        "OptHistoryView",
+        save=True,
+        show=False,
         directory_path=f"{formulation_name}/{scenario_name}/{n_sub_optim}",
     )
 
     input_optimal = min_co2_scenario.optimization_result.x_opt_as_dict
-    result = {
-        "inputs": {
-            name: value.tolist() for name, value in input_optimal.items()
-        }
-    }
+    result = {"inputs": {name: value.tolist() for name, value in input_optimal.items()}}
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
-    input_optimal.update(
-        {
-            key: value for key, value in
-            aeromax_scenario.discipline.default_inputs.items()
-            if key not in input_optimal.keys()
-        }
-    )
+    input_optimal.update({
+        key: value
+        for key, value in aeromax_scenario.discipline.default_inputs.items()
+        if key not in input_optimal
+    })
     min_budget = output_optimal["cumulative.CO2"]
-    result.update(
-        {
-            "outputs": {
-                name: value.tolist() for name, value in output_optimal.items()
-            }
-        }
-    )
+    result.update({
+        "outputs": {name: value.tolist() for name, value in output_optimal.items()}
+    })
     dump(
-        result, open(
-            f"{formulation_name}/{scenario_name}/{n_sub_optim}/opt_result.json", 'w'
-        )
+        result,
+        open(f"{formulation_name}/{scenario_name}/{n_sub_optim}/opt_result.json", "w"),
     )
 
     inout_optimal = {**input_optimal, **output_optimal}
     pareto_outputs.update({
-        f"{n_sub_optim}.{name}": value
-        for name, value in inout_optimal.items()
+        f"{n_sub_optim}.{name}": value for name, value in inout_optimal.items()
     })
 
     if plot_optimum:
@@ -543,50 +547,48 @@ def multi_policy_scenario_optimization(
         sub_scenario.add_constraint(
             "cumulative.CO2", "ineq", value=allocated_co2_budget
         )
-        sub_scenario.formulation.optimization_problem.constraints[-1] *= \
+        sub_scenario.formulation.optimization_problem.constraints[-1] *= (
             1.0 / allocated_co2_budget
+        )
 
         sub_scenario.execute({
-            "max_iter": 700, "algo": "NLOPT_SLSQP",
+            "max_iter": 700,
+            "algo": "NLOPT_SLSQP",
             "algo_options": {
-                "ftol_rel": 1e-14, "ftol_abs": 1e-14, "ineq_tolerance": 1e-6,
-                "xtol_rel": 1e-11, "xtol_abs": 1e-11,
+                "ftol_rel": 1e-14,
+                "ftol_abs": 1e-14,
+                "ineq_tolerance": 1e-6,
+                "xtol_rel": 1e-11,
+                "xtol_abs": 1e-11,
             },
         })
         sub_scenario.post_process(
-            "OptHistoryView", save=True, show=False,
+            "OptHistoryView",
+            save=True,
+            show=False,
             directory_path=f"{formulation_name}/{scenario_name}/{i}",
         )
 
         input_optimal = sub_scenario.optimization_result.x_opt_as_dict
         result = {
-            "inputs": {
-                name: value.tolist() for name, value in input_optimal.items()
-            }
+            "inputs": {name: value.tolist() for name, value in input_optimal.items()}
         }
         output_optimal = aeromax_scenario.discipline.execute(input_optimal)
-        input_optimal.update(
-            {
-                key: value for key, value in
-                aeromax_scenario.discipline.default_inputs.items()
-                if key not in input_optimal.keys()
-            }
+        input_optimal.update({
+            key: value
+            for key, value in aeromax_scenario.discipline.default_inputs.items()
+            if key not in input_optimal
+        })
+        result.update({
+            "outputs": {name: value.tolist() for name, value in output_optimal.items()}
+        })
+        dump(
+            result, open(f"{formulation_name}/{scenario_name}/{i}/opt_result.json", "w")
         )
-        result.update(
-            {
-                "outputs": {
-                    name: value.tolist() for name, value in output_optimal.items()
-                }
-            }
-        )
-        dump(result, open(
-            f"{formulation_name}/{scenario_name}/{i}/opt_result.json", 'w'
-        ))
 
         inout_optimal = {**input_optimal, **output_optimal}
         pareto_outputs.update({
-            f"{i}.{name}": value
-            for name, value in inout_optimal.items()
+            f"{i}.{name}": value for name, value in inout_optimal.items()
         })
 
         if plot_optimum:

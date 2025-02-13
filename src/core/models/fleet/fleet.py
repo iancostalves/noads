@@ -1,16 +1,36 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from jax.numpy import array
 from jax.numpy import sum
 
-from core.models.fleet.aircraft_design import AircraftDesign
 from core.model import JAXModel
 from core.model import Model
-from core.models.energy.energy import EnergyCarrier
 from core.models.energy.energy import Energy
-from core.models.fleet.aircraft_operation import AircraftOperation
+from core.models.energy.energy import EnergyCarrier
+from core.models.fleet.aircraft_design import AircraftDesign
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from core.models.fleet.aircraft_operation import AircraftOperation
 
 
 class Fleet:
@@ -29,12 +49,11 @@ class Fleet:
     ):
         self.name = name
         self.operating_aircraft = list(operating_aircraft)
-        self.consumed_carriers = list(set(
-            [
-                carrier for aircraft in operating_aircraft
-                for carrier in aircraft.propulsion.energy_carrier_mix.keys()
-            ]
-        ))
+        self.consumed_carriers = list({
+            carrier
+            for aircraft in operating_aircraft
+            for carrier in aircraft.propulsion.energy_carrier_mix
+        })
 
     @property
     def models(self):
@@ -47,13 +66,12 @@ class Fleet:
             # self.overshoot_constraint(),
         ]
 
-        models.extend(
-            [
-                model for aircraft in self.operating_aircraft for model in
-                aircraft.models
-                # if aircraft != self.operating_aircraft[0]
-            ]
-        )
+        models.extend([
+            model
+            for aircraft in self.operating_aircraft
+            for model in aircraft.models
+            # if aircraft != self.operating_aircraft[0]
+        ])
         return models
 
     # def overshoot_constraint(self):
@@ -114,12 +132,12 @@ class Fleet:
         }
 
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._demand_avoidance,
@@ -146,7 +164,7 @@ class Fleet:
 
         # elast = (dASK/ASKtrend) / (dP/Ptrend)
         # dP/Ptrend = (-SR)/elast
-        relative_price_change = - demand_shift_ratio / price_elasticity
+        relative_price_change = -demand_shift_ratio / price_elasticity
 
         discount_factor = (1 + discount_rate) ** (start_year - year)
         discounted_relative_price_change = relative_price_change * discount_factor
@@ -156,8 +174,7 @@ class Fleet:
             f"{self.name}.ask_avoided": ask_avoided,
             # f"{self.name}.discount_factor": discount_factor,
             f"{self.name}.relative_price_change": relative_price_change,
-            f"{self.name}.discounted_relative_price_change":
-                discounted_relative_price_change,
+            f"{self.name}.discounted_relative_price_change": discounted_relative_price_change,
             f"{self.name}.discounted_ask_avoided": discounted_ask_avoided,
         }
 
@@ -170,12 +187,12 @@ class Fleet:
             else:
                 output_units[f"{aircraft.name}.share"] = ""
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._last_share,
@@ -190,34 +207,32 @@ class Fleet:
         )
 
     def _last_share(self, input_data):
-        all_but_last_shares = array(
-            [
-                input_data[f"{self.operating_aircraft[i + 1].name}.share"]
-                for i in range(len(self.operating_aircraft) - 1)
-            ]
-        )
+        all_but_last_shares = array([
+            input_data[f"{self.operating_aircraft[i + 1].name}.share"]
+            for i in range(len(self.operating_aircraft) - 1)
+        ])
         return {
-            f"{self.operating_aircraft[0].name}.share":
-                1.0 - sum(all_but_last_shares, axis=0)
+            f"{self.operating_aircraft[0].name}.share": 1.0
+            - sum(all_but_last_shares, axis=0)
         }
 
     def consumption_model(self):
         default_values_units = {
             f"{aircraft.name}.{carrier.name}.consumption": (0.0, carrier.unit)
             for aircraft in self.operating_aircraft
-            for carrier in aircraft.propulsion.energy_carrier_mix.keys()
+            for carrier in aircraft.propulsion.energy_carrier_mix
         }
         output_units = {
             f"{self.name}.{carrier.name}.consumption": carrier.unit
             for carrier in self.consumed_carriers
         }
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._energy_consumption,
@@ -233,18 +248,18 @@ class Fleet:
 
     def _energy_consumption(self, input_data):
         conso_per_carrier = {
-            carrier.name: array(
-                [
-                    input_data[f"{aircraft.name}.{carrier.name}.consumption"]
-                    if carrier in aircraft.propulsion.energy_carrier_mix.keys() else 0.0
-                    for aircraft in self.operating_aircraft
-                ]
-            )
+            carrier.name: array([
+                input_data[f"{aircraft.name}.{carrier.name}.consumption"]
+                if carrier in aircraft.propulsion.energy_carrier_mix
+                else 0.0
+                for aircraft in self.operating_aircraft
+            ])
             for carrier in self.consumed_carriers
         }
         return {
-            f"{self.name}.{carrier.name}.consumption":
-                sum(conso_per_carrier[carrier.name])
+            f"{self.name}.{carrier.name}.consumption": sum(
+                conso_per_carrier[carrier.name]
+            )
             for carrier in self.consumed_carriers
         }
 
@@ -255,18 +270,17 @@ class Fleet:
         }
         default_values_units[f"{self.name}.ask"] = (0.0, "pax km")
         output_units = {
-            f"{self.name}.{carrier.name}.mean_consumption_per_ask":
-                f"{carrier.unit}/ pax km"
+            f"{self.name}.{carrier.name}.mean_consumption_per_ask": f"{carrier.unit}/ pax km"
             for carrier in self.consumed_carriers
         }
         output_units[f"{self.name}.mean_energy_per_ask"] = f"{Energy.unit}/ pax km"
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._mean_consumption_impacts,
@@ -281,16 +295,14 @@ class Fleet:
         )
 
     def _mean_consumption_impacts(self, input_data):
-        conso_per_carrier = array(
-            [
-                input_data[f"{self.name}.{carrier.name}.consumption"]
-                for carrier in self.consumed_carriers
-            ]
-        )
+        conso_per_carrier = array([
+            input_data[f"{self.name}.{carrier.name}.consumption"]
+            for carrier in self.consumed_carriers
+        ])
         ask = input_data[f"{self.name}.ask"]
         output_data = {
-            f"{self.name}.{carrier.name}.mean_consumption_per_ask": conso_per_carrier[
-                                                                        i] / ask
+            f"{self.name}.{carrier.name}.mean_consumption_per_ask": conso_per_carrier[i]
+            / ask
             for i, carrier in enumerate(self.consumed_carriers)
         }
         output_data[f"{self.name}.mean_energy_per_ask"] = sum(conso_per_carrier) / ask
@@ -299,20 +311,19 @@ class Fleet:
 
     def ask_model(self):
         default_values_units = {
-            f"{aircraft.name}.share": (0.0, "")
-            for aircraft in self.operating_aircraft
+            f"{aircraft.name}.share": (0.0, "") for aircraft in self.operating_aircraft
         }
         default_values_units[f"{self.name}.ask"] = (0.0, "pax km")
         output_units = {
             f"{aircraft.name}.ask": "pax km" for aircraft in self.operating_aircraft
         }
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._ask_mix,
@@ -328,12 +339,9 @@ class Fleet:
 
     def _ask_mix(self, input_data):
         ask = input_data[f"{self.name}.ask"]
-        shares = array(
-            [
-                input_data[f"{aircraft.name}.share"] for aircraft in
-                self.operating_aircraft
-            ]
-        )
+        shares = array([
+            input_data[f"{aircraft.name}.share"] for aircraft in self.operating_aircraft
+        ])
         aircraft_ask = shares * ask
         return {
             f"{aircraft.name}.ask": aircraft_ask[i]
@@ -375,9 +383,7 @@ class FleetAssembly(Fleet):
             self.mean_consumption_impacts_model(),
             self.ask_model(),
         ]
-        models.extend(
-            [model for fleet in self.fleets for model in fleet.models]
-        )
+        models.extend([model for fleet in self.fleets for model in fleet.models])
         # if self.design_aircraft:
         #     models.append(self.feasible_designs())
         return models
@@ -424,17 +430,12 @@ class FleetAssembly(Fleet):
             "start_year": (2025.0, "year"),
             "load_factor": (100.0, ""),
         }
-        default_values_units.update(
-            {
-                f"{fleet.name}.ask": (0.0, "pax km") for fleet in self.fleets
-            }
-        )
-        default_values_units.update(
-            {
-                f"{fleet.name}.relative_price_change": (0.0, "") for fleet in
-                self.fleets
-            }
-        )
+        default_values_units.update({
+            f"{fleet.name}.ask": (0.0, "pax km") for fleet in self.fleets
+        })
+        default_values_units.update({
+            f"{fleet.name}.relative_price_change": (0.0, "") for fleet in self.fleets
+        })
         # default_values_units.update(
         #     {
         #         f"{fleet.name}.demand_shift_ratio": (0.0, "") for fleet in
@@ -462,12 +463,12 @@ class FleetAssembly(Fleet):
         }
 
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._demand_avoidance,
@@ -488,17 +489,10 @@ class FleetAssembly(Fleet):
         start_year = input_data["start_year"]
         load_factor = input_data["load_factor"]
 
-        asks = array(
-            [
-                input_data[f"{fleet.name}.ask"] for fleet in self.fleets
-            ]
-        )
-        price_changes = array(
-            [
-                input_data[f"{fleet.name}.relative_price_change"] for fleet in
-                self.fleets
-            ]
-        )
+        asks = array([input_data[f"{fleet.name}.ask"] for fleet in self.fleets])
+        price_changes = array([
+            input_data[f"{fleet.name}.relative_price_change"] for fleet in self.fleets
+        ])
         # shift_ratios = array(
         #     [
         #         input_data[f"{fleet.name}.demand_shift_ratio"] for fleet in
@@ -550,12 +544,12 @@ class FleetAssembly(Fleet):
             else:
                 output_units[f"{fleet.name}.share"] = ""
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._last_share,
@@ -570,15 +564,11 @@ class FleetAssembly(Fleet):
         )
 
     def _last_share(self, input_data):
-        all_but_last_shares = array(
-            [
-                input_data[f"{self.fleets[i + 1].name}.share"]
-                for i in range(len(self.fleets) - 1)
-            ]
-        )
-        return {
-            f"{self.fleets[0].name}.share": 1 - sum(all_but_last_shares)
-        }
+        all_but_last_shares = array([
+            input_data[f"{self.fleets[i + 1].name}.share"]
+            for i in range(len(self.fleets) - 1)
+        ])
+        return {f"{self.fleets[0].name}.share": 1 - sum(all_but_last_shares)}
 
     def consumption_model(self):
         default_values_units = {
@@ -591,12 +581,12 @@ class FleetAssembly(Fleet):
             for carrier in self.consumed_carriers
         }
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._energy_consumption,
@@ -612,13 +602,12 @@ class FleetAssembly(Fleet):
 
     def _energy_consumption(self, input_data):
         conso_per_carrier = {
-            carrier.name: array(
-                [
-                    input_data[f"{fleet.name}.{carrier.name}.consumption"]
-                    if carrier in fleet.consumed_carriers else 0.0
-                    for fleet in self.fleets
-                ]
-            )
+            carrier.name: array([
+                input_data[f"{fleet.name}.{carrier.name}.consumption"]
+                if carrier in fleet.consumed_carriers
+                else 0.0
+                for fleet in self.fleets
+            ])
             for carrier in self.consumed_carriers
         }
         return {
@@ -633,12 +622,12 @@ class FleetAssembly(Fleet):
         default_values_units["ask_trend"] = (0.0, "pax km")
         output_units = {f"{fleet.name}.ask_trend": "pax km" for fleet in self.fleets}
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._ask_mix,
@@ -647,7 +636,7 @@ class FleetAssembly(Fleet):
             default_inputs={
                 name: value_unit[0] for name, value_unit in default_values_units.items()
             },
-            name=f"Global ASK trend",
+            name="Global ASK trend",
             # variable_full_names=fullnames,
             # variable_units=units,
         )
@@ -673,12 +662,12 @@ class FleetAssembly(Fleet):
         }
         output_units["mean_energy_per_ask"] = f"{Energy.unit}/pax km"
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._mean_consumption_impacts,
@@ -693,12 +682,10 @@ class FleetAssembly(Fleet):
         )
 
     def _mean_consumption_impacts(self, input_data):
-        conso_per_carrier = array(
-            [
-                input_data[f"{carrier.name}.consumption"]
-                for carrier in self.consumed_carriers
-            ]
-        )
+        conso_per_carrier = array([
+            input_data[f"{carrier.name}.consumption"]
+            for carrier in self.consumed_carriers
+        ])
         ask = input_data["ask"]
         output_data = {
             f"{carrier.name}.mean_consumption_per_ask": conso_per_carrier[i] / ask

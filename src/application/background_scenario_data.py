@@ -1,3 +1,19 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from matplotlib.pyplot import subplots
 from numpy import isnan
 from numpy import ndarray
@@ -52,49 +68,45 @@ def get_scenario_color(scenario_name: str):
     ssp_idx = int(name_split[1][0])
     if ssp_idx == 1:
         return "darkgreen"
-    elif ssp_idx == 2:
+    if ssp_idx == 2:
         return "royalblue"
-    elif ssp_idx == 3:
+    if ssp_idx == 3:
         return "firebrick"
-    elif ssp_idx == 4:
+    if ssp_idx == 4:
         return "darkorange"
     return "darkviolet"
 
 
 def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
-    population_data = read_csv("../../../src/application/ar6_scenarios_data/population.csv", index_col=1)
-    gdp_data = read_csv("../../../src/application/ar6_scenarios_data/gdp.csv", index_col=1)
+    population_data = read_csv(
+        "../../../src/application/ar6_scenarios_data/population.csv", index_col=1
+    )
+    gdp_data = read_csv(
+        "../../../src/application/ar6_scenarios_data/gdp.csv", index_col=1
+    )
     electricity_emissions_data = read_csv(
-        "../../../src/application/ar6_scenarios_data/electricity_emissions.csv", index_col=1
+        "../../../src/application/ar6_scenarios_data/electricity_emissions.csv",
+        index_col=1,
     )
     final_electricity_data = read_csv(
         "../../../src/application/ar6_scenarios_data/final_electricity.csv", index_col=1
     )
-    biomass_data = read_csv("../../../src/application/ar6_scenarios_data/biomass_total.csv", index_col=1)
+    biomass_data = read_csv(
+        "../../../src/application/ar6_scenarios_data/biomass_total.csv", index_col=1
+    )
 
     all_years = [
-        int(year) for year in list(electricity_emissions_data.keys())[5:]
+        int(year)
+        for year in list(electricity_emissions_data.keys())[5:]
         if start_year <= int(year) <= end_year
     ]
     var_units_name_convert = {
-        "population": (
-            "million hab.", "Population", 1e6
-        ),
-        "gdp_per_capita": (
-            "thousand US$2010/(hab. year)", "GDP (PPP) per capita", 1e3
-        ),
-        "gdp": (
-            "billion US$2010/year", "Gross Domestic Product (PPP)", 1e9
-        ),
-        "ELECTRICITY.CO2_index": (
-            "g CO2 / MJ", "Electricity Emission Factor", 1
-        ),
-        "ELECTRICITY.global_production": (
-            "EJ / year", "Electricity Production", 1e12
-        ),
-        "BIOMASS.global_production": (
-            "EJ / year", "Biomass Production", 1e12
-        ),
+        "population": ("million hab.", "Population", 1e6),
+        "gdp_per_capita": ("thousand US$2010/(hab. year)", "GDP (PPP) per capita", 1e3),
+        "gdp": ("billion US$2010/year", "Gross Domestic Product (PPP)", 1e9),
+        "ELECTRICITY.CO2_index": ("g CO2 / MJ", "Electricity Emission Factor", 1),
+        "ELECTRICITY.global_production": ("EJ / year", "Electricity Production", 1e12),
+        "BIOMASS.global_production": ("EJ / year", "Biomass Production", 1e12),
     }
 
     ar6_data = {
@@ -107,10 +119,12 @@ def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
     }
     years = []
     for scenario, model in scenario_to_model.items():
-        for variable in ar6_data.keys():
+        for variable in ar6_data:
             ar6_data[variable][scenario] = []
         for year in all_years:
-            array_or_pandas = population_data[str(year)][scenario][population_data["Model"][scenario] == model]
+            array_or_pandas = population_data[str(year)][scenario][
+                population_data["Model"][scenario] == model
+            ]
             if isinstance(array_or_pandas, ndarray):
                 pop = population_data[str(year)][scenario][
                     population_data["Model"][scenario] == model
@@ -144,11 +158,10 @@ def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
                     biomass_data["Model"][scenario] == model
                 ].to_numpy()
 
-
-            if not any([
+            if not any(
                 isnan(data_array) or data_array.size == 0
                 for data_array in [pop, gdp, elec_co2, elec, biomass]
-            ]):
+            ):
                 if year not in years:
                     years.append(year)
                 ar6_data["population"][scenario].append(
@@ -161,16 +174,16 @@ def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
                     float(gdp / pop) * var_units_name_convert["gdp_per_capita"][-1]
                 )
                 ar6_data["ELECTRICITY.CO2_index"][scenario].append(
-                    max(0.0, float(elec_co2 / elec)) *  # no below zero electricity
-                    var_units_name_convert["ELECTRICITY.CO2_index"][-1]
+                    max(0.0, float(elec_co2 / elec))  # no below zero electricity
+                    * var_units_name_convert["ELECTRICITY.CO2_index"][-1]
                 )
                 ar6_data["ELECTRICITY.global_production"][scenario].append(
-                    float(elec) *
-                    var_units_name_convert["ELECTRICITY.global_production"][-1]
+                    float(elec)
+                    * var_units_name_convert["ELECTRICITY.global_production"][-1]
                 )
                 ar6_data["BIOMASS.global_production"][scenario].append(
-                    float(biomass) *
-                    var_units_name_convert["BIOMASS.global_production"][-1]
+                    float(biomass)
+                    * var_units_name_convert["BIOMASS.global_production"][-1]
                 )
 
     if plot_data:
@@ -182,13 +195,13 @@ def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
                 "BIOMASS.global_production",
             ],
         }
-        for group_name, variable_group in var_groups.items():
+        for variable_group in var_groups.values():
             fig, axes = subplots(1, 3, layout="constrained")
             fig.set_size_inches(12, 5)
             lines = lines_gen()
             last_idx = 0
             for i, name in enumerate(variable_group):
-                for scenario in scenario_to_model.keys():
+                for scenario in scenario_to_model:
                     name_split = scenario.split("SSP")
                     ssp_idx = int(name_split[1][0])
                     if ssp_idx != last_idx:

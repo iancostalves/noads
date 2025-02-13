@@ -1,3 +1,47 @@
+Metadata-Version: 2.2
+Name: numerical-optimization-of-aviation-decarbonization-scenarios
+Version: 0.1.dev20+g44c3a64.d20250213
+Summary: Numerical Optimization of Aviation Decarbonization Scenarios with GEMSEO-JAX
+Author-email: Ian COSTA ALVES <ian.costa-alves.external@irt-saintexupery.com>
+License: GNU Lesser General Public License v3
+Project-URL: Homepage, https://gitlab.com/gemseo
+Project-URL: Source, https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios
+Project-URL: Tracker, https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios/-/issues
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: <3.13,>=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: gemseo-jax<3,>=2.0.2
+Requires-Dist: diffrax<0.6.1,>=0.6.0
+Requires-Dist: xlrd<2.1,>=2.0.1
+Provides-Extra: test
+Requires-Dist: covdefaults; extra == "test"
+Requires-Dist: pytest<9; extra == "test"
+Requires-Dist: pytest-cov; extra == "test"
+Requires-Dist: pytest-xdist; extra == "test"
+Provides-Extra: doc
+Requires-Dist: black; extra == "doc"
+Requires-Dist: griffe-inherited-docstrings; extra == "doc"
+Requires-Dist: markdown-exec[ansi]; extra == "doc"
+Requires-Dist: mike; extra == "doc"
+Requires-Dist: mkdocs-bibtex; extra == "doc"
+Requires-Dist: mkdocs-gallery; extra == "doc"
+Requires-Dist: mkdocs-gen-files; extra == "doc"
+Requires-Dist: mkdocs-include-markdown-plugin; extra == "doc"
+Requires-Dist: mkdocs-literate-nav; extra == "doc"
+Requires-Dist: mkdocs-material; extra == "doc"
+Requires-Dist: mkdocs-section-index; extra == "doc"
+Requires-Dist: mkdocstrings[python]; extra == "doc"
+
 
 <!--
  Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/

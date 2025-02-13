@@ -1,3 +1,19 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from jax.numpy.linalg import norm
 from numpy import arange
 from numpy import array as np_array
@@ -7,21 +23,19 @@ from pandas import read_excel
 
 
 def error_measure(y, y_data):
-    mse = norm(y - y_data) / norm(y_data)
-    return mse
+    return norm(y - y_data) / norm(y_data)
 
 
 def filter_nans(data_iterable, exclude_covid=True):
-    filtered_data_iterable = []
     last_index = 2 if exclude_covid else 0  # exclude 2020, 2021, 2022
-    for data in data_iterable:
-        filtered_data_iterable.append(
-            np_array([
-                data[idx] for idx in range(len(data) - last_index)
-                if not any([isnan(np_array(d))[idx] for d in data_iterable])
-            ])
-        )
-    return filtered_data_iterable
+    return [
+        np_array([
+            data[idx]
+            for idx in range(len(data) - last_index)
+            if not any(isnan(np_array(d))[idx] for d in data_iterable)
+        ])
+        for data in data_iterable
+    ]
 
 
 def get_rpk_data(y_start):

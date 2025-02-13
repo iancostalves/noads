@@ -1,21 +1,34 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from gemseo import create_design_space
 from gemseo import create_scenario
-from gemseo.algos.opt.multi_start.settings.multi_start_settings import \
-    MultiStart_Settings
-
-from matplotlib.pyplot import close
-from matplotlib.pyplot import show
-from matplotlib.pyplot import subplots
-
+from gemseo.algos.opt.multi_start.settings.multi_start_settings import (
+    MultiStart_Settings,
+)
 from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
 from gemseo_jax.jax_chain import JAXChain
+from matplotlib.pyplot import show
+from matplotlib.pyplot import subplots
 from matplotlib.pyplot import yscale
-
+from numpy import array as np_array
 from numpy import diff
+from numpy import linspace
 from numpy import max
 from numpy import min
-from numpy import array as np_array
-from numpy import linspace
 
 from core.models.traffic import generalised_logistic
 from demand_calibration.calibration_utils import error_measure
@@ -148,8 +161,8 @@ def run_region_calibration(region, plot_calibration=True):
     design_space.add_variable(
         "x_lag",
         lower_bound=0.0,
-        upper_bound=3.0 * x_max
-        , value=np_array(0.5 * x_max),
+        upper_bound=3.0 * x_max,
+        value=np_array(0.5 * x_max),
     )
     design_space.add_variable(
         "logistic_nu", lower_bound=0.1, upper_bound=10, value=np_array(1.0)
@@ -157,7 +170,6 @@ def run_region_calibration(region, plot_calibration=True):
     design_space.add_variable(
         "asymptote_coeff", lower_bound=0.5, upper_bound=2.0, value=np_array(1.0)
     )
-    variable_names = design_space.variable_names
 
     # Create the MDO scenario with an MDF formulation:
     scenario = create_scenario(
@@ -178,7 +190,6 @@ def run_region_calibration(region, plot_calibration=True):
 
     best_fit = scenario.optimization_result.x_opt_as_dict
     if plot_calibration:
-        print(region, "best fit:", best_fit)
         scenario.post_process(
             post_name="BasicHistory", variable_names=["mse"], save=False, show=False
         )
@@ -189,6 +200,4 @@ def run_region_calibration(region, plot_calibration=True):
             best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw
         )
 
-    return (
-            best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw
-        )
+    return (best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw)

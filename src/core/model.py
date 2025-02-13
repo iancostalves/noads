@@ -1,16 +1,33 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
 from gemseo_jax.jax_discipline import JAXDiscipline
 from gemseo_jax.jax_discipline import NumberLike
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 
 class Model:
-
     discipline: JAXDiscipline
 
     def __init__(
@@ -21,7 +38,6 @@ class Model:
 
 
 class JAXModel(Model):
-
     def __init__(
         self,
         function,
@@ -41,11 +57,9 @@ class JAXModel(Model):
 
 
 class AutoModel(Model):
-
     discipline: AutoJAXDiscipline
 
     def __init__(self, name):
-
         discipline = AutoJAXDiscipline(name=name, function=self._jax_func)
         super().__init__(discipline)
 

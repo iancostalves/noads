@@ -1,0 +1,2 @@
+[gemseo_plugins]
+numerical-optimization-of-aviation-decarbonization-scenarios = noads

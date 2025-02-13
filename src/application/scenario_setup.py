@@ -1,9 +1,22 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from __future__ import annotations
 
-from collections.abc import Sequence
-
-from gemseo import create_design_space
-from gemseo_jax.jax_discipline import JAXDiscipline
+from typing import TYPE_CHECKING
 
 from AeroMAX.models.traffic import AirTraffic
 from AeroMAX.scenarios.multiscenario import MultiScenario
@@ -11,11 +24,13 @@ from AeroMAX.scenarios.temporalscenario import TemporalScenario
 from AeroMAX.scenarios.temporalscenario import interpolate_data
 from aviation_scenarios.base_objects import initialize_aeromax_objects
 from aviation_scenarios.scenario_data import get_ar6_data
-
+from gemseo import create_design_space
+from gemseo_jax.jax_discipline import JAXDiscipline
 from numpy import array as np_array
 from numpy import ones as np_ones
-from numpy import eye as np_eye
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 refuel_eu_years = [2025, 2030, 2035, 2040, 2045, 2050, 2055, 2060]
 refuel_eu_biofuel = [0.02, 0.04, 0.15, 0.24, 0.27, 0.35, 0.7, 1.0]
@@ -47,7 +62,8 @@ def single_scenario_setup(
         f"{stream.name}.constraint" for stream in energy_mix.constrained_inputs
     ]
     temporal_constraints.extend([
-        f"{energy.name}.controls_constraint" for energy in energy_mix.produced_energies
+        f"{energy.name}.controls_constraint"
+        for energy in energy_mix.produced_energies
         if len(energy.pathways) > 1
     ])
     temporal_constraints.extend([
@@ -55,13 +71,11 @@ def single_scenario_setup(
     ])
 
     time_integrated_outputs = ["ask", "rpk"]
-    time_integrated_outputs.extend([
-        impact.name for impact in energy_mix.impacts
-    ])
+    time_integrated_outputs.extend([impact.name for impact in energy_mix.impacts])
     if integrate_constraints:
         for i in range(len(temporal_constraints)):
             temporal_constraints[i] += "_violation"
-        time_integrated_outputs.extend([name for name in temporal_constraints])
+        time_integrated_outputs.extend(list(temporal_constraints))
     if demand_aversion:
         time_integrated_outputs.extend([
             "discounted_relative_price_change",
@@ -72,13 +86,14 @@ def single_scenario_setup(
 
     constants = {
         "load_factor_end_year": 92.0,
-        "gdp_per_capita_covid_end":
-            float(interpolate_data(
+        "gdp_per_capita_covid_end": float(
+            interpolate_data(
                 x=2024.0,
                 x_data=np_array(years_data),
                 y_data=np_array(ar6_data["gdp_per_capita"][scenario_name]),
                 cubic=True,
-            )),
+            )
+        ),
         "discount_rate": 0.04,
         "start_year": start_year,
         "end_year": end_year,
@@ -120,39 +135,35 @@ def single_scenario_setup(
     }
     # interpolated values are from https://doi.org/10.1016/j.joule.2024.07.012.
     interpolated_2025_2035_2050 = {
-        "Electrolysis.ELECTRICITY.efficiency": (.71, .71 * 1.03, .71 * 1.06),
+        "Electrolysis.ELECTRICITY.efficiency": (0.71, 0.71 * 1.03, 0.71 * 1.06),
         "Power_to_liquid.ELECTRICITY.efficiency": (1.53, 1.53 * 1.08, 1.53 * 1.16),
         "Power_to_liquid.GAS-H2.efficiency": (0.53, 0.53 * 1.06, 0.53 * 1.12),
     }
     if not drop_in_only:
-        constants.update(
-            {
-                "H2_liquefaction.direct.CO2_index": 0.0,
-                "H2_liquefaction.GAS-H2.efficiency": 1.0,
-                "Charging.direct.CO2_index": 0.0,
-                "Charging.ELECTRICITY.efficiency": 0.98,
-            }
-        )
+        constants.update({
+            "H2_liquefaction.direct.CO2_index": 0.0,
+            "H2_liquefaction.GAS-H2.efficiency": 1.0,
+            "Charging.direct.CO2_index": 0.0,
+            "Charging.ELECTRICITY.efficiency": 0.98,
+        })
         interpolated_2025_2035_2050.update({
             "H2_liquefaction.ELECTRICITY.efficiency": (4.54, 4.54 * 1.2, 4.54 * 1.4),
         })
         if include_methane:
-            constants.update(
-                {
-                    "NATURAL_GAS.CO2_index": 67.6,
-                    "GM_methanation.direct.CO2_index": 0.0,
-                    "GM_biogas.direct.CO2_index": 14.3,
-                    "GM_fossil.direct.CO2_index": 0.0,
-                    "LM_liquefaction.direct.CO2_index": 0.0,
-                    "GM_fossil.NATURAL_GAS.efficiency": 1.0,
-                    "GM_methanation.GAS-H2.efficiency": 0.89,
-                    "LM_liquefaction.ELECTRICITY.efficiency": 20.0,
-                    "LM_liquefaction.GAS-CH4.efficiency": 1.0,
-                }
-            )
-            interpolated_2025_2035_2050.update(
-                {"GM_biogas.BIOMASS.efficiency": (.7, .75, .8)}
-            )
+            constants.update({
+                "NATURAL_GAS.CO2_index": 67.6,
+                "GM_methanation.direct.CO2_index": 0.0,
+                "GM_biogas.direct.CO2_index": 14.3,
+                "GM_fossil.direct.CO2_index": 0.0,
+                "LM_liquefaction.direct.CO2_index": 0.0,
+                "GM_fossil.NATURAL_GAS.efficiency": 1.0,
+                "GM_methanation.GAS-H2.efficiency": 0.89,
+                "LM_liquefaction.ELECTRICITY.efficiency": 20.0,
+                "LM_liquefaction.GAS-CH4.efficiency": 1.0,
+            })
+            interpolated_2025_2035_2050.update({
+                "GM_biogas.BIOMASS.efficiency": (0.7, 0.75, 0.8)
+            })
 
     controls_delay_times = {}
     constrained_control_groups = {}
@@ -191,46 +202,54 @@ def single_scenario_setup(
     models.extend(fleet.models)
 
     temporal_scenario = TemporalScenario(
-        name="Single scenario", models=models,
+        name="Single scenario",
+        models=models,
         constant_inputs=list(constants.keys()),
         control_delay_times=controls_delay_times,
         constrained_control_groups=constrained_control_groups,
         custom_controls=custom_controls,
         interpolated_inputs=list(interpolated_2025_2035_2050.keys()),
         time_integrated_outputs=time_integrated_outputs,
-        start_year=start_year, end_year=end_year,
-        time_step=time_step, interp_step=interp_step,
+        start_year=start_year,
+        end_year=end_year,
+        time_step=time_step,
+        interp_step=interp_step,
         adjoint_method=TemporalScenario.AdjointMethod.BACKSOLVE
-        if integrate_constraints else TemporalScenario.AdjointMethod.DIRECT,
+        if integrate_constraints
+        else TemporalScenario.AdjointMethod.DIRECT,
         differentiation_method=JAXDiscipline.DifferentiationMethod.REVERSE
-        if integrate_constraints else JAXDiscipline.DifferentiationMethod.FORWARD,
+        if integrate_constraints
+        else JAXDiscipline.DifferentiationMethod.FORWARD,
     )
     scenario_inputs = {"year": temporal_scenario.time_vector}
     scenario_inputs.update({
         f"constant.{name}": np_array([value]) for name, value in constants.items()
     })
     scenario_inputs.update({
-        f"interpolate.{name}":
-            np_array(interpolate_data(
+        f"interpolate.{name}": np_array(
+            interpolate_data(
                 x=temporal_scenario.time_interpolation,
                 x_data=np_array([2025.0, 2035.0, 2050.0]),
                 y_data=np_array([tup[0], tup[1], tup[2]]),
-            ))
+            )
+        )
         for name, tup in interpolated_2025_2035_2050.items()
     })
     scenario_inputs.update({
         f"control.{name}": 0.0 * np_ones(temporal_scenario.time_interpolation.shape)
-        for name in controls_delay_times if name not in custom_controls
+        for name in controls_delay_times
+        if name not in custom_controls
     })
     scenario_inputs.update({
-        name:
-            np_array(interpolate_data(
+        name: np_array(
+            interpolate_data(
                 x=temporal_scenario.time_vector,
                 x_data=np_array(years_data),
                 y_data=np_array(ar6_data[name][scenario_name]),
                 cubic=True,
-            ))
-        for name in ar6_data.keys()
+            )
+        )
+        for name in ar6_data
     })
     temporal_scenario.discipline.default_inputs = scenario_inputs
     if compile_jit:
@@ -262,7 +281,8 @@ def single_scenario_setup(
                 design_space.add_variable(
                     f"control.{pathway.name}.share",
                     size=temporal_scenario.time_interpolation.size,
-                    l_b=0.0, u_b=upper_value,
+                    l_b=0.0,
+                    u_b=upper_value,
                     value=value,
                 )
     for i, fleet_i in enumerate(fleet.fleets):
@@ -285,26 +305,32 @@ def single_scenario_setup(
             if aircraft != fleet_i.operating_aircraft[0]:
                 design_space.add_variable(
                     f"constant.{aircraft.name}.max_share",
-                    l_b=0.0, u_b=1.0, value=0.1,
+                    l_b=0.0,
+                    u_b=1.0,
+                    value=0.1,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.entry_into_service",
-                    l_b=2035.0, u_b=2060.0,
+                    l_b=2035.0,
+                    u_b=2060.0,
                     value=2060.0,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.lifetime",
-                    l_b=3.0 * fleet_tau, u_b=16.0 * fleet_tau,
+                    l_b=3.0 * fleet_tau,
+                    u_b=16.0 * fleet_tau,
                     value=3.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.ramp_up_duration",
-                    l_b=2.0 * fleet_tau, u_b=4.0 * fleet_tau,
+                    l_b=2.0 * fleet_tau,
+                    u_b=4.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.ramp_down_duration",
-                    l_b=2.0 * fleet_tau, u_b=4.0 * fleet_tau,
+                    l_b=2.0 * fleet_tau,
+                    u_b=4.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
 
@@ -355,11 +381,12 @@ def multi_scenario_setup(
     ]
     meaned.extend(temporal_scenario.time_integrated_outputs)
     if aggregate_constraints:
-        meaned.extend([name for name in constraints.keys() if name not in meaned])
+        meaned.extend([name for name in constraints if name not in meaned])
 
     fixed = ["year"]
     fixed.extend([
-        f"constant.{name}" for name in temporal_scenario.constant_inputs
+        f"constant.{name}"
+        for name in temporal_scenario.constant_inputs
         if name != "gdp_per_capita_covid_end"
     ])
     fixed.extend([
@@ -379,39 +406,33 @@ def multi_scenario_setup(
         f"fixed.{name}": temporal_scenario.discipline.default_inputs[name]
         for name in fixed
     }
-    multi_scenario_inputs.update(
-        {
-            f"{scenario}.{name}": temporal_scenario.discipline.default_inputs[name]
-            for scenario in scenario_names
-            for name in temporal_scenario.discipline.input_grammar.names
-            if name not in fixed
-        }
-    )
-    # reupdate inputs with ar6 data
-    multi_scenario_inputs.update(
-        {
-            f"{scenario}.{name}":
-                np_array(
-                    interpolate_data(
-                        x=temporal_scenario.time_vector,
-                        x_data=np_array(years_data),
-                        y_data=np_array(ar6_data[name][scenario]),
-                        cubic=True,
-                    )
-                )
-            for scenario in scenario_names
-            for name, scenario_dict in ar6_data.items()
-        }
-    )
     multi_scenario_inputs.update({
-        f"{scenario}.constant.gdp_per_capita_covid_end":
-            np_array([
-                interpolate_data(
-                    x=2024.0,
-                    x_data=np_array(years_data),
-                    y_data=np_array(ar6_data["gdp_per_capita"][scenario]),
-                )
-            ])
+        f"{scenario}.{name}": temporal_scenario.discipline.default_inputs[name]
+        for scenario in scenario_names
+        for name in temporal_scenario.discipline.input_grammar.names
+        if name not in fixed
+    })
+    # reupdate inputs with ar6 data
+    multi_scenario_inputs.update({
+        f"{scenario}.{name}": np_array(
+            interpolate_data(
+                x=temporal_scenario.time_vector,
+                x_data=np_array(years_data),
+                y_data=np_array(ar6_data[name][scenario]),
+                cubic=True,
+            )
+        )
+        for scenario in scenario_names
+        for name, scenario_dict in ar6_data.items()
+    })
+    multi_scenario_inputs.update({
+        f"{scenario}.constant.gdp_per_capita_covid_end": np_array([
+            interpolate_data(
+                x=2024.0,
+                x_data=np_array(years_data),
+                y_data=np_array(ar6_data["gdp_per_capita"][scenario]),
+            )
+        ])
         for scenario in scenario_names
     })
     multi_scenario.discipline.default_inputs = multi_scenario_inputs
@@ -444,7 +465,8 @@ def multi_scenario_setup(
                     design_space.add_variable(
                         f"{scenario}.control.{pathway.name}.share",
                         size=temporal_scenario.time_interpolation.size,
-                        l_b=0.0, u_b=upper_value,
+                        l_b=0.0,
+                        u_b=upper_value,
                         value=value,
                     )
 
@@ -470,25 +492,32 @@ def multi_scenario_setup(
             if aircraft != fleet_i.operating_aircraft[0]:
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.entry_into_service",
-                    l_b=2035.0, u_b=2060.0, value=2060.0,
+                    l_b=2035.0,
+                    u_b=2060.0,
+                    value=2060.0,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.max_share",
-                    l_b=0.0, u_b=1.0, value=0.1,
+                    l_b=0.0,
+                    u_b=1.0,
+                    value=0.1,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.lifetime",
-                    l_b=3.0 * fleet_tau, u_b=16.0 * fleet_tau,
+                    l_b=3.0 * fleet_tau,
+                    u_b=16.0 * fleet_tau,
                     value=3.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.ramp_up_duration",
-                    l_b=2.0 * fleet_tau, u_b=4.0 * fleet_tau,
+                    l_b=2.0 * fleet_tau,
+                    u_b=4.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.ramp_down_duration",
-                    l_b=2.0 * fleet_tau, u_b=4.0 * fleet_tau,
+                    l_b=2.0 * fleet_tau,
+                    u_b=4.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
 

@@ -1,23 +1,43 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from __future__ import annotations
 
-from collections.abc import Mapping
+from typing import TYPE_CHECKING
+
+from jax.numpy import exp
+from jax.numpy import log
+from jax.numpy import where
+from jax.numpy import zeros
 
 from core.model import JAXModel
 from core.model import Model
-from core.models.energy.energy import EnergyCarrier
 
-from jax.numpy import log
-from jax.numpy import exp
-from jax.numpy import where
-from jax.numpy import zeros
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from core.models.energy.energy import EnergyCarrier
 
 
 class PropulsionSystem:
     name: str
 
-    energy_carrier_mix: Mapping[EnergyCarrier: float]
+    energy_carrier_mix: Mapping[EnergyCarrier:float]
 
-    def __init__(self, name: str, energy_carrier_mix: Mapping[EnergyCarrier: float]):
+    def __init__(self, name: str, energy_carrier_mix: Mapping[EnergyCarrier:float]):
         self.name = name
         self.energy_carrier_mix = energy_carrier_mix
 
@@ -58,20 +78,27 @@ class AircraftOperation:
     def _sigmoid_fleet_share(self, years_since_introduction, max_share, cut_below=2):
         growth_rate = log(100 / cut_below - 1) / (self.lifetime / 2)
         year_inflection = 0 if self.recent else self.lifetime / 2
-        calc_share = 1e2 * max_share / (1 + exp(-growth_rate * (years_since_introduction - year_inflection)))
-        calc_share_max = 100 / (1 + exp(-growth_rate * (years_since_introduction - year_inflection)))
-        share = 1e-2 * where(
+        calc_share = (
+            1e2
+            * max_share
+            / (1 + exp(-growth_rate * (years_since_introduction - year_inflection)))
+        )
+        calc_share_max = 100 / (
+            1 + exp(-growth_rate * (years_since_introduction - year_inflection))
+        )
+        return 1e-2 * where(
             calc_share_max < cut_below, zeros(calc_share.shape), calc_share
         )
-        return share
 
     def _fleet_share(self, input_data):
         year = input_data["year"]
         entry_into_service = input_data[f"{self.name}.entry_into_service"]
         max_share = input_data[f"{self.name}.max_share"]
-        return {f"{self.name}.share": self._sigmoid_fleet_share(
-            year - entry_into_service, max_share
-        )}
+        return {
+            f"{self.name}.share": self._sigmoid_fleet_share(
+                year - entry_into_service, max_share
+            )
+        }
 
     def share_model(self):
         default_values_units = {
@@ -81,12 +108,12 @@ class AircraftOperation:
         }
         output_units = {f"{self.name}.share": ""}
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._fleet_share,
@@ -103,8 +130,9 @@ class AircraftOperation:
     def _energy_consumption(self, input_data):
         ask = input_data[f"{self.name}.ask"]
         return {
-            f"{self.name}.{carrier.name}.consumption":
-                carrier_ratio * ask * self.energy_per_ask
+            f"{self.name}.{carrier.name}.consumption": carrier_ratio
+            * ask
+            * self.energy_per_ask
             for carrier, carrier_ratio in self.propulsion.energy_carrier_mix.items()
         }
 
@@ -112,15 +140,15 @@ class AircraftOperation:
         default_values_units = {f"{self.name}.ask": (0.0, "pax km")}
         output_units = {
             f"{self.name}.{carrier.name}.consumption": carrier.unit
-            for carrier in self.propulsion.energy_carrier_mix.keys()
+            for carrier in self.propulsion.energy_carrier_mix
         }
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._energy_consumption,

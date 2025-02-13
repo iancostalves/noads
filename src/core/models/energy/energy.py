@@ -1,6 +1,22 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 from __future__ import annotations
 
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 from jax.numpy import append
 from jax.numpy import array
@@ -8,10 +24,14 @@ from jax.numpy import sum
 
 from core.model import JAXModel
 from core.model import Model
-from core.models.energy.production_pathway import ProductionPathway
 from core.models.energy.streams import Impact
 from core.models.energy.streams import MaterialStream
 from core.models.energy.streams import Stream
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from core.models.energy.production_pathway import ProductionPathway
 
 
 class Energy(Stream):
@@ -37,22 +57,21 @@ class ProducedEnergy(Energy):
     def __init__(self, name, pathways: Sequence[ProductionPathway]):
         Energy.__init__(self, name=name)
         self.pathways = list(pathways)
-        self.impacts = list(set(
-            [impact for pathway in pathways for impact in pathway.impacts]
-        ))
-        self.input_streams = list(set(
-            [stream for pathway in pathways for stream in pathway.input_streams]
-        ))
+        self.impacts = list({
+            impact for pathway in pathways for impact in pathway.impacts
+        })
+        self.input_streams = list({
+            stream for pathway in pathways for stream in pathway.input_streams
+        })
         self.output_streams = []
 
     @property
     def models(self) -> list[Model]:
-        models = [
+        return [
             self.impact_index_model(),
             self.production_model(),
             self.consumption_model(),
         ]
-        return models
 
     def set_output_streams(self, output_streams: Sequence[Stream]):
         self.output_streams = list(set(output_streams))
@@ -68,12 +87,12 @@ class ProducedEnergy(Energy):
             default_values_units[f"{pathway.name}.share"] = (0.0, "")
             output_units.update({f"{pathway.name}.production": Energy.unit})
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._dispatch_production,
@@ -89,9 +108,9 @@ class ProducedEnergy(Energy):
 
     def _dispatch_production(self, input_data):
         production = input_data[f"{self.name}.production"]
-        shares = array(
-            [input_data[f"{pathway.name}.share"] for pathway in self.pathways]
-        )
+        shares = array([
+            input_data[f"{pathway.name}.share"] for pathway in self.pathways
+        ])
         production_per_pathway = shares * production
         return {
             f"{pathway.name}.production": production_per_pathway[i]
@@ -103,25 +122,25 @@ class ProducedEnergy(Energy):
             f"{stream.name}.{self.name}.consumption": (0.0, self.unit)
             for stream in self.output_streams
         }
-        default_values_units.update(
-            {
-                f"{self.name}.{stream.name}.consumption_index":
-                    (0.0, f"{stream.unit}/{self.unit}")
-                for stream in self.input_streams
-            }
-        )
+        default_values_units.update({
+            f"{self.name}.{stream.name}.consumption_index": (
+                0.0,
+                f"{stream.unit}/{self.unit}",
+            )
+            for stream in self.input_streams
+        })
         output_units = {f"{self.name}.production": self.unit}
         output_units.update({
             f"{self.name}.{stream.name}.consumption": self.unit
             for stream in self.input_streams
         })
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._consumption_aggregation,
@@ -136,23 +155,23 @@ class ProducedEnergy(Energy):
         )
 
     def _consumption_aggregation(self, input_data):
-        production = sum(array([
-            input_data[f"{stream.name}.{self.name}.consumption"]
-            for stream in self.output_streams
-        ]))
+        production = sum(
+            array([
+                input_data[f"{stream.name}.{self.name}.consumption"]
+                for stream in self.output_streams
+            ])
+        )
         consumption_index = {
             stream.name: input_data[f"{self.name}.{stream.name}.consumption_index"]
             for stream in self.input_streams
         }
 
         output_data = {f"{self.name}.production": production}
-        output_data.update(
-            {
-                f"{self.name}.{stream.name}.consumption":
-                    production * consumption_index[stream.name]
-                for stream in self.input_streams
-            }
-        )
+        output_data.update({
+            f"{self.name}.{stream.name}.consumption": production
+            * consumption_index[stream.name]
+            for stream in self.input_streams
+        })
         return output_data
 
     def impact_index_model(self):
@@ -168,24 +187,24 @@ class ProducedEnergy(Energy):
                     default_values_units[
                         f"{pathway.name}.{stream.name}.consumption_index"
                     ] = (0.0, f"{stream.unit}/{Energy.unit}")
-                output_units.update(
-                    {f"{self.name}.{stream.name}.consumption_index":
-                        f"{stream.unit}/{self.unit}"}
-                )
+                output_units.update({
+                    f"{self.name}.{stream.name}.consumption_index": f"{stream.unit}/{self.unit}"
+                })
             for impact in self.impacts:
                 default_values_units[f"{pathway.name}.{impact.name}_index"] = (
-                    0.0, f"{impact.unit}/{Energy.unit}"
+                    0.0,
+                    f"{impact.unit}/{Energy.unit}",
                 )
                 output_units.update({
                     f"{self.name}.{impact.name}_index": f"{impact.unit}/{self.unit}"
                 })
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
         return JAXModel(
             function=self._impact_index,
@@ -200,32 +219,29 @@ class ProducedEnergy(Energy):
         )
 
     def _impact_index(self, input_data):
-        all_but_last_shares = array(
-            [
-                input_data[f"{self.pathways[i].name}.share"]
-                for i in range(len(self.pathways) - 1)
-            ]
-        )
+        all_but_last_shares = array([
+            input_data[f"{self.pathways[i].name}.share"]
+            for i in range(len(self.pathways) - 1)
+        ])
         last_share = 1 - sum(all_but_last_shares)
         output_data = {f"{self.pathways[-1].name}.share": last_share}
         shares = append(all_but_last_shares, last_share)
 
         impact_index = {
-            impact.name: array(
-                [
-                    input_data[f"{pathway.name}.{impact.name}_index"]
-                    for pathway in self.pathways
-                ]
-            ) for impact in self.impacts
+            impact.name: array([
+                input_data[f"{pathway.name}.{impact.name}_index"]
+                for pathway in self.pathways
+            ])
+            for impact in self.impacts
         }
         consumption_index = {
-            stream.name: array(
-                [
-                    input_data[f"{pathway.name}.{stream.name}.consumption_index"]
-                    if stream in pathway.input_streams else 0.0
-                    for pathway in self.pathways
-                ]
-            ) for stream in self.input_streams
+            stream.name: array([
+                input_data[f"{pathway.name}.{stream.name}.consumption_index"]
+                if stream in pathway.input_streams
+                else 0.0
+                for pathway in self.pathways
+            ])
+            for stream in self.input_streams
         }
 
         output_data.update({
@@ -233,8 +249,9 @@ class ProducedEnergy(Energy):
             for impact in self.impacts
         })
         output_data.update({
-            f"{self.name}.{stream.name}.consumption_index":
-                sum(shares * consumption_index[stream.name])
+            f"{self.name}.{stream.name}.consumption_index": sum(
+                shares * consumption_index[stream.name]
+            )
             for stream in self.input_streams
         })
         return output_data
@@ -268,7 +285,6 @@ class EnergyCarrier(Energy, MaterialStream):
 
 
 class ProducedEnergyCarrier(ProducedEnergy, EnergyCarrier):
-
     def __init__(
         self,
         name,
@@ -285,31 +301,29 @@ class ProducedEnergyCarrier(ProducedEnergy, EnergyCarrier):
         default_values_units = {
             f"{self.name}.consumption": (0.0, self.unit),
         }
-        default_values_units.update(
-            {
-                f"{stream.name}.{self.name}.consumption": (0.0, self.unit)
-                for stream in self.output_streams
-            }
-        )
-        default_values_units.update(
-            {
-                f"{self.name}.{stream.name}.consumption_index":
-                    (0.0, f"{stream.unit}/{self.unit}")
-                for stream in self.input_streams
-            }
-        )
+        default_values_units.update({
+            f"{stream.name}.{self.name}.consumption": (0.0, self.unit)
+            for stream in self.output_streams
+        })
+        default_values_units.update({
+            f"{self.name}.{stream.name}.consumption_index": (
+                0.0,
+                f"{stream.unit}/{self.unit}",
+            )
+            for stream in self.input_streams
+        })
         output_units = {f"{self.name}.production": self.unit}
         output_units.update({
             f"{self.name}.{stream.name}.consumption": stream.unit
             for stream in self.input_streams
         })
         variables = set(default_values_units.keys()).union(output_units)
-        fullnames = {
-            name: name.replace(".", " ").replace("_", " ") for name in variables
-        }
-        units = {
-            name: default_values_units[name][1] if name in default_values_units.keys()
-            else output_units[name] for name in variables
+        {name: name.replace(".", " ").replace("_", " ") for name in variables}
+        {
+            name: default_values_units[name][1]
+            if name in default_values_units
+            else output_units[name]
+            for name in variables
         }
 
         return JAXModel(
@@ -340,11 +354,9 @@ class ProducedEnergyCarrier(ProducedEnergy, EnergyCarrier):
         production = direct + indirect
 
         output_data = {f"{self.name}.production": production}
-        output_data.update(
-            {
-                f"{self.name}.{stream.name}.consumption":
-                    production * consumption_index[stream.name]
-                for stream in self.input_streams
-            }
-        )
+        output_data.update({
+            f"{self.name}.{stream.name}.consumption": production
+            * consumption_index[stream.name]
+            for stream in self.input_streams
+        })
         return output_data
