@@ -18,19 +18,19 @@ from core.models.energy.streams import Stream
 class EnergyMix:
     produced_energies: set[ProducedEnergy]
 
-    impacts: set[Impact]
+    impacts: list[Impact]
     """Set of all impacts accounted."""
 
-    input_streams: set[Stream]
+    input_streams: list[Stream]
     """Set of input streams that are not produced by any Pathway."""
 
-    secondary_energies: set[ProducedEnergy]
+    secondary_energies: list[ProducedEnergy]
     """Set of secondary energy (needed for producing other energies)."""
 
-    final_energies: set[ProducedEnergyCarrier]
+    final_energies: list[ProducedEnergyCarrier]
     """Set of final energy carriers (consumed by a direct.consumption)."""
 
-    constrained_inputs: set[Stream]
+    constrained_inputs: list[Stream]
     """Set of input streams with limited consumption."""
 
     def __init__(
@@ -41,49 +41,50 @@ class EnergyMix:
         plot_coupling_graph=False,
     ):
         self.produced_energies = set(energies)
-        self.impacts = set(
+        self.impacts = list(set(
             [impact for energy in self.produced_energies for impact in energy.impacts]
-        )
-        self.constrained_inputs = set(
+        ))
+        self.constrained_inputs = list(set(
             inputs_to_constrain if inputs_to_constrain is not None else []
-        )
+        ))
 
         # add missing impacts for all pathways
         if extra_impacts is not None:
             for impact in extra_impacts:
-                self.impacts.add(impact)
+                if impact not in self.impacts:
+                    self.impacts.append(impact)
 
         # add missing impacts for all pathways
         for energy in self.produced_energies:
             for impact in self.impacts:
                 if impact not in energy.impacts:
-                    energy.impacts.add(impact)
+                    energy.impacts.append(impact)
                 for pathway in energy.pathways:
                     if impact not in pathway.impacts:
-                        pathway.impacts.add(impact)
+                        pathway.impacts.append(impact)
 
-        self.final_energies = set(
+        self.final_energies = list(set(
             [
                 energy for energy in self.produced_energies
                 if isinstance(energy, ProducedEnergyCarrier)
             ]
-        )
-        self.input_streams = set(
+        ))
+        self.input_streams = list(set(
             [
                 stream for energy in self.produced_energies
                 for pathway in energy.pathways
                 for stream in pathway.input_streams
                 if stream not in self.produced_energies
             ]
-        )
-        self.secondary_energy = set(
+        ))
+        self.secondary_energy = list(set(
             [
                 stream for energy in self.produced_energies
                 for pathway in energy.pathways
                 for stream in pathway.input_streams
                 if stream in self.produced_energies
             ]
-        )
+        ))
         for energy_to_be_consumed in self.produced_energies:
             for energy in self.produced_energies:
                 if energy_to_be_consumed in energy.input_streams:

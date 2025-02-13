@@ -1,19 +1,26 @@
 from numpy import array
 
-from AeroMAX.models.energy.energy import ProducedEnergy
-from AeroMAX.models.energy.energy import ProducedEnergyCarrier
-from AeroMAX.models.energy.energy_mix import EnergyMix
-from AeroMAX.models.energy.production_pathway import ProductionPathway
-from AeroMAX.models.energy.energy import Energy
-from AeroMAX.models.energy.streams import Impact
-from AeroMAX.models.fleet.aircraft_design import AircraftDesign
-from AeroMAX.models.fleet.aircraft_operation import AircraftOperation
-from AeroMAX.models.fleet.aircraft_operation import PropulsionSystem
-from AeroMAX.models.fleet.aircraft_tech_parameter import AircraftTechParameter
-from AeroMAX.models.fleet.fleet import Fleet
-from AeroMAX.models.fleet.fleet import FleetAssembly
+from core.models.energy.energy import ProducedEnergy
+from core.models.energy.energy import ProducedEnergyCarrier
+from core.models.energy.energy_mix import EnergyMix
+from core.models.energy.production_pathway import ProductionPathway
+from core.models.energy.energy import Energy
+from core.models.energy.streams import Impact
+from core.models.fleet.aircraft_design import AircraftDesign
+from core.models.fleet.aircraft_operation import AircraftOperation
+from core.models.fleet.aircraft_operation import PropulsionSystem
+from core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+from core.models.fleet.fleet import Fleet
+from core.models.fleet.fleet import FleetAssembly
 
-from gam_fleet import aeroscope_category_conso
+
+aeroscope_category_conso = {
+    "general": 1.87014607,
+    "commuter": 1.18419916,
+    "regional": 0.97249364,
+    "short_medium": 1.0504334,
+    "long_range": 1.0504334,
+}
 
 categories_mission = {
     "general": {"npax": 19, "range": 500e3},
@@ -29,7 +36,7 @@ propulsion_mission = {
     "Battery-Electric": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
     "lH2-FuelCell": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
     "lH2-GasTurbine": {"speed": 0.8 * 340, "altitude": 28000 * 0.3048},
-    "lCH4-GasTurbine": {"speed": 0.8 * 340, "altitude": 28000 * 0.3048},
+    # "lCH4-GasTurbine": {"speed": 0.8 * 340, "altitude": 28000 * 0.3048},
 }
 
 propulsion_architectures = {
@@ -65,16 +72,16 @@ propulsion_architectures = {
         "energy_type": "liquid_h2",
         "bpr": 12.0,
     },
-    "lCH4-GasTurbine": {
-        "engine_count": 2,
-        "engine_type": "turbofan",
-        "thruster_type": "fan",
-        "energy_type": "liquid_ch4",
-        "bpr": 12.0,
-    },
+    # "lCH4-GasTurbine": {
+    #     "engine_count": 2,
+    #     "engine_type": "turbofan",
+    #     "thruster_type": "fan",
+    #     "energy_type": "liquid_ch4",
+    #     "bpr": 12.0,
+    # },
 }
 
-tech_params_lower_upper_2020_2035_2050 = {
+tech_params_lower_upper_2020_2040_2060 = {
     "battery_specific_energy": (
         array([200, 350, 600]),
         0.5 * (array([200, 350, 600]) + array([200, 700, 1300])),
@@ -82,18 +89,18 @@ tech_params_lower_upper_2020_2035_2050 = {
     ),
     "emotor_specific_power": (
         array([2, 15, 20]),
-        0.5 * (array([1, 15, 20]) + array([1, 20, 26])),
-        array([1, 20, 26]),
+        0.5 * (array([2, 15, 20]) + array([2, 20, 26])),
+        array([2, 20, 26]),
     ),
     "electronics_specific_power": (
         array([2, 15, 20]),
-        0.5 * (array([1, 15, 20]) + array([1, 22, 30])),
-        array([1, 22, 30]),
+        0.5 * (array([2, 15, 20]) + array([2, 22, 30])),
+        array([2, 22, 30]),
     ),
     "fuelcell_specific_power": (
         array([1, 2, 3]),
-        0.5 * (array([1, 2, 3]) + array([1, 3, 5])),
-        array([1, 3, 5]),
+        0.5 * (array([1, 2, 3]) + array([1, 5, 7])),
+        array([1, 5, 7]),
     ),
     "lh2tank_gravimetric_index": (
         array([0.2, 0.3, 0.4]) * 1e2,
@@ -102,8 +109,8 @@ tech_params_lower_upper_2020_2035_2050 = {
     ),
     "fuelcell_efficiency": (
         array([0.40, 0.45, 0.5]) * 1e2,
-        0.5 * (array([0.40, 0.45, 0.5]) * 1e2 + array([0.40, 0.50, 0.60]) * 1e2),
-        array([0.40, 0.50, 0.60]) * 1e2,
+        0.5 * (array([0.40, 0.45, 0.5]) * 1e2 + array([0.40, 0.65, 0.75]) * 1e2),
+        array([0.40, 0.65, 0.75]) * 1e2,
     ),
     "struct_weight_factor": (
         array([1, 0.85, 0.8]) * 1e2,
@@ -114,12 +121,10 @@ tech_params_lower_upper_2020_2035_2050 = {
 
 
 def initialize_aeromax_objects(
-    drop_in_only=False, include_methane=False, technology_index=0,
+    drop_in_only=False, technology_index=0,
 ):
     if technology_index < 0 or technology_index > 2:
         raise RuntimeError("Please enter 0, 1 or 2 as technology index (low, mid, up)")
-    if include_methane:
-        raise NotImplementedError("Sorry, methane aircraft still not modeled")
 
     co2 = Impact(name="CO2", unit="gCO2", budget=900e15)
 
@@ -143,22 +148,11 @@ def initialize_aeromax_objects(
         pathways=[refinery],
     )
 
-    # Biofuel
-    # bio_hefa_fog = ProductionPathway(
-    #     "HEFA-fog",
-    #     impacts=[co2],
-    #     input_streams=[biomass],
-    # )
     bio_hefa = ProductionPathway(
         "HEFA",
         impacts=[co2],
         input_streams=[biomass],
     )
-    # bio_ft_others = ProductionPathway(
-    #     "FT-others",
-    #     impacts=[co2],
-    #     input_streams=[biomass],
-    # )
     bio_ft = ProductionPathway(
         "FT",
         impacts=[co2],
@@ -179,26 +173,11 @@ def initialize_aeromax_objects(
         impacts=[],
         input_streams=[electricity],
     )
-    # gas_ccs = ProductionPathway(
-    #     "GH_gas_ccs",
-    #     impacts=[co2],
-    #     input_streams=[],
-    # )
-    # coal_ccs = ProductionPathway(
-    #     "GH_coal_ccs",
-    #     impacts=[co2],
-    #     input_streams=[],
-    # )
     gas = ProductionPathway(
         "Gas_reforming",
         impacts=[co2],
         input_streams=[],
     )
-    # coal = ProductionPathway(
-    #     "Coal_gasification",
-    #     impacts=[co2],
-    #     input_streams=[],
-    # )
     gh2 = ProducedEnergy(
         "GAS-H2",
         pathways=[electrolysis, gas],
@@ -213,26 +192,26 @@ def initialize_aeromax_objects(
         "E-FUEL",
         pathways=[ptl],
     )
-    # Gas methane
-    fossil_ch4 = ProductionPathway(
-        "GM_fossil",
-        impacts=[],
-        input_streams=[natural_gas],
-    )
-    ptg = ProductionPathway(
-        "GM_methanation",
-        impacts=[],
-        input_streams=[gh2],
-    )
-    biogas = ProductionPathway(
-        "GM_biogas",
-        impacts=[co2],
-        input_streams=[biomass],
-    )
-    gch4 = ProducedEnergy(
-        "GAS-CH4",
-        pathways=[ptg, biogas, fossil_ch4]
-    )
+    # # Gas methane
+    # fossil_ch4 = ProductionPathway(
+    #     "GM_fossil",
+    #     impacts=[],
+    #     input_streams=[natural_gas],
+    # )
+    # ptg = ProductionPathway(
+    #     "GM_methanation",
+    #     impacts=[],
+    #     input_streams=[gh2],
+    # )
+    # biogas = ProductionPathway(
+    #     "GM_biogas",
+    #     impacts=[co2],
+    #     input_streams=[biomass],
+    # )
+    # gch4 = ProducedEnergy(
+    #     "GAS-CH4",
+    #     pathways=[ptg, biogas, fossil_ch4]
+    # )
 
     # Final Energy Carriers ............................................................
     # Drop-in
@@ -271,19 +250,19 @@ def initialize_aeromax_objects(
         specific_energy=120.0,
     )
 
-    # Liquid-methane
-    gch4_liquefaction = ProductionPathway(
-        "LM_liquefaction",
-        impacts=[],
-        input_streams=[electricity, gch4],
-    )
-
-    lch4 = ProducedEnergyCarrier(
-        "LIQUID-CH4",
-        pathways=[gch4_liquefaction],
-        density=22.2 / 53.6,
-        specific_energy=53.6,
-    )
+    # # Liquid-methane
+    # gch4_liquefaction = ProductionPathway(
+    #     "LM_liquefaction",
+    #     impacts=[],
+    #     input_streams=[electricity, gch4],
+    # )
+    #
+    # lch4 = ProducedEnergyCarrier(
+    #     "LIQUID-CH4",
+    #     pathways=[gch4_liquefaction],
+    #     density=22.2 / 53.6,
+    #     specific_energy=53.6,
+    # )
 
     # Batteries
     charging = ProductionPathway(
@@ -313,19 +292,18 @@ def initialize_aeromax_objects(
                 "Battery-Electric": PropulsionSystem("electric_propulsion", {battery: 1.0}),
             }
         )
-        if include_methane:
-            energies.extend([gch4, lch4])
-            prop_systems.update(
-                {
-                    "lCH4-GasTurbine": PropulsionSystem("lch4_burn", {lch4: 1.0}),
-                }
-            )
+        #     energies.extend([gch4, lch4])
+        #     prop_systems.update(
+        #         {
+        #             "lCH4-GasTurbine": PropulsionSystem("lch4_burn", {lch4: 1.0}),
+        #         }
+        #     )
 
     energy_mix = EnergyMix(energies, inputs_to_constrain=[electricity, biomass])
 
     # Aircraft technology evolution parameters
     aircraft_tech_params = []
-    for param_name, lower_mid_upper in tech_params_lower_upper_2020_2035_2050.items():
+    for param_name, lower_mid_upper in tech_params_lower_upper_2020_2040_2060.items():
         param_values = lower_mid_upper[technology_index]
         aircraft_tech_params.append(
             AircraftTechParameter(

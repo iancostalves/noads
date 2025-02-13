@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Sequence
 
 from jax.numpy import append
@@ -20,28 +22,28 @@ class Energy(Stream):
 
 
 class ProducedEnergy(Energy):
-    impacts: set[Impact]
+    impacts: list[Impact]
     """Set of all impacts accounted."""
 
-    input_streams: set[Stream]
+    input_streams: list[Stream]
     """Set of input streams that are directly consumed for production."""
 
-    output_streams: set[Stream]
+    output_streams: list[Stream]
     """Set of output streams that consume this energy to be produced."""
 
-    pathways: Sequence[ProductionPathway]
+    pathways: list[ProductionPathway]
     """Set of production pathways for this energy."""
 
     def __init__(self, name, pathways: Sequence[ProductionPathway]):
         Energy.__init__(self, name=name)
-        self.pathways = pathways
-        self.impacts = set(
+        self.pathways = list(pathways)
+        self.impacts = list(set(
             [impact for pathway in pathways for impact in pathway.impacts]
-        )
-        self.input_streams = set(
+        ))
+        self.input_streams = list(set(
             [stream for pathway in pathways for stream in pathway.input_streams]
-        )
-        self.output_streams = set()
+        ))
+        self.output_streams = []
 
     @property
     def models(self) -> list[Model]:
@@ -53,10 +55,11 @@ class ProducedEnergy(Energy):
         return models
 
     def set_output_streams(self, output_streams: Sequence[Stream]):
-        self.output_streams = set(output_streams)
+        self.output_streams = list(set(output_streams))
 
     def add_output_stream(self, output_stream: Stream):
-        self.output_streams.add(output_stream)
+        if output_stream not in self.output_streams:
+            self.output_streams.append(output_stream)
 
     def production_model(self):
         default_values_units = {f"{self.name}.production": (0.0, self.unit)}

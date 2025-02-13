@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 from jax.numpy import array
@@ -13,10 +15,10 @@ from core.models.energy.streams import Stream
 class ProductionPathway:
     name: str
 
-    impacts: set[Impact]
+    impacts: list[Impact]
     """Direct impacts per unit of production."""
 
-    input_streams: set[Stream]
+    input_streams: list[Stream]
     """Energy/material inputs for pathway production."""
 
     def __init__(
@@ -26,8 +28,8 @@ class ProductionPathway:
         input_streams: Sequence[Stream],
     ):
         self.name = name
-        self.impacts = set(impacts)
-        self.input_streams = set(input_streams)
+        self.impacts = list(set(impacts))
+        self.input_streams = list(set(input_streams))
 
     @property
     def models(self) -> list[Model]:

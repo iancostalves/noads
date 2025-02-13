@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
 
 from core.model import JAXModel
@@ -26,8 +28,6 @@ class AircraftOperation:
     propulsion: PropulsionSystem
 
     energy_per_ask: float
-
-    # entry_into_service: float
 
     lifetime: float
 

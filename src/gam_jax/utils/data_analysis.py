@@ -16,7 +16,7 @@ import matplotlib.cm as cm
 
 import pickle
 
-from utils import unit
+from gam_jax.utils import unit
 
 colors = {"general": "green",
           "commuter": "gold",

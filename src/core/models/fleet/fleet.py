@@ -18,7 +18,7 @@ class Fleet:
 
     operating_aircraft: list[AircraftOperation | AircraftDesign]
 
-    consumed_carriers: set[EnergyCarrier]
+    consumed_carriers: list[EnergyCarrier]
 
     models: list[Model]
 
@@ -29,12 +29,12 @@ class Fleet:
     ):
         self.name = name
         self.operating_aircraft = list(operating_aircraft)
-        self.consumed_carriers = set(
+        self.consumed_carriers = list(set(
             [
                 carrier for aircraft in operating_aircraft
                 for carrier in aircraft.propulsion.energy_carrier_mix.keys()
             ]
-        )
+        ))
 
     @property
     def models(self):
