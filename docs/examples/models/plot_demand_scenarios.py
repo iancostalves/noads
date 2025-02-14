@@ -24,9 +24,9 @@ from numpy import array as np_array
 from numpy import linspace
 from numpy import ones
 
-from application.background_scenario_data import get_ar6_data
-from core.models.interpolation import interpolate_data
-from core.models.traffic import AirTraffic
+from noads.application.background_scenario_data import get_ar6_data
+from noads.core.models.interpolation import interpolate_data
+from noads.core.models.traffic import AirTraffic
 
 # %%
 # # AR6 scenario data

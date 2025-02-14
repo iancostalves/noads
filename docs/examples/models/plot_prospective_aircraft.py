@@ -15,16 +15,18 @@
 # NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
 # WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""Prospective aircraft design accounting for technology maturing."""
+
 from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
 from numpy import array
 from numpy import linspace
 
-from application.base_objects import categories_mission
-from application.base_objects import propulsion_architectures
-from application.base_objects import tech_params_lower_upper_2020_2040_2060
-from core.models.fleet.aircraft_design import AircraftDesign
-from core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+from noads.application.base_objects import categories_mission
+from noads.application.base_objects import propulsion_architectures
+from noads.application.base_objects import tech_params_lower_upper_2020_2040_2060
+from noads.core.models.fleet.aircraft_design import AircraftDesign
+from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 
 data_sources = {
     "NASA": {

@@ -22,9 +22,9 @@ from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
 from matplotlib.pyplot import subplots
 from numpy import linspace
 
-from core.models.traffic import generalised_logistic
-from demand_calibration.global_rpk import run_global_rpk_calibration
-from demand_calibration.regional_departures import run_region_calibration
+from noads.core.models.traffic import generalised_logistic
+from noads.demand_calibration.global_rpk import run_global_rpk_calibration
+from noads.demand_calibration.regional_departures import run_region_calibration
 
 configure_logger()
 

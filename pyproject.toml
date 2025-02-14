@@ -1,5 +1,5 @@
 [project]
-name = "numerical-optimization-of-aviation-decarbonization-scenarios"
+name = "noads"
 authors = [
     {name = "Ian COSTA ALVES", email = "ian.costa-alves.external@irt-saintexupery.com"}
 ]

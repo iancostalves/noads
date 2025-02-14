@@ -18,10 +18,10 @@ import pytest
 from gemseo_jax.jax_discipline import DataType
 from numpy import array
 
-from core.model import AutoModel
-from core.model import JAXModel
-from core.scenarios.multiscenario import MultiScenario
-from core.scenarios.temporalscenario import TemporalScenario
+from noads.core.model import AutoModel
+from noads.core.model import JAXModel
+from noads.core.scenarios.multiscenario import MultiScenario
+from noads.core.scenarios.temporalscenario import TemporalScenario
 
 
 class TestAutoModel(AutoModel):
