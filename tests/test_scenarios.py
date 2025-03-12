@@ -29,7 +29,8 @@ class TestAutoModel(AutoModel):
         super().__init__("auto")
 
     def _jax_func(self, a=0.0, b=1.0, c=2.0, d=3.0) -> float:
-        return 2 * a + b - c * d
+        x = 2 * a + b - c * d
+        return x  # noqa: RET504
 
 
 def compute_yz(input_data: DataType) -> DataType:
@@ -69,9 +70,9 @@ def constant_inputs():
     return ["c"]
 
 
-@pytest.fixture(scope="module")
-def delayed_inputs():
-    return ["d"]
+# @pytest.fixture(scope="module")
+# def delayed_inputs():
+#     return ["d"]
 
 
 @pytest.fixture(scope="module")
@@ -85,39 +86,39 @@ def start_year():
 
 
 @pytest.mark.parametrize(
-    ("delay_time", "interpolated_time", "end_year", "time_step", "n_inputs"),
+    ("delay_times", "interp_step", "end_year", "time_step", "n_inputs"),
     [
-        (1.0, array([0.0, 5.0, 10.0]), 10.0, 1.0, 5),
-        (1.0, array([0.0, 5.0]), 10.0, 1.0, 5),
-        (1.0, array([0.0, 5.0, 10.0]), 15.0, 1.0, 5),
-        (1.0, array([0.0, 5.0, 10.0]), 10.0, 2.0, 5),
+        ({"d": 1.0}, 1.0, 10.0, 1.0, 5),
+        ({"d": 1.0}, 2.0, 10.0, 1.0, 5),
+        ({"d": 1.0}, 5.0, 15.0, 1.0, 5),
+        ({"d": 1.0}, 5.0, 10.0, 2.0, 5),
     ],
 )
 def test_temporal_scenario(
     models,
     constant_inputs,
     interpolated_inputs,
-    delayed_inputs,
     time_integrated_outputs,
     start_year,
     end_year,
     time_step,
-    delay_time,
-    interpolated_time,
+    delay_times,
+    interp_step,
     n_inputs,
 ):
     scenario = TemporalScenario(
-        "test",
-        models,
-        constant_inputs,
-        delayed_inputs,
-        delay_time,
-        interpolated_inputs,
-        interpolated_time,
-        time_integrated_outputs,
-        start_year,
-        end_year,
-        time_step,
+        name="test",
+        models=models,
+        constant_inputs=constant_inputs,
+        control_delay_times=delay_times,
+        constrained_control_groups={},
+        custom_controls=[],
+        interpolated_inputs=interpolated_inputs,
+        interp_step=interp_step,
+        time_integrated_outputs=time_integrated_outputs,
+        start_year=start_year,
+        end_year=end_year,
+        time_step=time_step,
     )
 
     assert scenario.discipline is not None
@@ -161,12 +162,12 @@ def fixed_inputs():
 
 
 @pytest.mark.parametrize(
-    ("delay_time", "interpolated_time", "end_year", "time_step", "n_inputs"),
+    ("delay_times", "interp_step", "end_year", "time_step", "n_inputs"),
     [
-        (1.0, array([0.0, 5.0, 10.0]), 10.0, 1.0, 5),
-        (1.0, array([0.0, 5.0]), 10.0, 1.0, 5),
-        (1.0, array([0.0, 5.0, 10.0]), 15.0, 1.0, 5),
-        (1.0, array([0.0, 5.0, 10.0]), 10.0, 2.0, 5),
+        ({"d": 1.0}, 1.0, 10.0, 1.0, 5),
+        ({"d": 1.0}, 2.0, 10.0, 1.0, 5),
+        ({"d": 1.0}, 5.0, 15.0, 1.0, 5),
+        ({"d": 1.0}, 5.0, 10.0, 2.0, 5),
     ],
 )
 def test_multi_scenario(
@@ -176,27 +177,28 @@ def test_multi_scenario(
     models,
     constant_inputs,
     interpolated_inputs,
-    delayed_inputs,
     time_integrated_outputs,
     start_year,
     end_year,
     time_step,
-    delay_time,
-    interpolated_time,
+    delay_times,
+    interp_step,
     n_inputs,
 ):
+
     temporal_scenario = TemporalScenario(
-        "test",
-        models,
-        constant_inputs,
-        delayed_inputs,
-        delay_time,
-        interpolated_inputs,
-        interpolated_time,
-        time_integrated_outputs,
-        start_year,
-        end_year,
-        time_step,
+        name="test",
+        models=models,
+        constant_inputs=constant_inputs,
+        control_delay_times=delay_times,
+        constrained_control_groups={},
+        custom_controls=[],
+        interpolated_inputs=interpolated_inputs,
+        interp_step=interp_step,
+        time_integrated_outputs=time_integrated_outputs,
+        start_year=start_year,
+        end_year=end_year,
+        time_step=time_step,
     )
 
     scenario = MultiScenario(

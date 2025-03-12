@@ -68,14 +68,14 @@ class MultiScenario(Model):
         )
         self.mean_outputs = list(mean_outputs)
 
-        default_inputs = {
-            f"{self._fixed_prefix}.{name}": self.temporal_scenario.discipline.default_inputs[
+        default_input_data = {
+            f"{self._fixed_prefix}.{name}": self.temporal_scenario.discipline.default_input_data[
                 name
             ]
             for name in self.fixed_inputs
         }
-        default_inputs.update({
-            f"{scenario}.{name}": self.temporal_scenario.discipline.default_inputs[name]
+        default_input_data.update({
+            f"{scenario}.{name}": self.temporal_scenario.discipline.default_input_data[name]
             for scenario in self.scenario_names
             for name in self.scenario_inputs
         })
@@ -90,12 +90,12 @@ class MultiScenario(Model):
         discipline = JAXDiscipline(
             name=f"Multi-scenario {self.temporal_scenario.discipline.name}",
             function=self.__multi_scenario,
-            input_names=list(default_inputs.keys()),
+            input_names=list(default_input_data.keys()),
             output_names=output_names,
-            default_inputs=default_inputs,
+            default_inputs=default_input_data,
             differentiation_method=differentiation_method,
         )
-        discipline.set_cache_policy()
+        # discipline.set_cache_policy()
         super().__init__(discipline)
 
     def __multi_scenario(self, input_data: DataType) -> DataType:
