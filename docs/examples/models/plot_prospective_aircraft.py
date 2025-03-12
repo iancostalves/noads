@@ -17,15 +17,20 @@
 
 """Prospective aircraft design accounting for technology maturing."""
 
+from jax import vmap
+from matplotlib.patches import Patch
 from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
 from numpy import array
 from numpy import linspace
 
+from noads.application.base_objects import aeroscope_category_conso
 from noads.application.base_objects import categories_mission
 from noads.application.base_objects import propulsion_architectures
+from noads.application.base_objects import propulsion_mission
 from noads.application.base_objects import tech_params_lower_upper_2020_2040_2060
 from noads.core.models.fleet.aircraft_design import AircraftDesign
+from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 
 data_sources = {
@@ -122,6 +127,12 @@ name_to_fullname = {
     "fuelcell_efficiency": "Fuel cell Efficiency",
     "struct_weight_factor": "Structural weight reduction",
 }
+propulsion_colors = {
+    "JetA-GasTurbine": "dimgray",
+    "Battery-Electric": "limegreen",
+    "lH2-FuelCell": "royalblue",
+    "lH2-GasTurbine": "orangered",
+}
 
 years = linspace(2020, 2060, 41)
 fig1, axes1 = subplots(
@@ -175,121 +186,143 @@ fig1.suptitle(
 show()
 
 fig2, axes2 = subplots(3, 2, layout="constrained", figsize=(8, 12))
+fig2.suptitle("Aircraft Energy Efficiency\n[pax km / MJ]", fontsize="x-large")
+
+fig3, axes3 = subplots(3, 2, layout="constrained", figsize=(8, 12))
+fig3.suptitle("Aircraft Empty-Mass Efficiency\n[pax km / kg]", fontsize="x-large")
+
 categories = categories_mission.keys()
 ymax = 4.0
 
 for cat, category in enumerate(categories):
     max_range = 1e-3 * categories_mission[category]["range"]
     pax = categories_mission[category]["npax"]
-    ax = axes2.flat[cat]
 
-    ax.set_ylim(ymin=0.0, ymax=ymax)
-    ax.set_title(
-        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
-        fontsize="large",
+    ax_e = axes2.flat[cat]
+    ax_m = axes3.flat[cat]
+
+    reference_energy_per_ask = aeroscope_category_conso[category]
+    reference_aircraft = AircraftOperation(
+        name=f"{category}_RECENT",
+        propulsion=None,
+        energy_per_ask=reference_energy_per_ask,
+        recent=True,
     )
-    for prop, propulsion in enumerate(propulsion_architectures.keys()):
-        lower_design = AircraftDesign()
-
-        reference_ask_per_energy = 0
-        for scen, (scenario, aircraft_tech) in enumerate(tech_scenario.items()):
-            print("p", propulsion)
-            print("c", category)
-            print("s", scenario)
-            design_plane = Partial(
-                design_prospective_airplane,
-                category=category,
-                propulsion=propulsion,
-                aircraft_tech=aircraft_tech,
+    for _prop, propulsion in enumerate(propulsion_architectures.keys()):
+        ask_per_energy_low_to_up = []
+        ask_per_owe_low_to_up = []
+        for tech_idx in range(3):
+            aircraft = AircraftDesign(
+                name=f"{category}_{propulsion}",
+                propulsion=None,
+                mission={
+                    **categories_mission[category],
+                    **propulsion_mission[propulsion],
+                    "category": category,
+                },
+                power_system=propulsion_architectures[propulsion],
+                aircraft_tech_params=[
+                    tech_param[tech_idx]
+                    for tech_name, tech_param in tech_params.items()
+                ],
+                reference_aircraft=reference_aircraft,
             )
-            yearly_design = vmap(design_plane)
-            energy_per_ask = yearly_design(years)
-            yearly_ask_per_energy = 1.0 / energy_per_ask
+            model = aircraft.design_model()
+            model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
+            outputs = model.discipline.execute({
+                f"{category}_{propulsion}.entry_into_service": years
+            })
+            ask_per_energy_low_to_up.append(
+                1.0 / outputs[f"{category}_{propulsion}.energy_per_ask"]
+            )
+            ask_per_owe_low_to_up.append(
+                pax * max_range / outputs[f"{category}_{propulsion}.owe"]
+            )
 
-            if scen == 0:
-                reference_ask_per_energy = yearly_ask_per_energy
-
-            if prop == 0:
-                label = f"{propulsion} ({scenario})"
-            elif scen == 0:
-                label = propulsion
-            else:
-                label = "_"
-            if scen == 2:
-                label = f"{propulsion} (full range)" if prop == 0 else "_"
-                ax.fill_between(
-                    years,
-                    reference_ask_per_energy,
-                    yearly_ask_per_energy,
-                    alpha=0.2,
-                    color=propulsion_colors_markers[propulsion][0],
-                    label=label,
-                )
-                if category in categories_resumed:
-                    ax_r.fill_between(
-                        years,
-                        reference_ask_per_energy,
-                        yearly_ask_per_energy,
-                        alpha=0.2,
-                        color=propulsion_colors_markers[propulsion][0],
-                        label=label,
-                    )
-            else:
-                line = next(lines)
-                ax.plot(
-                    years,
-                    yearly_ask_per_energy,
-                    label=label,
-                    color=propulsion_colors_markers[propulsion][0],
-                    linestyle=line,
-                    linewidth=3,
-                )
-                if category in categories_resumed:
-                    ax_r.plot(
-                        years,
-                        yearly_ask_per_energy,
-                        label=label,
-                        color=propulsion_colors_markers[propulsion][0],
-                        linestyle=line,
-                        linewidth=3,
-                    )
-
-    # Plot the category recent 2019 reference
-    ref_ask_per_energy = aeroscope_category_conso[category] ** -1
-    ax.hlines(
-        y=ref_ask_per_energy,
-        xmin=years[0],
-        xmax=years[-1],
-        colors="k",
-        linestyles="--",
-        label="2019 reference",
-        linewidth=2,
-    )
-    if category in categories_resumed:
-        ax_r.hlines(
-            y=ref_ask_per_energy,
+        ax_e.fill_between(
+            years,
+            ask_per_energy_low_to_up[0],
+            ask_per_energy_low_to_up[-1],
+            alpha=0.2,
+            color=propulsion_colors[propulsion],
+        )
+        ax_e.plot(
+            years,
+            ask_per_energy_low_to_up[0],
+            color=propulsion_colors[propulsion],
+            linestyle="-",
+            linewidth=3,
+        )
+        ax_e.plot(
+            years,
+            ask_per_energy_low_to_up[1],
+            color=propulsion_colors[propulsion],
+            linestyle=":",
+            linewidth=3,
+        )
+        ax_e.hlines(
+            y=1.0 / reference_energy_per_ask,
             xmin=years[0],
             xmax=years[-1],
             colors="k",
             linestyles="--",
-            label="2019 reference",
             linewidth=2,
         )
 
-fig.suptitle("Aircraft Passenger Efficiency\n[pax km / MJ]", fontsize="x-large")
-fig_r.suptitle("Aircraft Passenger Efficiency\n[pax km / MJ]", fontsize="x-large")
+        ax_m.fill_between(
+            years,
+            ask_per_owe_low_to_up[0],
+            ask_per_owe_low_to_up[-1],
+            alpha=0.2,
+            color=propulsion_colors[propulsion],
+        )
+        ax_m.plot(
+            years,
+            ask_per_owe_low_to_up[0],
+            color=propulsion_colors[propulsion],
+            linestyle="-",
+            linewidth=3,
+        )
+        ax_m.plot(
+            years,
+            ask_per_owe_low_to_up[1],
+            color=propulsion_colors[propulsion],
+            linestyle=":",
+            linewidth=3,
+        )
 
-axes[-1, -1].clear()
-axes[-1, -1].set_axis_off()
-axes_r[-1, -1].clear()
-axes_r[-1, -1].set_axis_off()
+    ax_e.set_ylim(ymin=0.0, ymax=ymax)
+    ax_e.set_title(
+        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
+        fontsize="large",
+    )
+    ax_m.set_ylim(ymin=0.0)
+    ax_m.set_title(
+        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
+        fontsize="large",
+    )
+
+axes2[-1, -1].clear()
+axes2[-1, -1].set_axis_off()
+axes3[-1, -1].clear()
+axes3[-1, -1].set_axis_off()
 
 # Manually add legend
-axes[-1, -1].legend(
+axes2[-1, -1].legend(
     handles=[
-        Patch(color=tup_color_marker[0], label=prop_name)
-        for prop_name, tup_color_marker in propulsion_colors_markers.items()
+        Patch(color=color, label=prop_name)
+        for prop_name, color in propulsion_colors.items()
     ],
     loc="center",
 )
-axes[-1, 0].set_xlabel("Entry-Into-Service")
+axes2[-1, 0].set_xlabel("Entry-Into-Service")
+
+axes3[-1, -1].legend(
+    handles=[
+        Patch(color=color, label=prop_name)
+        for prop_name, color in propulsion_colors.items()
+    ],
+    loc="center",
+)
+axes3[-1, 0].set_xlabel("Entry-Into-Service")
+show()

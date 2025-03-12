@@ -31,10 +31,11 @@ def generalised_logistic(
     asymptote_coeff=1.27603214,
     x_lag=0.0,
 ):
-    return left_asymptote + divide(
+    y = left_asymptote + divide(
         capacity - left_asymptote,
         (asymptote_coeff + exp(-growth_rate * (x - x_lag))) ** (1 / logistic_nu),
     )
+    return y  # noqa: RET504
 
 
 class AirTraffic(AutoModel):

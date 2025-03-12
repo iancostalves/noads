@@ -16,6 +16,7 @@
 
 from jax.numpy.linalg import norm
 from numpy import arange
+from numpy import array
 from numpy import array as np_array
 from numpy import flip
 from numpy import isnan
@@ -23,7 +24,8 @@ from pandas import read_excel
 
 
 def error_measure(y, y_data):
-    return norm(y - y_data) / norm(y_data)
+    mse = norm(y - y_data) / norm(y_data)
+    return mse  # noqa: RET504
 
 
 def filter_nans(data_iterable, exclude_covid=True):
@@ -38,16 +40,56 @@ def filter_nans(data_iterable, exclude_covid=True):
     ]
 
 
+def get_historic_ask_rpk_co2():
+    read_excel(
+        "../../../src/noads/demand_calibration/calibration_data/Traffic_1929_to_2021"
+        ".xlsx",
+        decimal=",",
+    )
+    array([
+        549.6,
+        531.5,
+        532.8,
+        535.7,
+        561.2,
+        574.9,
+        600.9,
+        619.2,
+        631.4,
+        651.8,
+        685.5,
+        659.4,
+        660.7,
+        660.3,
+        701.9,
+        736.4,
+        744.9,
+        766.6,
+        763.0,
+        723.6,
+        760.1,
+        782.7,
+        791.1,
+        813.6,
+        839.2,
+        885.1,
+        927.9,
+        982.6,
+        1033.7,
+    ])
+    arange(1990, 2018 + 1)
+
+
 def get_rpk_data(y_start):
     # Socio-economic indicators
     gdp_data = read_excel(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/demand_calibration/calibration_data/GDP.xls",
+        "../../../src/noads/demand_calibration/calibration_data/GDP.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/demand_calibration/calibration_data/Population.xls",
+        "../../../src/noads/demand_calibration/calibration_data/Population.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -55,7 +97,7 @@ def get_rpk_data(y_start):
 
     # Air traffic indicators
     rpk_data = read_excel(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/demand_calibration/calibration_data/Traffic_1929_to_2021.xlsx",
+        "../../../src/noads/demand_calibration/calibration_data/Traffic_1929_to_2021.xlsx",
         decimal=",",
     )
 
@@ -84,13 +126,13 @@ def get_rpk_data(y_start):
 def get_departures_data(region):
     # Socio-economic indicators
     gdp_data = read_excel(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/demand_calibration/calibration_data/GDP.xls",
+        "../../../src/noads/demand_calibration/calibration_data/GDP.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/demand_calibration/calibration_data/Population.xls",
+        "../../../src/noads/demand_calibration/calibration_data/Population.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -98,7 +140,7 @@ def get_departures_data(region):
 
     # Air traffic indicators
     dep_data = read_excel(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/demand_calibration/calibration_data/AirTraffic-carrier-departures.xls",
+        "../../../src/noads/demand_calibration/calibration_data/AirTraffic-carrier-departures.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,

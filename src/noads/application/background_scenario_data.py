@@ -79,23 +79,23 @@ def get_scenario_color(scenario_name: str):
 
 def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
     population_data = read_csv(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/application/ar6_scenarios_data/population.csv",
+        "../../../src/noads/application/ar6_scenarios_data/population.csv",
         index_col=1,
     )
     gdp_data = read_csv(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/application/ar6_scenarios_data/gdp.csv",
+        "../../../src/noads/application/ar6_scenarios_data/gdp.csv",
         index_col=1,
     )
     electricity_emissions_data = read_csv(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/application/ar6_scenarios_data/electricity_emissions.csv",
+        "../../../src/noads/application/ar6_scenarios_data/electricity_emissions.csv",
         index_col=1,
     )
     final_electricity_data = read_csv(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/application/ar6_scenarios_data/final_electricity.csv",
+        "../../../src/noads/application/ar6_scenarios_data/final_electricity.csv",
         index_col=1,
     )
     biomass_data = read_csv(
-        "C:/Users/i.costa-alves/Documents/Kodigus/opt-avi-decarb-scenarios/noads/src/application/ar6_scenarios_data/biomass_total.csv",
+        "../../../src/noads/application/ar6_scenarios_data/biomass_total.csv",
         index_col=1,
     )
 

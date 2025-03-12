@@ -25,6 +25,8 @@ from numpy import linspace
 from numpy import ones
 
 from noads.application.background_scenario_data import get_ar6_data
+from noads.application.background_scenario_data import get_scenario_color
+from noads.application.background_scenario_data import lines_gen
 from noads.core.models.interpolation import interpolate_data
 from noads.core.models.traffic import AirTraffic
 
@@ -67,27 +69,59 @@ gdp_per_capita_end_covid = {
 # # Model vectorization
 # When a model must be evaluated yearly, rather than once, we must vectorize its
 # function to account for vectorized inputs. When running a TemporalScenario this is
-# done automatically, but to here we must to it manually.
+# done automatically, but here we must to it manually.
 model = AirTraffic()
 model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
 outputs = {}
 fig, axes = subplots(2, 2, figsize=(8, 6), layout="constrained")
+vones = ones(years.shape)
+
+lines = lines_gen()
+last_ssp_index = 0
 for scenario in population:
-    vones = ones(years.shape)
     model_input = {
         "year": years,
         "gdp_per_capita": gdp_per_capita[scenario],
         "population": population[scenario],
         "gdp_per_capita_covid_end": gdp_per_capita_end_covid[scenario] * vones,
-        "load_factor_end_year": 92.0 * vones,
-        "end_year": 2075.0 * vones,
+        "load_factor_end_year": 95.0 * vones,
+        "end_year": 2100.0 * vones,
     }
     model_output = model.discipline.execute(model_input)
     outputs[scenario] = model_output
-    axes[0, 0].plot(years, model_output["rpk_per_capita"], label=scenario)
-    axes[0, 1].plot(years, 1.0e-12 * model_output["rpk_trend"])
-    axes[1, 0].plot(years, model_output["load_factor"])
-    axes[1, 1].plot(years, 1.0e-12 * model_output["ask_trend"])
+
+    name_split = scenario.split("SSP")
+    ssp_idx = int(name_split[1][0])
+    if ssp_idx != last_ssp_index:
+        lines = lines_gen()
+    line = next(lines)
+    last_ssp_index = ssp_idx
+
+    axes[0, 0].plot(
+        years,
+        model_output["rpk_per_capita"],
+        label=scenario,
+        linestyle=line,
+        color=get_scenario_color(scenario),
+    )
+    axes[0, 1].plot(
+        years,
+        1.0e-12 * model_output["rpk_trend"],
+        linestyle=line,
+        color=get_scenario_color(scenario),
+    )
+    axes[1, 0].plot(
+        years,
+        model_output["load_factor"],
+        linestyle=line,
+        color=get_scenario_color(scenario),
+    )
+    axes[1, 1].plot(
+        years,
+        1.0e-12 * model_output["ask_trend"],
+        linestyle=line,
+        color=get_scenario_color(scenario),
+    )
 
 axes[0, 0].set_xlabel("Year")
 axes[0, 0].set_ylabel("pax-km per hab.")
