@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Utilities for spline-based interpolation."""
 
 from __future__ import annotations
 
@@ -108,7 +109,8 @@ class InterpolatedUnivariateSpline:  # noqa: D101
         x = atleast_1d(x)
         y = atleast_1d(y)
         assert len(x) == len(y), "Input arrays must be the same length."
-        assert x.ndim == 1 and y.ndim == 1, "Input arrays must be 1D."
+        assert x.ndim == 1, "Input arrays must be 1D."
+        assert y.ndim == 1
         n_data = len(x)
 
         # Difference vectors
@@ -142,7 +144,7 @@ class InterpolatedUnivariateSpline:  # noqa: D101
                 dt = x - knots[:-1]
 
                 # Now we build the system natrix
-                A = diag(  # noqa: N806
+                a_matrix = diag(  # noqa: N806
                     concatenate([
                         ones(1),
                         (
@@ -155,20 +157,22 @@ class InterpolatedUnivariateSpline:  # noqa: D101
                     ])
                 )
 
-                A += diag(
+                a_matrix += diag(
                     concatenate([-array([1 + h[0] / h[1]]), dt[1:] ** 2 / h[1:]]),
                     k=1,
                 )
-                A += diag(concatenate([atleast_1d(h[0] / h[1]), zeros(n - 3)]), k=2)
+                a_matrix += diag(
+                    concatenate([atleast_1d(h[0] / h[1]), zeros(n - 3)]), k=2
+                )
 
-                A += diag(
+                a_matrix += diag(
                     concatenate([
                         h[:-1] - 2 * dt[:-1] + dt[:-1] ** 2 / h[:-1],
                         -array([1 + h[-1] / h[-2]]),
                     ]),
                     k=-1,
                 )
-                A += diag(
+                a_matrix += diag(
                     concatenate([zeros(n - 3), atleast_1d(h[-1] / h[-2])]),
                     k=-2,
                 )
@@ -177,7 +181,7 @@ class InterpolatedUnivariateSpline:  # noqa: D101
                 s = concatenate([zeros(1), 2 * p, zeros(1)])
 
                 # Compute spline coefficients by solving the system
-                coefficients = solve(A, s)
+                coefficients = solve(a_matrix, s)
 
             if k == 3:
                 assert n_data > 3, "Not enough input points for cubic spline."
@@ -201,18 +205,18 @@ class InterpolatedUnivariateSpline:  # noqa: D101
                 # A[N, N-2]
 
                 # Construct the tri-diagonal matrix A
-                A = diag(concatenate((a00, 2 * (h[:-1] + h[1:]), ann)))  # noqa: N806
+                a_matrix = diag(concatenate((a00, 2 * (h[:-1] + h[1:]), ann)))  # noqa: N806
                 upper_diag1 = diag(concatenate((a01, h[1:])), k=1)
                 upper_diag2 = diag(concatenate((a02, zeros(n_data - 3))), k=2)
                 lower_diag1 = diag(concatenate((h[:-1], an1)), k=-1)
                 lower_diag2 = diag(concatenate((zeros(n_data - 3), an2)), k=-2)
-                A += upper_diag1 + upper_diag2 + lower_diag1 + lower_diag2
+                a_matrix += upper_diag1 + upper_diag2 + lower_diag1 + lower_diag2
 
                 # Construct RHS vector s
                 center = 3 * (p[1:] / h[1:] - p[:-1] / h[:-1])
                 s = concatenate((zero, center, zero))
                 # Compute spline coefficients by solving the system
-                coefficients = solve(A, s)
+                coefficients = solve(a_matrix, s)
 
         # Saving spline parameters for evaluation later
         self.k = k

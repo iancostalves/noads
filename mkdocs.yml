@@ -87,7 +87,7 @@ nav:
 - User guide: user_guide/
 - Examples:
   - generated/examples/models
-  - generated/examples/scenarios
+  - generated/examples/optimization
 
 - API documentation: reference/noads/
 

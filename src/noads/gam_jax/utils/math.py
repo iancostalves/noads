@@ -22,6 +22,8 @@
 :author: ROCHES Pascal, portage to Python
 """
 
+# ruff: noqa D205, E501, N806, D103, N803, F821
+
 import warnings
 
 import numpy as np

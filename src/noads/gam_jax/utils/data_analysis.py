@@ -22,6 +22,8 @@
          AircraftOperation & Systems, Air Transport Department, ENAC
 """
 
+# ruff: noqa E501, D103, PTH123, D205, A002, N806, D205, D415, D103
+
 import pickle
 
 import matplotlib.colors as plt_colors

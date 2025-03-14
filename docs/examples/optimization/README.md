@@ -8,6 +8,6 @@
  Commons, PO Box 1866, Mountain View, CA 94042, USA.
 -->
 
-# Scenarios
+# Optimization
 
-The optimal decision-making demonstrated into three applications.
+The optimal decision-making demonstrated in three applications.

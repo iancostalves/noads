@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Utilities for handling background scenario from the AR6 database."""
 
 from matplotlib.pyplot import subplots
 from numpy import isnan
@@ -64,6 +65,7 @@ def lines_gen():
 
 
 def get_scenario_color(scenario_name: str):
+    """Get scenario color from SSP name."""
     name_split = scenario_name.split("SSP")
     ssp_idx = int(name_split[1][0])
     if ssp_idx == 1:
@@ -78,6 +80,7 @@ def get_scenario_color(scenario_name: str):
 
 
 def get_ar6_data(start_year=2010, end_year=2080, plot_data=True):
+    """Get relevant data from AR6 scenarios."""
     population_data = read_csv(
         "../../../src/noads/application/ar6_scenarios_data/population.csv",
         index_col=1,

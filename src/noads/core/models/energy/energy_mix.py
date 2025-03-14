@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Assembly of Energy types and Production pathways into an EnergyMix."""
 
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from typing import TYPE_CHECKING
 
 from gemseo import generate_coupling_graph
 from jax.numpy import array
-from jax.numpy import sum
+from jax.numpy import sum as jnp_sum
 from jax.numpy import where
 
 from noads.core.model import JAXModel
@@ -36,22 +37,25 @@ if TYPE_CHECKING:
 
 
 class EnergyMix:
-    produced_energies: set[ProducedEnergy]
+    """Mix of Energy types among Production Pathways."""
+
+    produced_energies: list[ProducedEnergy]
+    """List of all energy types with explicit production from Pathways."""
 
     impacts: list[Impact]
-    """Set of all impacts accounted."""
+    """List of all impacts accounted."""
 
     input_streams: list[Stream]
-    """Set of input streams that are not produced by any Pathway."""
+    """List of input streams that are not produced by any Pathway."""
 
     secondary_energies: list[ProducedEnergy]
-    """Set of secondary energy (needed for producing other energies)."""
+    """List of secondary energy (needed for producing other energies)."""
 
     final_energies: list[ProducedEnergyCarrier]
-    """Set of final energy carriers (consumed by a direct.consumption)."""
+    """List of final energy carriers (consumed by a direct.consumption)."""
 
     constrained_inputs: list[Stream]
-    """Set of input streams with limited consumption."""
+    """List of input streams with limited consumption."""
 
     def __init__(
         self,
@@ -60,6 +64,7 @@ class EnergyMix:
         inputs_to_constrain: Sequence[Stream] | None = None,
         plot_coupling_graph=False,
     ):
+        """Initialize EnergyMix."""
         self.produced_energies = set(energies)
         self.impacts = list({
             impact for energy in self.produced_energies for impact in energy.impacts
@@ -112,6 +117,7 @@ class EnergyMix:
 
     @property
     def models(self) -> list[Model]:
+        """List of all EnergyMix models."""
         models = [self.input_streams_model(), self.total_impacts_model()]
         if any(self.constrained_inputs):
             models.append(self.constraint_model())
@@ -122,6 +128,7 @@ class EnergyMix:
         return models
 
     def plot_pretty_couplings(self):
+        """Plot and save coupling graphs of the EnergyMix."""
         impact_models = []
         prod_conso_models = []
         for energy in self.produced_energies:
@@ -149,6 +156,7 @@ class EnergyMix:
         )
 
     def input_streams_model(self):
+        """Aggregate consumption of input streams model."""
         default_values_units = {
             f"{energy.name}.{stream.name}.consumption": (0.0, stream.unit)
             for stream in self.input_streams
@@ -158,14 +166,6 @@ class EnergyMix:
         output_units = {
             f"{stream.name}.consumption": stream.unit for stream in self.input_streams
         }
-        variables = set(default_values_units.keys()).union(output_units)
-        {name: name.replace(".", " ").replace("_", " ") for name in variables}
-        {
-            name: default_values_units[name][1]
-            if name in default_values_units
-            else output_units[name]
-            for name in variables
-        }
         return JAXModel(
             function=self._inputs_consumption,
             input_names=list(default_values_units.keys()),
@@ -174,8 +174,6 @@ class EnergyMix:
                 name: value_unit[0] for name, value_unit in default_values_units.items()
             },
             name="Aggregate consumption",
-            # variable_full_names=fullnames,
-            # variable_units=units,
         )
 
     def _inputs_consumption(self, input_data):
@@ -189,7 +187,7 @@ class EnergyMix:
             for stream in self.input_streams
         }
         consumption_per_stream = {
-            stream.name: sum(
+            stream.name: jnp_sum(
                 array([
                     consumption_per_stream_per_energy[stream.name][energy.name]
                     for energy in self.produced_energies
@@ -204,6 +202,7 @@ class EnergyMix:
         }
 
     def total_impacts_model(self):
+        """Aggregate production of impacts model."""
         default_values_units = {
             f"{energy.name}.{impact.name}_index": (0.0, f"{impact.unit}/{energy.unit}")
             for energy in self.final_energies
@@ -214,14 +213,6 @@ class EnergyMix:
             for energy in self.final_energies
         })
         output_units = {f"{impact.name}": impact.unit for impact in self.impacts}
-        variables = set(default_values_units.keys()).union(output_units)
-        {name: name.replace(".", " ").replace("_", " ") for name in variables}
-        {
-            name: default_values_units[name][1]
-            if name in default_values_units
-            else output_units[name]
-            for name in variables
-        }
         return JAXModel(
             function=self._impact_production,
             input_names=list(default_values_units.keys()),
@@ -230,8 +221,6 @@ class EnergyMix:
                 name: value_unit[0] for name, value_unit in default_values_units.items()
             },
             name="Aggregate impacts",
-            # variable_full_names=fullnames,
-            # variable_units=units,
         )
 
     def _impact_production(self, input_data):
@@ -249,7 +238,7 @@ class EnergyMix:
             for energy in self.final_energies
         }
         return {
-            impact.name: sum(
+            impact.name: jnp_sum(
                 array([
                     consumption[energy.name] * impact_index[energy.name][impact.name]
                     for energy in self.final_energies
@@ -259,6 +248,7 @@ class EnergyMix:
         }
 
     def constraint_model(self):
+        """Constraints on consumption of input streams and non-negative production."""
         default_inputs = {
             f"{input_stream.name}.fair_share": 1.0
             for input_stream in self.constrained_inputs

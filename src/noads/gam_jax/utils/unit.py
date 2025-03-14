@@ -21,6 +21,8 @@
          PETEILH Nicolas : portage to Python
 """
 
+# ruff: noqa D103, N802, N803, A002, D103
+
 from copy import deepcopy
 
 import numpy

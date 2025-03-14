@@ -14,12 +14,15 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+# ruff: noqa D100, D103, E501
+
 import matplotlib.pyplot as plt
 import numpy as np
-import utils.data_analysis as uda
 from scipy import interpolate
-from utils import physical_data as phd
-from utils import unit
+
+import noads.gam_jax.utils.data_analysis as uda
+from noads.gam_jax.utils import physical_data as phd
+from noads.gam_jax.utils import unit
 
 
 def psfc_thierry(pw):

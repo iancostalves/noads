@@ -13,21 +13,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Setup model structure, default inputs and design space for optimization."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from AeroMAX.models.traffic import AirTraffic
-from AeroMAX.scenarios.multiscenario import MultiScenario
-from AeroMAX.scenarios.temporalscenario import TemporalScenario
-from AeroMAX.scenarios.temporalscenario import interpolate_data
-from aviation_scenarios.base_objects import initialize_aeromax_objects
-from aviation_scenarios.scenario_data import get_ar6_data
 from gemseo import create_design_space
 from gemseo_jax.jax_discipline import JAXDiscipline
 from numpy import array as np_array
 from numpy import ones as np_ones
+
+from noads.application.background_scenario_data import get_ar6_data
+from noads.application.base_objects import initialize_base_objects
+from noads.core.models.interpolation import interpolate_data
+from noads.core.models.traffic import AirTraffic
+from noads.core.scenarios.multiscenario import MultiScenario
+from noads.core.scenarios.temporalscenario import TemporalScenario
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -42,21 +44,19 @@ def single_scenario_setup(
     start_year=2025,
     end_year=2075,
     time_step=1.0,
-    interp_step=5.0,
+    interp_step=2.0,
     technology_index=0,
     integrate_constraints=False,
     demand_aversion=False,
     drop_in_only=False,
-    include_methane=False,
     preferential_energy=False,
     plot_scenario_data=False,
     compile_jit=True,
 ):
+    """Setup decarbonization scenario based on a single objective."""
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
     ar6_data, years_data = get_ar6_data(plot_data=plot_scenario_data)
-    energy_mix, fleet = initialize_aeromax_objects(
-        drop_in_only, include_methane, technology_index
-    )
+    energy_mix, fleet = initialize_base_objects(drop_in_only, technology_index)
 
     temporal_constraints = [
         f"{stream.name}.constraint" for stream in energy_mix.constrained_inputs
@@ -79,9 +79,6 @@ def single_scenario_setup(
     if demand_aversion:
         time_integrated_outputs.extend([
             "discounted_relative_price_change",
-            # "discounted_ask_ratio",
-            # "avoidance_burden",
-            # "discounted_avoidance_burden",
         ])
 
     constants = {
@@ -149,21 +146,21 @@ def single_scenario_setup(
         interpolated_2025_2035_2050.update({
             "H2_liquefaction.ELECTRICITY.efficiency": (4.54, 4.54 * 1.2, 4.54 * 1.4),
         })
-        if include_methane:
-            constants.update({
-                "NATURAL_GAS.CO2_index": 67.6,
-                "GM_methanation.direct.CO2_index": 0.0,
-                "GM_biogas.direct.CO2_index": 14.3,
-                "GM_fossil.direct.CO2_index": 0.0,
-                "LM_liquefaction.direct.CO2_index": 0.0,
-                "GM_fossil.NATURAL_GAS.efficiency": 1.0,
-                "GM_methanation.GAS-H2.efficiency": 0.89,
-                "LM_liquefaction.ELECTRICITY.efficiency": 20.0,
-                "LM_liquefaction.GAS-CH4.efficiency": 1.0,
-            })
-            interpolated_2025_2035_2050.update({
-                "GM_biogas.BIOMASS.efficiency": (0.7, 0.75, 0.8)
-            })
+        # if include_methane:
+        #     constants.update({
+        #         "NATURAL_GAS.CO2_index": 67.6,
+        #         "GM_methanation.direct.CO2_index": 0.0,
+        #         "GM_biogas.direct.CO2_index": 14.3,
+        #         "GM_fossil.direct.CO2_index": 0.0,
+        #         "LM_liquefaction.direct.CO2_index": 0.0,
+        #         "GM_fossil.NATURAL_GAS.efficiency": 1.0,
+        #         "GM_methanation.GAS-H2.efficiency": 0.89,
+        #         "LM_liquefaction.ELECTRICITY.efficiency": 20.0,
+        #         "LM_liquefaction.GAS-CH4.efficiency": 1.0,
+        #     })
+        #     interpolated_2025_2035_2050.update({
+        #         "GM_biogas.BIOMASS.efficiency": (0.7, 0.75, 0.8)
+        #     })
 
     controls_delay_times = {}
     constrained_control_groups = {}
@@ -251,7 +248,7 @@ def single_scenario_setup(
         )
         for name in ar6_data
     })
-    temporal_scenario.discipline.default_inputs = scenario_inputs
+    temporal_scenario.discipline.default_input_data = scenario_inputs
     if compile_jit:
         temporal_scenario.discipline.compile_jit(pre_run=False)
 
@@ -281,8 +278,8 @@ def single_scenario_setup(
                 design_space.add_variable(
                     f"control.{pathway.name}.share",
                     size=temporal_scenario.time_interpolation.size,
-                    l_b=0.0,
-                    u_b=upper_value,
+                    lower_bound=0.0,
+                    upper_bound=upper_value,
                     value=value,
                 )
     for i, fleet_i in enumerate(fleet.fleets):
@@ -290,8 +287,8 @@ def single_scenario_setup(
             design_space.add_variable(
                 f"control.{fleet_i.name}.demand_shift_ratio",
                 size=temporal_scenario.time_interpolation.size,
-                l_b=0.0,
-                u_b=0.6,
+                lower_bound=0.0,
+                upper_bound=0.6,
                 # * (np_ones(
                 #     temporal_scenario.time_interpolation.shape
                 # ) - np_eye(1, temporal_scenario.time_interpolation.size)[0]),
@@ -305,33 +302,33 @@ def single_scenario_setup(
             if aircraft != fleet_i.operating_aircraft[0]:
                 design_space.add_variable(
                     f"constant.{aircraft.name}.max_share",
-                    l_b=0.0,
-                    u_b=1.0,
+                    lower_bound=0.0,
+                    upper_bound=1.0,
                     value=0.1,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.entry_into_service",
-                    l_b=2035.0,
-                    u_b=2060.0,
+                    lower_bound=2035.0,
+                    upper_bound=2060.0,
                     value=2060.0,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.lifetime",
-                    l_b=3.0 * fleet_tau,
-                    u_b=16.0 * fleet_tau,
-                    value=3.0 * fleet_tau,
+                    lower_bound=3.0 * fleet_tau,
+                    upper_bound=16.0 * fleet_tau,
+                    value=13.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.ramp_up_duration",
-                    l_b=2.0 * fleet_tau,
-                    u_b=4.0 * fleet_tau,
-                    value=2.0 * fleet_tau,
+                    lower_bound=2.0 * fleet_tau,
+                    upper_bound=4.0 * fleet_tau,
+                    value=4.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.ramp_down_duration",
-                    l_b=2.0 * fleet_tau,
-                    u_b=4.0 * fleet_tau,
-                    value=2.0 * fleet_tau,
+                    lower_bound=2.0 * fleet_tau,
+                    upper_bound=4.0 * fleet_tau,
+                    value=4.0 * fleet_tau,
                 )
 
     optimization_constraints = {
@@ -362,6 +359,7 @@ def multi_scenario_setup(
     preferential_energy=False,
     plot_scenario_data=False,
 ):
+    """Setup decarbonization scenario robust to several background scenarios."""
     temporal_scenario, _, constraints, energy_mix, fleet = single_scenario_setup(
         scenario_name=scenario_names[0],
         start_year=start_year,
@@ -403,11 +401,11 @@ def multi_scenario_setup(
         fixed_inputs=fixed,
     )
     multi_scenario_inputs = {
-        f"fixed.{name}": temporal_scenario.discipline.default_inputs[name]
+        f"fixed.{name}": temporal_scenario.discipline.default_input_data[name]
         for name in fixed
     }
     multi_scenario_inputs.update({
-        f"{scenario}.{name}": temporal_scenario.discipline.default_inputs[name]
+        f"{scenario}.{name}": temporal_scenario.discipline.default_input_data[name]
         for scenario in scenario_names
         for name in temporal_scenario.discipline.input_grammar.names
         if name not in fixed
@@ -435,7 +433,7 @@ def multi_scenario_setup(
         ])
         for scenario in scenario_names
     })
-    multi_scenario.discipline.default_inputs = multi_scenario_inputs
+    multi_scenario.discipline.default_input_data = multi_scenario_inputs
     multi_scenario.discipline.compile_jit(pre_run=False)
 
     design_space = create_design_space()
@@ -465,8 +463,8 @@ def multi_scenario_setup(
                     design_space.add_variable(
                         f"{scenario}.control.{pathway.name}.share",
                         size=temporal_scenario.time_interpolation.size,
-                        l_b=0.0,
-                        u_b=upper_value,
+                        lower_bound=0.0,
+                        upper_bound=upper_value,
                         value=value,
                     )
 
@@ -475,8 +473,8 @@ def multi_scenario_setup(
                 design_space.add_variable(
                     f"{scenario}.control.{fleet_i.name}.demand_shift_ratio",
                     size=temporal_scenario.time_interpolation.size,
-                    l_b=0.0,
-                    u_b=0.6,
+                    lower_bound=0.0,
+                    upper_bound=0.6,
                     # * (np_ones(
                     #     temporal_scenario.time_interpolation.shape
                     # ) - np_eye(1, temporal_scenario.time_interpolation.size)[0]),
@@ -492,32 +490,32 @@ def multi_scenario_setup(
             if aircraft != fleet_i.operating_aircraft[0]:
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.entry_into_service",
-                    l_b=2035.0,
-                    u_b=2060.0,
+                    lower_bound=2035.0,
+                    upper_bound=2060.0,
                     value=2060.0,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.max_share",
-                    l_b=0.0,
-                    u_b=1.0,
+                    lower_bound=0.0,
+                    upper_bound=1.0,
                     value=0.1,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.lifetime",
-                    l_b=3.0 * fleet_tau,
-                    u_b=16.0 * fleet_tau,
+                    lower_bound=3.0 * fleet_tau,
+                    upper_bound=16.0 * fleet_tau,
                     value=3.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.ramp_up_duration",
-                    l_b=2.0 * fleet_tau,
-                    u_b=4.0 * fleet_tau,
+                    lower_bound=2.0 * fleet_tau,
+                    upper_bound=4.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.ramp_down_duration",
-                    l_b=2.0 * fleet_tau,
-                    u_b=4.0 * fleet_tau,
+                    lower_bound=2.0 * fleet_tau,
+                    upper_bound=4.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
 

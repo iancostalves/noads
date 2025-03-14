@@ -16,3 +16,18 @@
 # WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 """Optimal decarbonization scenario based on a single objective."""
+
+from noads.application.examples import single_policy_scenario_optimization
+
+background_scenario = "SSP2-26"
+
+single_policy_scenario_optimization(
+    global_scenario_name=background_scenario,
+    carbon_budget_percent=3.0,
+    technology_index=0,
+    drop_in_only=False,
+    low_demand_formulation=False,
+    preferential_energy=False,
+    plot_optimum=True,
+    save_optimum=False,
+)

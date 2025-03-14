@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Initialize object-oriented model structure."""
 
 from numpy import array
 
@@ -135,10 +136,11 @@ tech_params_lower_upper_2020_2040_2060 = {
 }
 
 
-def initialize_aeromax_objects(
+def initialize_base_objects(
     drop_in_only=False,
     technology_index=0,
 ):
+    """Initialize base model objects."""
     if technology_index < 0 or technology_index > 2:
         msg = "Please enter 0, 1 or 2 as technology index (low, mid, up)"
         raise RuntimeError(msg)

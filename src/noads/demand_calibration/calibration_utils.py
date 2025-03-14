@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Calibration utilities for reading and filtering data."""
 
 from jax.numpy.linalg import norm
 from numpy import arange
-from numpy import array
 from numpy import array as np_array
 from numpy import flip
 from numpy import isnan
@@ -24,11 +24,13 @@ from pandas import read_excel
 
 
 def error_measure(y, y_data):
+    """Error measure to minimize in calibration."""
     mse = norm(y - y_data) / norm(y_data)
     return mse  # noqa: RET504
 
 
 def filter_nans(data_iterable, exclude_covid=True):
+    """Filter Not-a-Number values from data."""
     last_index = 2 if exclude_covid else 0  # exclude 2020, 2021, 2022
     return [
         np_array([
@@ -40,47 +42,49 @@ def filter_nans(data_iterable, exclude_covid=True):
     ]
 
 
-def get_historic_ask_rpk_co2():
-    read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/Traffic_1929_to_2021"
-        ".xlsx",
-        decimal=",",
-    )
-    array([
-        549.6,
-        531.5,
-        532.8,
-        535.7,
-        561.2,
-        574.9,
-        600.9,
-        619.2,
-        631.4,
-        651.8,
-        685.5,
-        659.4,
-        660.7,
-        660.3,
-        701.9,
-        736.4,
-        744.9,
-        766.6,
-        763.0,
-        723.6,
-        760.1,
-        782.7,
-        791.1,
-        813.6,
-        839.2,
-        885.1,
-        927.9,
-        982.6,
-        1033.7,
-    ])
-    arange(1990, 2018 + 1)
+# def get_historic_ask_rpk_co2():
+#     """Get """
+#     read_excel(
+#         "../../../src/noads/demand_calibration/calibration_data/Traffic_1929_to_2021"
+#         ".xlsx",
+#         decimal=",",
+#     )
+#     array([
+#         549.6,
+#         531.5,
+#         532.8,
+#         535.7,
+#         561.2,
+#         574.9,
+#         600.9,
+#         619.2,
+#         631.4,
+#         651.8,
+#         685.5,
+#         659.4,
+#         660.7,
+#         660.3,
+#         701.9,
+#         736.4,
+#         744.9,
+#         766.6,
+#         763.0,
+#         723.6,
+#         760.1,
+#         782.7,
+#         791.1,
+#         813.6,
+#         839.2,
+#         885.1,
+#         927.9,
+#         982.6,
+#         1033.7,
+#     ])
+#     arange(1990, 2018 + 1)
 
 
 def get_rpk_data(y_start):
+    """Get data for Revenue Passenger Kilometers calibration."""
     # Socio-economic indicators
     gdp_data = read_excel(
         "../../../src/noads/demand_calibration/calibration_data/GDP.xls",
@@ -124,6 +128,7 @@ def get_rpk_data(y_start):
 
 
 def get_departures_data(region):
+    """Get data for Carrier Departures calibration."""
     # Socio-economic indicators
     gdp_data = read_excel(
         "../../../src/noads/demand_calibration/calibration_data/GDP.xls",

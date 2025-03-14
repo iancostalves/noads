@@ -13,24 +13,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Utilities for launching scenario optimization examples."""
 
 from json import dump
 from json import load
-from os import mkdir
 from os import walk
-from os.path import isdir
+from pathlib import Path
 
-from aviation_scenarios.scenario_data import co2_budget_2p0deg_66percent
-from aviation_scenarios.scenario_setup import single_scenario_setup
-from aviation_scenarios.visualization import plot_single_scenario_result
-from gemseo import MDODiscipline
 from gemseo import configure_logger
 from gemseo import create_scenario
 from numpy import array as np_array
 from numpy import interp
+from numpy import linspace
 from numpy import sum as np_sum
 from numpy import trapz
 from numpy import vstack
+
+from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
+from noads.application.scenario_setup import multi_scenario_setup
+from noads.application.scenario_setup import single_scenario_setup
+from noads.application.visualization import plot_multi_scenario_result
+from noads.application.visualization import plot_single_scenario_result
 
 
 def single_policy_scenario_optimization(
@@ -41,7 +44,9 @@ def single_policy_scenario_optimization(
     low_demand_formulation=False,
     preferential_energy=False,
     plot_optimum=True,
+    save_optimum=False,
 ):
+    """Optimal decarbonization scenario based on a single objective."""
     scenario_name = global_scenario_name
     if drop_in_only:
         scenario_name += "-DropIn"
@@ -62,10 +67,6 @@ def single_policy_scenario_optimization(
 
     formulation_name = "single_policy"
 
-    if not isdir(formulation_name):
-        mkdir(formulation_name)
-    if not isdir(f"{formulation_name}/{scenario_name}"):
-        mkdir(f"{formulation_name}/{scenario_name}")
     start_year = 2025.0
     end_year = 2075.0
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
@@ -74,7 +75,7 @@ def single_policy_scenario_optimization(
             start_year=start_year,
             end_year=end_year,
             technology_index=technology_index,
-            plot_scenario_data=True,
+            plot_scenario_data=False,
             integrate_constraints=False,
             demand_aversion=low_demand_formulation,
             drop_in_only=drop_in_only,
@@ -82,17 +83,15 @@ def single_policy_scenario_optimization(
         )
     )
 
-    # if gemseo_scenario is None:
     gemseo_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
-        formulation="DisciplinaryOpt",
+        formulation_name="DisciplinaryOpt",
         objective_name=(
             "cumulative.discounted_relative_price_change"
             if low_demand_formulation
             else "cumulative.CO2"
         ),
         design_space=design_space,
-        grammar_type=MDODiscipline.GrammarType.SIMPLE,
     )
     time_period = end_year - start_year
     allocated_co2_budget = co2_budget_2p0deg_66percent * carbon_budget_percent * 1.0e-2
@@ -114,35 +113,43 @@ def single_policy_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
-    # else:
-    #     gemseo_scenario.formulation._disciplines = \
-    #         aeromax_scenario.discipline.default_inputs
-
-    gemseo_scenario.execute({
-        "max_iter": 700,
-        "algo": "NLOPT_SLSQP",
-        "algo_options": {
-            "ftol_rel": 1e-14,
-            "ftol_abs": 1e-14,
-            "ineq_tolerance": 1e-6,
-            "xtol_rel": 1e-11,
-            "xtol_abs": 1e-11,
-        },
-    })
-    gemseo_scenario.post_process(
-        "OptHistoryView",
-        save=True,
-        show=False,
-        directory_path=f"{formulation_name}/{scenario_name}",
+    gemseo_scenario.execute(
+        max_iter=700,
+        algo_name="NLOPT_SLSQP",
+        ftol_rel=1e-14,
+        ftol_abs=1e-14,
+        ineq_tolerance=1e-6,
+        xtol_rel=1e-11,
+        xtol_abs=1e-11,
     )
+    # gemseo_scenario.post_process(
+    #     post_name="OptHistoryView",
+    #     save=save_optimum,
+    #     show=plot_optimum,
+    #     directory_path=f"{formulation_name}/{scenario_name}" if save_optimum else "",
+    # )
 
     input_optimal = gemseo_scenario.optimization_result.x_opt_as_dict
-    result = {"inputs": {name: value.tolist() for name, value in input_optimal.items()}}
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
-    result.update({
-        "outputs": {name: value.tolist() for name, value in output_optimal.items()}
-    })
-    dump(result, open(f"{formulation_name}/{scenario_name}/opt_result.json", "w"))
+
+    if save_optimum:
+        if not Path(formulation_name).is_dir():
+            Path(formulation_name).mkdir()
+        if not Path(f"{formulation_name}/{scenario_name}").is_dir():
+            Path(f"{formulation_name}/{scenario_name}").mkdir()
+        result = {
+            "inputs": {name: value.tolist() for name, value in input_optimal.items()}
+        }
+        result.update({
+            "outputs": {
+                name: value if len(value) == 1 else value.tolist()
+                for name, value in output_optimal.items()
+            }
+        })
+        with Path(f"{formulation_name}/{scenario_name}/opt_result.json").open(
+            "w"
+        ) as r_file:
+            dump(result, r_file)
 
     if plot_optimum:
         plot_single_scenario_result(
@@ -153,10 +160,11 @@ def single_policy_scenario_optimization(
             fleet=fleet,
             low_demand=low_demand_formulation,
         )
-    return output_optimal  # , gemseo_scenario
+    return output_optimal
 
 
 def single_scenario_synthesis():
+    """Sinthetize scenario results from a single policy optimization."""
     directory = "./single_policy"
     variables_units_conversion = {
         "rpk": (1e-12, "trillion pax-km / yr"),
@@ -176,7 +184,7 @@ def single_scenario_synthesis():
 
     for _path, folders, _files in walk(directory):
         for folder_name in folders:
-            with open(f"{directory}/{folder_name}/opt_result.json") as f:
+            with Path(f"{directory}/{folder_name}/opt_result.json").open() as f:
                 result = load(f)
                 io_dict = {**result["inputs"], **result["outputs"]}
                 simulation_years = io_dict["year"]
@@ -210,7 +218,9 @@ def single_policy_robust_scenario_optimization(
     low_demand_formulation=False,
     preferential_energy=False,
     plot_optimum=True,
+    save_optimum=False,
 ):
+    """Optimal decarbonization scenario robust to several background scenarios."""
     if drop_in_only:
         scenario_name += "-DropIn"
 
@@ -230,10 +240,6 @@ def single_policy_robust_scenario_optimization(
 
     formulation_name = "robust_single_policy"
 
-    if not isdir(formulation_name):
-        mkdir(formulation_name)
-    if not isdir(f"{formulation_name}/{scenario_name}"):
-        mkdir(f"{formulation_name}/{scenario_name}")
     start_year = 2025.0
     end_year = 2075.0
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
@@ -260,7 +266,6 @@ def single_policy_robust_scenario_optimization(
             else "mean.cumulative.CO2"
         ),
         design_space=design_space,
-        grammar_type=MDODiscipline.GrammarType.SIMPLE,
     )
 
     allocated_co2_budget = co2_budget_2p0deg_66percent * carbon_budget_percent * 1.0e-2
@@ -301,17 +306,36 @@ def single_policy_robust_scenario_optimization(
         directory_path=f"{formulation_name}/{scenario_name}",
     )
 
-    output_optimal = aeromax_scenario.discipline.execute(
-        gemseo_scenario.optimization_result.x_opt_as_dict
-    )
-    output_optimal.update(aeromax_scenario.discipline.default_inputs)
+    input_optimal = gemseo_scenario.optimization_result.x_opt_as_dict
+    output_optimal = aeromax_scenario.discipline.execute(input_optimal)
+    # output_optimal.update(aeromax_scenario.discipline.default_inputs)
+
+    if save_optimum:
+        if not Path(formulation_name).is_dir():
+            Path(formulation_name).mkdir()
+        if not Path(f"{formulation_name}/{scenario_name}").is_dir():
+            Path(f"{formulation_name}/{scenario_name}").mkdir()
+        result = {
+            "inputs": {name: value.tolist() for name, value in input_optimal.items()}
+        }
+        result.update({
+            "outputs": {
+                name: value if len(value) == 1 else value.tolist()
+                for name, value in output_optimal.items()
+            }
+        })
+        with Path(f"{formulation_name}/{scenario_name}/opt_result.json").open(
+            "w"
+        ) as r_file:
+            dump(result, r_file)
+
     if plot_optimum:
         plot_multi_scenario_result(
             scenario_names=global_scenario_names,
             mean_outputs=aeromax_scenario.mean_outputs,
             folder_name=f"./{formulation_name}/{scenario_name}",
             figure_name="robust_scenario",
-            output_optimal=output_optimal,
+            output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
             year_endplots=2075.0,
@@ -328,7 +352,9 @@ def multi_policy_scenario_optimization(
     drop_in_only=False,
     preferential_energy=False,
     plot_optimum=True,
+    save_optimum=False,
 ):
+    """Decarbonization scenario pareto front based on two objectives."""
     scenario_name = global_scenario_name
     if technology_index == 0:
         scenario_name += "-low"
@@ -346,10 +372,6 @@ def multi_policy_scenario_optimization(
 
     formulation_name = "multi_policy"
 
-    if not isdir(formulation_name):
-        mkdir(formulation_name)
-    if not isdir(f"{formulation_name}/{scenario_name}"):
-        mkdir(f"{formulation_name}/{scenario_name}")
     start_year = 2025.0
     end_year = 2075.0
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
@@ -373,7 +395,6 @@ def multi_policy_scenario_optimization(
         formulation="DisciplinaryOpt",
         objective_name="cumulative.CO2",
         design_space=design_space,
-        grammar_type=MDODiscipline.GrammarType.SIMPLE,
     )
     co2_budget_ref = 3.0e-2 * co2_budget_2p0deg_66percent
     min_co2_trend_traffic_scenario.formulation.optimization_problem.objective *= (
@@ -387,9 +408,6 @@ def multi_policy_scenario_optimization(
             min_co2_trend_traffic_scenario.formulation.optimization_problem.constraints[
                 -1
             ] *= 0.1
-
-    if not isdir(f"{formulation_name}/{scenario_name}/0"):
-        mkdir(f"{formulation_name}/{scenario_name}/0")
 
     min_co2_trend_traffic_scenario.execute({
         "max_iter": 700,
@@ -421,20 +439,39 @@ def multi_policy_scenario_optimization(
     result.update({
         "outputs": {name: value.tolist() for name, value in output_optimal.items()}
     })
-    dump(result, open(f"{formulation_name}/{scenario_name}/0/opt_result.json", "w"))
-
-    inout_optimal = {**input_optimal, **output_optimal}
-    pareto_outputs = {f"0.{name}": value for name, value in inout_optimal.items()}
+    if save_optimum:
+        if not Path(formulation_name).is_dir():
+            Path(formulation_name).mkdir()
+        if not Path(f"{formulation_name}/{scenario_name}/0").is_dir():
+            Path(f"{formulation_name}/{scenario_name}/0").mkdir()
+        result = {
+            "inputs": {name: value.tolist() for name, value in input_optimal.items()}
+        }
+        result.update({
+            "outputs": {
+                name: value if len(value) == 1 else value.tolist()
+                for name, value in output_optimal.items()
+            }
+        })
+        with Path(f"{formulation_name}/{scenario_name}/0/opt_result.json").open(
+            "w"
+        ) as r_file:
+            dump(result, r_file)
 
     if plot_optimum:
         plot_single_scenario_result(
             scenario_name=scenario_name,
             folder_name=f"./{formulation_name}/{scenario_name}/0",
-            output_optimal=inout_optimal,
+            output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
             low_demand=True,
         )
+
+    pareto_outputs = {
+        f"0.{name}": value
+        for name, value in {**input_optimal, **output_optimal}.items()
+    }
 
     time_period = end_year - start_year
 
@@ -458,7 +495,6 @@ def multi_policy_scenario_optimization(
         formulation="DisciplinaryOpt",
         objective_name="cumulative.CO2",
         design_space=design_space,
-        grammar_type=MDODiscipline.GrammarType.SIMPLE,
     )
     co2_budget_ref = 3.0e-2 * co2_budget_2p0deg_66percent
     min_co2_scenario.formulation.optimization_problem.objective *= 1.0 / co2_budget_ref
@@ -466,9 +502,6 @@ def multi_policy_scenario_optimization(
         min_co2_scenario.add_constraint(name, "ineq", value=value, positive=positive)
         if "cumulative" in name or "Electric" in name:
             min_co2_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
-
-    if not isdir(f"{formulation_name}/{scenario_name}/{n_sub_optim}"):
-        mkdir(f"{formulation_name}/{scenario_name}/{n_sub_optim}")
 
     min_co2_scenario.execute({
         "max_iter": 700,
@@ -500,41 +533,52 @@ def multi_policy_scenario_optimization(
     result.update({
         "outputs": {name: value.tolist() for name, value in output_optimal.items()}
     })
-    dump(
-        result,
-        open(f"{formulation_name}/{scenario_name}/{n_sub_optim}/opt_result.json", "w"),
-    )
-
-    inout_optimal = {**input_optimal, **output_optimal}
-    pareto_outputs.update({
-        f"{n_sub_optim}.{name}": value for name, value in inout_optimal.items()
-    })
+    if save_optimum:
+        if not Path(formulation_name).is_dir():
+            Path(formulation_name).mkdir()
+        if not Path(f"{formulation_name}/{scenario_name}/{n_sub_optim}").is_dir():
+            Path(f"{formulation_name}/{scenario_name}/{n_sub_optim}").mkdir()
+        result = {
+            "inputs": {name: value.tolist() for name, value in input_optimal.items()}
+        }
+        result.update({
+            "outputs": {
+                name: value if len(value) == 1 else value.tolist()
+                for name, value in output_optimal.items()
+            }
+        })
+        with Path(
+            f"{formulation_name}/{scenario_name}/{n_sub_optim}/opt_result.json"
+        ).open("w") as r_file:
+            dump(result, r_file)
 
     if plot_optimum:
         plot_single_scenario_result(
             scenario_name=scenario_name,
             folder_name=f"./{formulation_name}/{scenario_name}/{n_sub_optim}",
-            output_optimal=inout_optimal,
+            output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
             low_demand=True,
         )
+
+    pareto_outputs.update({
+        f"{n_sub_optim}.{name}": value
+        for name, value in {**input_optimal, **output_optimal}.items()
+    })
+
     carbon_budget_constraints = linspace(
         max_budget,
         min_budget,
         n_sub_optim + 1,
     )
     for i in range(1, n_sub_optim):
-        if not isdir(f"{formulation_name}/{scenario_name}/{i}"):
-            mkdir(f"{formulation_name}/{scenario_name}/{i}")
-
         # design_space.set_current_value(input_optimal)
         sub_scenario = create_scenario(
             disciplines=aeromax_scenario.discipline,
             formulation="DisciplinaryOpt",
             objective_name="cumulative.discounted_relative_price_change",
             design_space=design_space,
-            grammar_type=MDODiscipline.GrammarType.SIMPLE,
         )
 
         sub_scenario.formulation.optimization_problem.objective *= 1.0 / time_period
@@ -582,24 +626,41 @@ def multi_policy_scenario_optimization(
         result.update({
             "outputs": {name: value.tolist() for name, value in output_optimal.items()}
         })
-        dump(
-            result, open(f"{formulation_name}/{scenario_name}/{i}/opt_result.json", "w")
-        )
-
-        inout_optimal = {**input_optimal, **output_optimal}
-        pareto_outputs.update({
-            f"{i}.{name}": value for name, value in inout_optimal.items()
-        })
+        if save_optimum:
+            if not Path(formulation_name).is_dir():
+                Path(formulation_name).mkdir()
+            if not Path(f"{formulation_name}/{scenario_name}/{i}").is_dir():
+                Path(f"{formulation_name}/{scenario_name}/{i}").mkdir()
+            result = {
+                "inputs": {
+                    name: value.tolist() for name, value in input_optimal.items()
+                }
+            }
+            result.update({
+                "outputs": {
+                    name: value if len(value) == 1 else value.tolist()
+                    for name, value in output_optimal.items()
+                }
+            })
+            with Path(f"{formulation_name}/{scenario_name}/{i}/opt_result.json").open(
+                "w"
+            ) as r_file:
+                dump(result, r_file)
 
         if plot_optimum:
             plot_single_scenario_result(
                 scenario_name=scenario_name,
                 folder_name=f"./{formulation_name}/{scenario_name}/{i}",
-                output_optimal=inout_optimal,
+                output_optimal={**input_optimal, **output_optimal},
                 energy_mix=energy_mix,
                 fleet=fleet,
                 low_demand=True,
             )
+
+        pareto_outputs.update({
+            f"{i}.{name}": value
+            for name, value in {**input_optimal, **output_optimal}.items()
+        })
     if plot_optimum:
         plot_multi_scenario_result(
             scenario_names=[f"{i}" for i in range(n_sub_optim + 1)],

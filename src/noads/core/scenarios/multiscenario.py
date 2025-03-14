@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Multi-scenario vectorization of time-dependant scenarios."""
 
 from collections.abc import Sequence
 
@@ -27,21 +28,29 @@ from noads.core.scenarios.temporalscenario import TemporalScenario
 
 
 class MultiScenario(Model):
+    """Multi-scenario assembly of a time-dependent scenario."""
+
     _fixed_prefix: str = "fixed"
 
     _mean_prefix: str = "mean"
 
     temporal_scenario: TemporalScenario
+    """TemporalScenario to vectorize."""
 
     scenario_names: list[str]
+    """Names of the scenarios to batch over."""
 
     fixed_inputs: list[str]
+    """List of inputs kept fixed between scenarios."""
 
     scenario_inputs: list[str]
+    """List of scenario-specific inputs."""
 
     scenario_outputs: list[str]
+    """List of scenario outputs."""
 
     mean_outputs: list[str]
+    """List of outputs to apply mean across scenarios."""
 
     def __init__(
         self,
@@ -49,8 +58,9 @@ class MultiScenario(Model):
         mean_outputs: Sequence[str],
         scenario_names: Sequence[str],
         fixed_inputs: Sequence[str],
-        differentiation_method: JAXDiscipline.DifferentiationMethod = JAXDiscipline.DifferentiationMethod.REVERSE,
+        differentiation_method: JAXDiscipline.DifferentiationMethod = JAXDiscipline.DifferentiationMethod.REVERSE,  # noqa: E501
     ):
+        """Initialize MultiScenario."""
         if differentiation_method == JAXDiscipline.DifferentiationMethod.AUTO:
             msg = "Chose either forward or reverse AutoDiff method."
             raise ValueError(msg)
@@ -71,11 +81,13 @@ class MultiScenario(Model):
         default_input_data = {
             f"{self._fixed_prefix}.{name}": self.temporal_scenario.discipline.default_input_data[
                 name
-            ]
+            ]  # noqa: E501
             for name in self.fixed_inputs
         }
         default_input_data.update({
-            f"{scenario}.{name}": self.temporal_scenario.discipline.default_input_data[name]
+            f"{scenario}.{name}": self.temporal_scenario.discipline.default_input_data[
+                name
+            ]
             for scenario in self.scenario_names
             for name in self.scenario_inputs
         })

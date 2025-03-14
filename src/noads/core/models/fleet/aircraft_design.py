@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Design a new aircraft from scratch using GAM."""
 
 from __future__ import annotations
 
@@ -31,13 +32,19 @@ if TYPE_CHECKING:
 
 
 class AircraftDesign(AircraftOperation):
+    """Aircraft based on a new design using GAM."""
+
     reference_aircraft: AircraftOperation
+    """Reference aircraft for performance comparison."""
 
     mission: Mapping[str, str | float]
+    """Mission dictionary for initializing GAM model."""
 
     power_system: Mapping[str, str | float]
+    """Power system for initializing GAM model."""
 
     technology_evolution: list[AircraftTechParameter]
+    """List of time-evolving technology parameters."""
 
     def __init__(
         self,
@@ -48,6 +55,7 @@ class AircraftDesign(AircraftOperation):
         aircraft_tech_params,
         reference_aircraft,
     ):
+        """Initialize AircraftDesign."""
         self.reference_aircraft = reference_aircraft
         self.mission = mission
         self.power_system = power_system
@@ -56,9 +64,11 @@ class AircraftDesign(AircraftOperation):
 
     @property
     def models(self):
+        """List of models."""
         return [self.consumption_model(), self.control_model(), self.design_model()]
 
     def design_model(self):
+        """Aircraft design model as a GAM wrapper."""
         default_inputs = {f"{self.name}.entry_into_service": 2035.0}
         output_names = [
             f"{self.name}.energy_per_ask",
@@ -101,11 +111,13 @@ class AircraftDesign(AircraftOperation):
             f"{self.name}.mtow": final_design["mtow"],
             f"{self.name}.owe": final_design["owe"],
             f"{self.name}.relative_efficiency_gain": self.reference_aircraft.energy_per_ask
-            / (final_design["enrg_consumption"] * 1.0e-3),
+            / final_design["enrg_consumption"]
+            * 1.0e-3,  # noqa: E501
         })
         return output_data
 
     def control_model(self):
+        """Time-dependent control of the aircraft market share."""
         default_inputs = {
             "start_year": 2025.0,
             f"{self.name}.ramp_up_duration": 5.0,
@@ -157,6 +169,7 @@ class AircraftDesign(AircraftOperation):
         }
 
     def consumption_model(self):
+        """Energy carrier consumption model."""
         default_inputs = {f"{self.name}.ask": 0.0, f"{self.name}.energy_per_ask": 1.0}
         output_names = [
             f"{self.name}.{carrier.name}.consumption"

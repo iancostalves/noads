@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Calibration routine for Revenue Passenger Kilometers."""
 
 from gemseo import create_design_space
 from gemseo import create_scenario
@@ -27,9 +28,9 @@ from matplotlib.pyplot import yscale
 from numpy import array as np_array
 from numpy import diff
 from numpy import linspace
-from numpy import max
+from numpy import max as np_max
 from numpy import mean
-from numpy import min
+from numpy import min as np_min
 from numpy import sqrt
 
 from noads.core.models.traffic import generalised_logistic
@@ -41,7 +42,8 @@ from noads.demand_calibration.calibration_utils import get_rpk_data
 def plot_calibration_result(
     opt_result, years_data, x_data, y_data, pop_data, years_raw, x_raw, y_raw, pop_raw
 ):
-    x_ordered = linspace(min(x_data), 2.5 * max(x_data), 100)
+    """Plot calibration of Revenue Passenger Kilometers."""
+    x_ordered = linspace(np_min(x_data), 2.5 * np_max(x_data), 100)
 
     # Disciplines and Chain with gemseo-jax
     model = AutoJAXDiscipline(generalised_logistic)
@@ -125,6 +127,7 @@ def plot_calibration_result(
 
 
 def run_global_rpk_calibration(plot_calibration=True):
+    """Run calibration of Revenue Passenger Kilometers."""
     years_raw, x_raw, y_raw, pop_raw = get_rpk_data(1970)
     filtered = filter_nans([years_raw, x_raw, y_raw, pop_raw])
     years_data = filtered[0]
@@ -133,13 +136,13 @@ def run_global_rpk_calibration(plot_calibration=True):
     pop_data = filtered[3]
 
     # Compute some stuff from data
-    x_max = max(x_data)
+    x_max = np_max(x_data)
 
-    y_max = max(y_data)
-    y_min = min(y_data)
+    y_max = np_max(y_data)
+    y_min = np_min(y_data)
 
     dy = diff(y_data)
-    dy_max = max(dy)
+    dy_max = np_max(dy)
 
     # Disciplines and Chain with gemseo-jax
     model = AutoJAXDiscipline(generalised_logistic, static_args={"x": x_data})
@@ -213,4 +216,4 @@ def run_global_rpk_calibration(plot_calibration=True):
             pop_raw,
         )
 
-    return (best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw)
+    return best_fit, years_data, x_data, y_data, years_raw, x_raw, y_raw

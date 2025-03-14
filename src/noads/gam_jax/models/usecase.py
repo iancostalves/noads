@@ -16,8 +16,11 @@
 
 """This is an example of use of the Generic Airplane Model toolbox."""
 
+# ruff: noqa E501
+
 from generic_airplane_model import GAM  # import the toolbox
-from utils import unit
+
+from noads.gam_jax.utils import unit
 
 # ----- INITIALIZATION
 gam = GAM()

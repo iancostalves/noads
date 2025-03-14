@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Core model based on gemseo-jax classes."""
 
 from __future__ import annotations
 
@@ -27,17 +28,22 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-class Model:
+class Model:  # noqa: B903
+    """Basic model, from an instantiated JAXDiscipline."""
+
     discipline: JAXDiscipline
 
     def __init__(
         self,
         discipline: JAXDiscipline,
     ):
+        """Initialize Model from existing JAXDiscipline."""
         self.discipline = discipline
 
 
 class JAXModel(Model):
+    """Basic model, from a dict-based JAX function, names, and default inputs."""
+
     def __init__(
         self,
         function,
@@ -46,6 +52,7 @@ class JAXModel(Model):
         default_inputs,
         name,
     ):
+        """Initialize JAXModel and JAXDiscipline from scratch."""
         discipline = JAXDiscipline(
             function=function,
             input_names=input_names,
@@ -57,9 +64,12 @@ class JAXModel(Model):
 
 
 class AutoModel(Model):
+    """Basic model, from named args based JAX function."""
+
     discipline: AutoJAXDiscipline
 
     def __init__(self, name):
+        """Initialize AutoModel from abstract JAX function."""
         discipline = AutoJAXDiscipline(name=name, function=self._jax_func)
         super().__init__(discipline)
 

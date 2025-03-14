@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Energy production pathway."""
 
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from typing import TYPE_CHECKING
 
 from jax.numpy import array
 from jax.numpy import atleast_1d
-from jax.numpy import sum
+from jax.numpy import sum as jnp_sum
 
 from noads.core.model import JAXModel
 from noads.core.model import Model
@@ -33,10 +34,13 @@ if TYPE_CHECKING:
 
 
 class ProductionPathway:
+    """Energy production pathway, consumes input streams and generates impacts."""
+
     name: str
+    """Name of the pathway."""
 
     impacts: list[Impact]
-    """Direct impacts per unit of production."""
+    """Direct impacts of production."""
 
     input_streams: list[Stream]
     """Energy/material inputs for pathway production."""
@@ -47,12 +51,14 @@ class ProductionPathway:
         impacts: Sequence[Impact],
         input_streams: Sequence[Stream],
     ):
+        """Initialize ProductionPathway from name, impacts and inputs."""
         self.name = name
         self.impacts = list(set(impacts))
         self.input_streams = list(set(input_streams))
 
     @property
     def models(self) -> list[Model]:
+        """List of models."""
         return [self.impact_index_model(), self.consumption_model()]
 
     def _impact_index(self, input_data):
@@ -65,7 +71,7 @@ class ProductionPathway:
         }
         # input streams per production unit
         consumption_per_prod = {
-            stream: 1 / input_data[f"{self.name}.{stream.name}.efficiency"]
+            stream: 1.0 / input_data[f"{self.name}.{stream.name}.efficiency"]
             for stream in self.input_streams
         }
 
@@ -83,7 +89,7 @@ class ProductionPathway:
 
         # Impact index imported from input streams
         output_data.update({
-            f"{self.name}.indirect.{impact.name}_index": sum(
+            f"{self.name}.indirect.{impact.name}_index": jnp_sum(
                 array([
                     atleast_1d(
                         stream_consumption
@@ -113,71 +119,52 @@ class ProductionPathway:
         return output_data
 
     def impact_index_model(self):
-        default_values_units = {
-            f"{self.name}.direct.{impact.name}_index": (0.0, f"{impact.unit}/")
-            for impact in self.impacts
+        """Pathway impact index model."""
+        default_inputs = {
+            f"{self.name}.direct.{impact.name}_index": 0.0 for impact in self.impacts
         }
-        default_values_units.update({
-            f"{self.name}.{input_stream.name}.efficiency": (
-                1.0,
-                f"/{input_stream.unit}",
-            )
+        default_inputs.update({
+            f"{self.name}.{input_stream.name}.efficiency": 1.0
             for input_stream in self.input_streams
         })
-        output_units = {}
+        output_names = []
         for impact in self.impacts:
-            output_units.update({
-                f"{self.name}.{impact.name}_index": f"{impact.unit}/",
-                f"{self.name}.indirect.{impact.name}_index": f"{impact.unit}/",
-            })
+            output_names.extend([
+                f"{self.name}.{impact.name}_index",
+                f"{self.name}.indirect.{impact.name}_index",
+            ])
             for input_stream in self.input_streams:
-                default_values_units.update({
-                    f"{input_stream.name}.{impact.name}_index": (
-                        0.0,
-                        f"{impact.unit}/{input_stream.unit}",
-                    )
+                default_inputs.update({
+                    f"{input_stream.name}.{impact.name}_index": 0.0,
                 })
-                output_units.update({
-                    f"{self.name}.{input_stream.name}.consumption_index": f"{input_stream.unit}/"
-                })
+                output_names.append(
+                    f"{self.name}.{input_stream.name}.consumption_index"
+                )
         return JAXModel(
             function=self._impact_index,
-            input_names=list(default_values_units.keys()),
-            output_names=list(output_units.keys()),
-            default_inputs={
-                name: value_unit[0] for name, value_unit in default_values_units.items()
-            },
+            input_names=list(default_inputs.keys()),
+            output_names=output_names,
+            default_inputs=default_inputs,
             name=f"{self.name} impacts",
         )
 
     def consumption_model(self):
-        default_values_units = {f"{self.name}.production": (0.0, "")}
-        default_values_units.update({
-            f"{self.name}.{stream.name}.consumption_index": (0.0, f"{stream.unit}/")
+        """Pathway consumption model."""
+        default_inputs = {f"{self.name}.production": 0.0}
+        default_inputs.update({
+            f"{self.name}.{stream.name}.consumption_index": 0.0
             for stream in self.input_streams
         })
-        output_units = {
+        output_names = {
             f"{self.name}.{stream.name}.consumption": stream.unit
             for stream in self.input_streams
         }
-        variables = set(default_values_units.keys()).union(output_units)
-        {name: name.replace(".", " ").replace("_", " ") for name in variables}
-        {
-            name: default_values_units[name][1]
-            if name in default_values_units
-            else output_units[name]
-            for name in variables
-        }
         return JAXModel(
             function=self._consumption,
-            input_names=list(default_values_units.keys()),
-            output_names=list(output_units.keys()),
-            default_inputs={
-                name: value_unit[0] for name, value_unit in default_values_units.items()
-            },
+            input_names=list(default_inputs.keys()),
+            output_names=list(output_names.keys()),
+            default_inputs=default_inputs,
             name=f"{self.name} production",
-            # variable_full_names=fullnames,
-            # variable_units=units,
         )
 
     def _consumption(self, input_data):

@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Air Traffic modelling."""
 
 from __future__ import annotations
 
@@ -31,6 +32,7 @@ def generalised_logistic(
     asymptote_coeff=1.27603214,
     x_lag=0.0,
 ):
+    """Generalized logistic function."""
     y = left_asymptote + divide(
         capacity - left_asymptote,
         (asymptote_coeff + exp(-growth_rate * (x - x_lag))) ** (1 / logistic_nu),
@@ -39,7 +41,10 @@ def generalised_logistic(
 
 
 class AirTraffic(AutoModel):
+    """Air Traffic model from function with named arguments."""
+
     def __init__(self):
+        """Initialize AirTraffic."""
         super().__init__(name="Air Traffic from Socioeconomic Drivers")
 
     def _jax_func(

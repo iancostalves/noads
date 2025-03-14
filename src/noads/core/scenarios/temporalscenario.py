@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Model assembly and vectorization into time-dependant scenario."""
 
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -25,23 +26,18 @@ from diffrax import ODETerm
 from diffrax import RecursiveCheckpointAdjoint
 from diffrax import SaveAt
 from diffrax import diffeqsolve
-
 from gemseo.typing import RealArray
-
 from gemseo_jax.jax_chain import JAXChain
 from gemseo_jax.jax_discipline import DataType
 from gemseo_jax.jax_discipline import JAXDiscipline
-
 from jax import vmap
 from jax.numpy import array
 from jax.numpy import ones
-from jax.numpy import sum
+from jax.numpy import sum as jnp_sum
 from jax.numpy import where
 from jax.scipy.integrate import trapezoid
-
 from numpy import append
 from numpy import arange
-
 from strenum import StrEnum
 
 from noads.core.model import Model
@@ -57,6 +53,8 @@ def delay1_rhs(t, y, args):
 
 
 class TemporalScenario(Model):
+    """Assemble models into a time-dependent scenario."""
+
     class AdjointMethod(StrEnum):
         """The method to compute the Adjoint of control variables."""
 
@@ -77,30 +75,43 @@ class TemporalScenario(Model):
     __adjoint: AbstractAdjoint
 
     models: list[Model]
+    """List of models."""
 
     constant_inputs: list[str]
+    """List of time-independent inputs."""
 
     interpolated_inputs: list[str]
+    """List of time-interpolated inputs."""
 
     control_delay_times: Mapping[str, float]
+    """List of inputs subject to delay of a time-interpolated control."""
 
     constrained_control_groups: Mapping[str : Sequence[str]]
+    """Groups of control variables to constrain at all time-steps."""
 
     custom_controls: Sequence[str]
+    """List of inputs subject to a delay with custom time-interpolation."""
 
     non_modified_inputs: list[str]
+    """List of inputs not to be vectorized."""
 
     time_integrated_outputs: list[str]
+    """List of outputs to perform time-integration."""
 
     time_vector: RealArray
+    """Vector of simulation time."""
 
     time_interpolation: RealArray
+    """Vector of interpolation time."""
 
     cubic_interpolation: bool
+    """Boolean to apply cubic interpolation (otherwise linear)."""
 
     vectorized_chain: JAXChain
+    """JAXChain of vectorized models."""
 
     unvectorized_chain: JAXChain
+    """JAXChain of unvectorized models."""
 
     def __init__(
         self,
@@ -117,10 +128,10 @@ class TemporalScenario(Model):
         time_step: float = 1.0,
         interp_step: float = 5.0,
         cubic_interpolation: bool = False,
-        differentiation_method: JAXDiscipline.DifferentiationMethod =
-        JAXDiscipline.DifferentiationMethod.REVERSE,
+        differentiation_method: JAXDiscipline.DifferentiationMethod = JAXDiscipline.DifferentiationMethod.REVERSE,  # noqa: E501
         adjoint_method: AdjointMethod = AdjointMethod.RECURSIVE,
     ):
+        """Initialize TemporalScenario."""
         self.models = list(models)
         self.constant_inputs = list(constant_inputs)
         self.control_delay_times = control_delay_times
@@ -128,9 +139,7 @@ class TemporalScenario(Model):
         self.custom_controls = custom_controls
         self.interpolated_inputs = list(interpolated_inputs)
         self.time_integrated_outputs = list(time_integrated_outputs)
-        self.time_vector = append(
-            arange(start_year, end_year, time_step), end_year
-        )
+        self.time_vector = append(arange(start_year, end_year, time_step), end_year)
         self.time_interpolation = append(
             arange(start_year, end_year, interp_step), end_year
         )
@@ -161,13 +170,11 @@ class TemporalScenario(Model):
         vectorized = []
         unvectorized = []
         for model in models:
-            if all([
-                var_name in self.constant_inputs or any([
-                    var_name in disc.output_grammar.names
-                    for disc in unvectorized
-                ])
+            if all(
+                var_name in self.constant_inputs
+                or any(var_name in disc.output_grammar.names for disc in unvectorized)
                 for var_name in model.discipline.input_grammar.names
-            ]):
+            ):
                 unvectorized.append(model.discipline)
             else:
                 vectorized.append(model.discipline)
@@ -176,56 +183,60 @@ class TemporalScenario(Model):
         self.vectorized_chain = JAXChain(vectorized)
 
         self.non_modified_inputs = [
-            name for name in self.vectorized_chain.input_grammar.names
-            if name not in set(self.constant_inputs).union(
-                self.interpolated_inputs
-            ).union(self.control_delay_times.keys()).union(
-                self.unvectorized_chain.output_grammar.names
-            )
+            name
+            for name in self.vectorized_chain.input_grammar.names
+            if name
+            not in set(self.constant_inputs)
+            .union(self.interpolated_inputs)
+            .union(self.control_delay_times.keys())
+            .union(self.unvectorized_chain.output_grammar.names)
         ]
 
         default_input_data = {
-            f"{self._constant_prefix}.{name}":
-                self.unvectorized_chain.default_input_data[name]
+            f"{self._constant_prefix}.{name}": self.unvectorized_chain.default_input_data[
+                name
+            ]  # noqa: E501
             for name in self.unvectorized_chain.input_grammar.names
         }
         default_input_data.update({
-            f"{self._constant_prefix}.{name}":
-                self.vectorized_chain.default_input_data[name]
+            f"{self._constant_prefix}.{name}": self.vectorized_chain.default_input_data[
+                name
+            ]
             for name in self.constant_inputs
             if name not in self.unvectorized_chain.input_grammar.names
         })
         default_input_data.update({
-            f"{self._interpolation_prefix}.{name}":
-                self.vectorized_chain.default_input_data[name] * ones(
-                    self.time_interpolation.shape
-                )
+            f"{self._interpolation_prefix}.{name}": self.vectorized_chain.default_input_data[
+                name
+            ]  # noqa: E501
+            * ones(self.time_interpolation.shape)
             for name in self.interpolated_inputs
         })
         default_input_data.update({
-            f"{self._control_prefix}.{name}":
-                self.vectorized_chain.default_input_data[name] * ones(
-                    self.time_interpolation.shape
-                )
-            for name in self.control_delay_times.keys()
+            f"{self._control_prefix}.{name}": self.vectorized_chain.default_input_data[
+                name
+            ]
+            * ones(self.time_interpolation.shape)
+            for name in self.control_delay_times
             if (
-                    f"{self._control_prefix}.{name}" not in
-                    self.unvectorized_chain.output_grammar.names
-                ) and name not in self.custom_controls
+                f"{self._control_prefix}.{name}"
+                not in self.unvectorized_chain.output_grammar.names
+            )
+            and name not in self.custom_controls
         })
         default_input_data.update({
-            name: self.vectorized_chain.default_input_data[name] * ones(
-                self.time_vector.shape
-            ) for name in self.non_modified_inputs
+            name: self.vectorized_chain.default_input_data[name]
+            * ones(self.time_vector.shape)
+            for name in self.non_modified_inputs
         })
 
         output_names = [
             f"{group_name}.controls_constraint"
-            for group_name in self.constrained_control_groups.keys()
+            for group_name in self.constrained_control_groups
         ]
         output_names.extend([
             f"{group_name}.controls_constraint_violation"
-            for group_name in self.constrained_control_groups.keys()
+            for group_name in self.constrained_control_groups
         ])
         output_names.extend(list(self.vectorized_chain.output_grammar.names))
         output_names.extend(list(self.unvectorized_chain.output_grammar.names))
@@ -234,14 +245,12 @@ class TemporalScenario(Model):
         output_names.extend(self.control_delay_times.keys())
         output_names.extend([
             f"{self._interpolation_prefix}.{self._control_prefix}.{name}"
-            for name in self.control_delay_times.keys()
+            for name in self.control_delay_times
         ])
-        output_names.extend(
-            [
-                f"{self._integration_prefix}.{name}" for name in
-                self.time_integrated_outputs
-            ]
-        )
+        output_names.extend([
+            f"{self._integration_prefix}.{name}"
+            for name in self.time_integrated_outputs
+        ])
 
         discipline = JAXDiscipline(
             name=name,
@@ -276,9 +285,8 @@ class TemporalScenario(Model):
 
         # Fixed inputs in time
         constant_inputs = {
-            name: input_data[f"{self._constant_prefix}.{name}"] * ones(
-                self.time_vector.shape
-            )
+            name: input_data[f"{self._constant_prefix}.{name}"]
+            * ones(self.time_vector.shape)
             for name in self.constant_inputs
         }
         stacked_inputs.update(constant_inputs)
@@ -295,52 +303,51 @@ class TemporalScenario(Model):
             for name in self.interpolated_inputs
         }
         interpolated_inputs.update({
-            f"{self._interpolation_prefix}.{self._control_prefix}.{name}":
-                interpolate_data(
-                    x=self.time_vector,
-                    x_data=self.time_interpolation,
-                    y_data=input_data[f"{self._control_prefix}.{name}"],
-                    cubic=self.cubic_interpolation,
-                )
-            for name in self.control_delay_times.keys()
+            f"{self._interpolation_prefix}.{self._control_prefix}.{name}": interpolate_data(  # noqa: E501
+                x=self.time_vector,
+                x_data=self.time_interpolation,
+                y_data=input_data[f"{self._control_prefix}.{name}"],
+                cubic=self.cubic_interpolation,
+            )
+            for name in self.control_delay_times
             if name not in self.custom_controls
         })
-        interpolated_inputs.update(
-            {
-                f"{self._interpolation_prefix}.{self._control_prefix}.{name}":
-                    interpolate_data(
-                        x=self.time_vector,
-                        x_data=output_data[f"{self._control_prefix}.{name}.times"],
-                        y_data=output_data[f"{self._control_prefix}.{name}.values"],
-                        cubic=self.cubic_interpolation,
-                    )
-                for name in self.custom_controls
-            }
-        )
+        interpolated_inputs.update({
+            f"{self._interpolation_prefix}.{self._control_prefix}.{name}": interpolate_data(  # noqa: E501
+                x=self.time_vector,
+                x_data=output_data[f"{self._control_prefix}.{name}.times"],
+                y_data=output_data[f"{self._control_prefix}.{name}.values"],
+                cubic=self.cubic_interpolation,
+            )
+            for name in self.custom_controls
+        })
 
         sum_controls = {
-            group_name: sum(
+            group_name: jnp_sum(
                 array([
                     interpolate_data(
                         x=self.time_vector,
                         x_data=output_data[f"{self._control_prefix}.{name}.times"]
-                        if name in self.custom_controls else self.time_interpolation,
+                        if name in self.custom_controls
+                        else self.time_interpolation,
                         y_data=output_data[f"{self._control_prefix}.{name}.values"]
-                        if name in self.custom_controls else input_data[
-                            f"{self._control_prefix}.{name}"
-                        ]
+                        if name in self.custom_controls
+                        else input_data[f"{self._control_prefix}.{name}"],
                     )
-                for name in names
-                ]), axis=0,
-            ) for group_name, names in self.constrained_control_groups.items()
+                    for name in names
+                ]),
+                axis=0,
+            )
+            for group_name, names in self.constrained_control_groups.items()
         }
         controls_constraint = {
             f"{group_name}.controls_constraint": values - 1.0
             for group_name, values in sum_controls.items()
         }
         controls_constraint.update({
-            f"{group_name}.controls_constraint_violation":
-                where(values > 1.0, values - 1.0, 0.0)
+            f"{group_name}.controls_constraint_violation": where(
+                values > 1.0, values - 1.0, 0.0
+            )
             for group_name, values in sum_controls.items()
         })
         output_data.update(controls_constraint)
@@ -395,8 +402,9 @@ class TemporalScenario(Model):
         output_data.update(stacked_outputs)
 
         time_integrated = {
-            f"{self._integration_prefix}.{name}":
-                trapezoid(output_data[name], self.time_vector)
+            f"{self._integration_prefix}.{name}": trapezoid(
+                output_data[name], self.time_vector
+            )
             for name in self.time_integrated_outputs
             if name not in self.unvectorized_chain.output_grammar.names
         }
@@ -405,4 +413,5 @@ class TemporalScenario(Model):
 
     @property
     def interpolation_prefix(self):
+        """Prefix for interpolated values at interpolation times."""
         return self._interpolation_prefix
