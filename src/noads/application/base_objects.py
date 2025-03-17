@@ -377,6 +377,6 @@ def initialize_base_objects(
 
         # Create the fleet object assembling all aircraft
         fleets.append(Fleet(cat_name, operating_aircraft=aircraft))
-    fleet = FleetAssembly(fleets, design_aircraft=True)
+    fleet = FleetAssembly(fleets)
 
     return energy_mix, fleet

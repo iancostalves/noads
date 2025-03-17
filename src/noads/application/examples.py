@@ -16,24 +16,20 @@
 """Utilities for launching scenario optimization examples."""
 
 from json import dump
-from json import load
-from os import walk
+from logging import getLogger
 from pathlib import Path
 
 from gemseo import configure_logger
 from gemseo import create_scenario
-from numpy import array as np_array
-from numpy import interp
 from numpy import linspace
-from numpy import sum as np_sum
-from numpy import trapz
-from numpy import vstack
 
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
 from noads.application.scenario_setup import multi_scenario_setup
 from noads.application.scenario_setup import single_scenario_setup
 from noads.application.visualization import plot_multi_scenario_result
 from noads.application.visualization import plot_single_scenario_result
+
+LOGGER = getLogger(__name__)
 
 
 def single_policy_scenario_optimization(
@@ -122,12 +118,6 @@ def single_policy_scenario_optimization(
         xtol_rel=1e-11,
         xtol_abs=1e-11,
     )
-    # gemseo_scenario.post_process(
-    #     post_name="OptHistoryView",
-    #     save=save_optimum,
-    #     show=plot_optimum,
-    #     directory_path=f"{formulation_name}/{scenario_name}" if save_optimum else "",
-    # )
 
     input_optimal = gemseo_scenario.optimization_result.x_opt_as_dict
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
@@ -152,9 +142,13 @@ def single_policy_scenario_optimization(
             dump(result, r_file)
 
     if plot_optimum:
+        gemseo_scenario.post_process(
+            post_name="OptHistoryView",
+            show=True,
+            save=False,
+        )
         plot_single_scenario_result(
             scenario_name=scenario_name,
-            folder_name=f"./{formulation_name}/{scenario_name}",
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
@@ -163,50 +157,50 @@ def single_policy_scenario_optimization(
     return output_optimal
 
 
-def single_scenario_synthesis():
-    """Sinthetize scenario results from a single policy optimization."""
-    directory = "./single_policy"
-    variables_units_conversion = {
-        "rpk": (1e-12, "trillion pax-km / yr"),
-        "ask": (1e-12, "trillion pax-km / yr"),
-        "CO2": (1e-15, "Gt CO2 / yr"),
-        "ELECTRICITY.consumption": (1e-12, "EJ / yr"),
-        "BIOMASS.consumption": (1e-12, "EJ / yr"),
-        "OIL.consumption": (1e-12, "EJ / yr"),
-    }
-    aircraft_agregation_names = [
-        "Current",
-        "JetA",
-        "Battery",
-        "lH2",
-    ]
-    observed_years = np_array([2030, 2050, 2070])
-
-    for _path, folders, _files in walk(directory):
-        for folder_name in folders:
-            with Path(f"{directory}/{folder_name}/opt_result.json").open() as f:
-                result = load(f)
-                io_dict = {**result["inputs"], **result["outputs"]}
-                simulation_years = io_dict["year"]
-                for _i, (var, (factor, _unit)) in enumerate(
-                    variables_units_conversion.items()
-                ):
-                    interp(observed_years, simulation_years, io_dict[var]) * factor
-                    trapz(io_dict[var], simulation_years) * factor
-                for aircraft_name in aircraft_agregation_names:
-                    if any(".ask" in var and aircraft_name in var for var in io_dict):
-                        asks = vstack([
-                            np_array(value)
-                            for var, value in io_dict.items()
-                            if ".ask" in var and aircraft_name in var
-                        ])
-                        sum_ask = np_sum(asks, axis=0)
-                        interp(
-                            observed_years, simulation_years, sum_ask
-                        ) * variables_units_conversion["rpk"][0]
-                        trapz(sum_ask, simulation_years) * variables_units_conversion[
-                            "rpk"
-                        ][0]
+# def single_scenario_synthesis():
+#     """Sinthetize scenario results from a single policy optimization."""
+#     directory = "./single_policy"
+#     variables_units_conversion = {
+#         "rpk": (1e-12, "trillion pax-km / yr"),
+#         "ask": (1e-12, "trillion pax-km / yr"),
+#         "CO2": (1e-15, "Gt CO2 / yr"),
+#         "ELECTRICITY.consumption": (1e-12, "EJ / yr"),
+#         "BIOMASS.consumption": (1e-12, "EJ / yr"),
+#         "OIL.consumption": (1e-12, "EJ / yr"),
+#     }
+#     aircraft_agregation_names = [
+#         "Current",
+#         "JetA",
+#         "Battery",
+#         "lH2",
+#     ]
+#     observed_years = np_array([2030, 2050, 2070])
+#
+#     for _path, folders, _files in walk(directory):
+#         for folder_name in folders:
+#             with Path(f"{directory}/{folder_name}/opt_result.json").open() as f:
+#                 result = load(f)
+#                 io_dict = {**result["inputs"], **result["outputs"]}
+#                 simulation_years = io_dict["year"]
+#                 for _i, (var, (factor, _unit)) in enumerate(
+#                     variables_units_conversion.items()
+#                 ):
+#                     interp(observed_years, simulation_years, io_dict[var]) * factor
+#                     trapz(io_dict[var], simulation_years) * factor
+#                 for aircraft_name in aircraft_agregation_names:
+#                     if any(".ask" in var and aircraft_name in var for var in io_dict):
+#                         asks = vstack([
+#                             np_array(value)
+#                             for var, value in io_dict.items()
+#                             if ".ask" in var and aircraft_name in var
+#                         ])
+#                         sum_ask = np_sum(asks, axis=0)
+#                         interp(
+#                             observed_years, simulation_years, sum_ask
+#                         ) * variables_units_conversion["rpk"][0]
+#                         trapz(sum_ask, simulation_years) * variables_units_conversion[
+#                             "rpk"
+#                         ][0]
 
 
 def single_policy_robust_scenario_optimization(

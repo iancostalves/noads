@@ -72,6 +72,10 @@ gdp_per_capita_end_covid = {
 # done automatically, but here we must to it manually.
 model = AirTraffic()
 model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
+
+# %%
+# # Results
+# Now let's visualize the results for each scenario
 outputs = {}
 fig, axes = subplots(2, 2, figsize=(8, 6), layout="constrained")
 vones = ones(years.shape)

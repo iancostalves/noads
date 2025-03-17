@@ -33,6 +33,11 @@ from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 
+# %%
+# # Aircraft Technology Evolution
+# Let's start by initializing the time evolution of some key aircraft technology
+# components, according to several literature sources.
+
 data_sources = {
     "NASA": {
         "battery_specific_energy": array([[2035, 2040], [500, 750]]),
@@ -134,6 +139,9 @@ propulsion_colors = {
     "lH2-GasTurbine": "orangered",
 }
 
+# %%
+# Now let's visualize how the Technology Evolution scenarios compare with these sources.
+
 years = linspace(2020, 2060, 41)
 fig1, axes1 = subplots(
     4,
@@ -184,6 +192,16 @@ fig1.suptitle(
     fontsize="large",
 )
 show()
+
+# %%
+# # Prospective Aircraft Design
+# Now for each year of Entry-Into-Service we'll design an airplane using GAM and compare
+# their overall empty weight and mission energy consumption.
+#
+# Unfeasible designs may yield infinite mass and energy, therefore the (mass/energy)
+# metric is calculated on a per (pax-km) basis and then inverted. They are therefore a
+# measure of traffic per (mass/energy). The highest the metric the lower the
+# (mass/energy).
 
 fig2, axes2 = subplots(3, 2, layout="constrained", figsize=(8, 12))
 fig2.suptitle("Aircraft Energy Efficiency\n[pax km / MJ]", fontsize="x-large")

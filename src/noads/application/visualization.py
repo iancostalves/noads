@@ -67,9 +67,11 @@ def plot_single_scenario_result(
             for energy in energy_mix.produced_energies
             if energy.name == energy_name
         )
-    fig, axes = subplots(2, len(mixed_energies), figsize=(12, 7), layout="constrained")
+    fig_e, axes_e = subplots(
+        2, len(mixed_energies), figsize=(12, 7), layout="constrained"
+    )
     for i, energy in enumerate(mixed_energies):
-        axes[0, i].stackplot(
+        axes_e[0, i].stackplot(
             years,
             [
                 output_optimal[f"{pathway.name}.production"] * 1e-12
@@ -77,12 +79,12 @@ def plot_single_scenario_result(
             ],
             labels=[pathway.name for pathway in energy.pathways],
         )
-        axes[0, i].set_ylim((0, 22))
-        axes[0, i].legend(loc="upper left", reverse=True, framealpha=0.4)
-        axes[0, i].set_title(energy.name)
-        axes[1, i].set_ylim((0, 150))
+        axes_e[0, i].set_ylim((0, 22))
+        axes_e[0, i].legend(loc="upper left", reverse=True, framealpha=0.4)
+        axes_e[0, i].set_title(energy.name)
+        axes_e[1, i].set_ylim((0, 150))
         for pathway in energy.pathways:
-            axes[1, i].plot(
+            axes_e[1, i].plot(
                 years,
                 output_optimal[f"{pathway.name}.CO2_index"] * ones(years.shape)
                 if output_optimal[f"{pathway.name}.CO2_index"].size == 1
@@ -90,36 +92,36 @@ def plot_single_scenario_result(
                 "-",
                 linewidth=2,
             )
-        axes[1, i].plot(
+        axes_e[1, i].plot(
             years,
             output_optimal[f"{energy.name}.CO2_index"],
             "k:",
             linewidth=3,
         )
-    axes[0, 0].set_ylabel("Production\n[EJ / year]")
-    axes[1, 0].set_ylabel("Emission factor\n[gCO2 / MJ]")
-    fig.show()
-    close(fig)
+    axes_e[0, 0].set_ylabel("Production\n[EJ / year]")
+    axes_e[1, 0].set_ylabel("Emission factor\n[gCO2 / MJ]")
+    fig_e.show()
+    # close(fig)
 
     # Aggregated consumption and impacts
     # output_optimal.update(renewable_gap.default_inputs)
-    fig, axes = subplots(
+    fig_c, axes_c = subplots(
         len(energy_mix.input_streams),
         figsize=(6, 10),
         layout="constrained",
     )
     # Energy resources and their constraint
     for i, stream in enumerate(energy_mix.input_streams):
-        axes[i].plot(
+        axes_c[i].plot(
             years,
             output_optimal[f"{stream.name}.consumption"] * 1e-12,
             linewidth=2,
             label="Consumed",
         )
-        axes[i].set_title(f"{stream.name} consumption")
-        axes[i].set_ylabel("EJ / year")
+        axes_c[i].set_title(f"{stream.name} consumption")
+        axes_c[i].set_ylabel("EJ / year")
         if stream in energy_mix.constrained_inputs:
-            axes[i].plot(
+            axes_c[i].plot(
                 years,
                 output_optimal[f"{stream.name}.global_production"]
                 * output_optimal[f"{stream.name}.fair_share"]
@@ -128,13 +130,15 @@ def plot_single_scenario_result(
                 linewidth=3,
                 label="Available to aviation",
             )
-            axes[i].legend(loc="upper left")
-    axes[-1].set_xlabel("Year")
-    fig.show()
-    close(fig)
+            axes_c[i].legend(loc="upper left")
+    axes_c[-1].set_xlabel("Year")
+    fig_c.show()
+    # close(fig)
 
     # Fleet ASK composition and mean energy consumption
-    fig, axes = subplots(2, len(fleet.fleets), figsize=(16, 7), layout="constrained")
+    fig_f, axes_f = subplots(
+        2, len(fleet.fleets), figsize=(16, 7), layout="constrained"
+    )
     for i, fleet_i in enumerate(fleet.fleets):
         asks = [
             output_optimal[f"{aircraft.name}.ask"] * 1e-12
@@ -158,14 +162,14 @@ def plot_single_scenario_result(
             colors.append("gainsboro")
             hatches.append("xx")
 
-        axes[0, i].stackplot(
+        axes_f[0, i].stackplot(
             years,
             asks,
             labels=labels,
             colors=colors,
             hatch=hatches,
         )
-        axes[0, i].set_title(fleet_i.name.replace("_", " "))
+        axes_f[0, i].set_title(fleet_i.name.replace("_", " "))
 
         for j, aircraft in enumerate(fleet_i.operating_aircraft):
             co2_per_ask = (
@@ -179,7 +183,7 @@ def plot_single_scenario_result(
                 )
                 / (output_optimal[f"{aircraft.name}.ask"])
             )
-            axes[1, i].plot(years, co2_per_ask, "-", linewidth=2, color=colors[j])
+            axes_f[1, i].plot(years, co2_per_ask, "-", linewidth=2, color=colors[j])
         co2_per_ask = np_sum(
             [
                 output_optimal[
@@ -190,20 +194,20 @@ def plot_single_scenario_result(
             ],
             axis=0,
         )
-        axes[1, i].plot(years, co2_per_ask, "k:", linewidth=3, label="Mean")
-        axes[1, i].set_ylim((0, 175))
+        axes_f[1, i].plot(years, co2_per_ask, "k:", linewidth=3, label="Mean")
+        axes_f[1, i].set_ylim((0, 175))
 
-    axes[0, 0].legend(bbox_to_anchor=(0.9, -0.1))
-    axes[1, 0].legend(loc="upper right")
+    axes_f[0, 0].legend(bbox_to_anchor=(0.9, -0.1))
+    axes_f[1, 0].legend(loc="upper right")
 
-    axes[0, 0].set_ylabel("Available Seat Kilometers\n[trillion pax km]")
-    axes[1, 0].set_ylabel("Carbon Intensity\n[g CO2 / ASK]")
+    axes_f[0, 0].set_ylabel("Available Seat Kilometers\n[trillion pax km]")
+    axes_f[1, 0].set_ylabel("Carbon Intensity\n[g CO2 / ASK]")
 
-    fig.show()
-    close(fig)
+    fig_f.show()
+    # close(fig)
 
     if low_demand:
-        fig, ax = subplots(layout="constrained")
+        fig_d, ax = subplots(layout="constrained")
         ax.plot(years, output_optimal["ask"], label="Fulfilled")
         ax.plot(years, output_optimal["ask_trend"], "k:", label="Trend")
         ax.plot(years, output_optimal["ask_avoided"], "r--", label="Avoided")
@@ -211,11 +215,11 @@ def plot_single_scenario_result(
         ax.set_ylabel("Available Seat Kilometers\n[pax km]")
         ax.set_xlabel("Year")
         ax.set_title("Air traffic supply")
-        fig.show()
-        close(fig)
+        fig_d.show()
+        # close(fig)
 
-        fig, axes = subplots(3, 1, figsize=(5, 10), layout="constrained")
-        axes[0].stackplot(
+        fig_a, axes_a = subplots(3, 1, figsize=(5, 10), layout="constrained")
+        axes_a[0].stackplot(
             years,
             [
                 output_optimal[f"{fleet_i.name}.ask_avoided"] * 1e-12
@@ -223,43 +227,43 @@ def plot_single_scenario_result(
             ],
             labels=[fleet_i.name for fleet_i in fleet.fleets],
         )
-        axes[0].set_title("Avoided ASK")
-        axes[0].set_ylabel("trillion seat km")
-        axes[0].legend(loc="upper left", framealpha=0.7)
+        axes_a[0].set_title("Avoided ASK")
+        axes_a[0].set_ylabel("trillion seat km")
+        axes_a[0].legend(loc="upper left", framealpha=0.7)
 
         for fleet_i in fleet.fleets:
-            axes[1].plot(
+            axes_a[1].plot(
                 years,
                 output_optimal[f"{fleet_i.name}.relative_price_change"] * 100,
                 linewidth=2,
             )
-            axes[2].plot(
+            axes_a[2].plot(
                 years,
                 output_optimal[f"{fleet_i.name}.discounted_relative_price_change"]
                 * 1.0e2,
                 linewidth=2,
             )
-        axes[1].plot(
+        axes_a[1].plot(
             years,
             output_optimal["relative_price_change"] * 100,
             "k:",
             linewidth=3,
             label="Global mean",
         )
-        axes[1].set_title("Relative ticket price increase")
-        axes[1].set_ylabel("%")
+        axes_a[1].set_title("Relative ticket price increase")
+        axes_a[1].set_ylabel("%")
 
-        axes[2].plot(
+        axes_a[2].plot(
             years,
             output_optimal["discounted_relative_price_change"] * 100,
             "k:",
             linewidth=3,
         )
-        axes[2].set_title("Time-discounted ticket price increase")
-        axes[2].set_ylabel("%")
-        axes[2].set_xlabel("Year")
-        fig.show()
-        close(fig)
+        axes_a[2].set_title("Time-discounted ticket price increase")
+        axes_a[2].set_ylabel("%")
+        axes_a[2].set_xlabel("Year")
+        fig_a.show()
+        # close(fig)
 
     # Simplified energy sankey diagrams
     sankey_years = [2030, 2045, 2060]
@@ -483,7 +487,7 @@ def plot_single_scenario_result(
         p_fig.show(renderer="sphinx_gallery_png")
 
 
-def plot_scenario_comparison(scenario_outputs, year_endplots, folder_name, figure_name):
+def plot_scenario_comparison(scenario_outputs, year_endplots):
     """Plot basic scenario comparison."""
     fig = figure()
     gs = fig.add_gridspec(2, 9)
@@ -641,11 +645,11 @@ def plot_scenario_comparison(scenario_outputs, year_endplots, folder_name, figur
 
     fig.canvas.draw()
     fig.tight_layout()
-    fig.savefig(f"{folder_name}/{figure_name}.pdf")
-    close(fig)
+    fig.show()
+    # close(fig)
 
 
-def plot_tech_scenario_comparison(scenario_outputs, colors, folder_name, figure_name):
+def plot_tech_scenario_comparison(scenario_outputs, colors):
     """Plot scenario comparison with lower, mid, and upper technology."""
     fig = figure()
     gs = fig.add_gridspec(2, 9)
@@ -897,15 +901,13 @@ def plot_tech_scenario_comparison(scenario_outputs, colors, folder_name, figure_
 
     fig.canvas.draw()
     fig.tight_layout()
-    fig.savefig(f"{folder_name}/{figure_name}.pdf")
-    close(fig)
+    fig.show()
+    # close(fig)
 
 
 def plot_multi_scenario_result(
     scenario_names,
     mean_outputs,
-    folder_name,
-    figure_name,
     output_optimal,
     energy_mix,
     fleet,
@@ -994,9 +996,7 @@ def plot_multi_scenario_result(
             low_demand=low_demand,
         )
 
-    plot_scenario_comparison(
-        scenario_comparison, year_endplots, folder_name, figure_name
-    )
+    plot_scenario_comparison(scenario_comparison, year_endplots)
 
 
 def plot_traffic_emissions_pareto_front(
