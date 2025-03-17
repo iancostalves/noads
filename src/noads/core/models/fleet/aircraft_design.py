@@ -110,9 +110,8 @@ class AircraftDesign(AircraftOperation):
             f"{self.name}.energy_mass": final_design["mission_fuel"],
             f"{self.name}.mtow": final_design["mtow"],
             f"{self.name}.owe": final_design["owe"],
-            f"{self.name}.relative_efficiency_gain": self.reference_aircraft.energy_per_ask
-            / final_design["enrg_consumption"]
-            * 1.0e-3,  # noqa: E501
+            f"{self.name}.relative_efficiency_gain": self.reference_aircraft.energy_per_ask  # noqa: E501
+            / (final_design["enrg_consumption"] * 1.0e-3),
         })
         return output_data
 

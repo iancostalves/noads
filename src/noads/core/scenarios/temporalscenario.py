@@ -193,9 +193,9 @@ class TemporalScenario(Model):
         ]
 
         default_input_data = {
-            f"{self._constant_prefix}.{name}": self.unvectorized_chain.default_input_data[
+            f"{self._constant_prefix}.{name}": self.unvectorized_chain.default_input_data[  # noqa: E501
                 name
-            ]  # noqa: E501
+            ]
             for name in self.unvectorized_chain.input_grammar.names
         }
         default_input_data.update({
@@ -206,9 +206,9 @@ class TemporalScenario(Model):
             if name not in self.unvectorized_chain.input_grammar.names
         })
         default_input_data.update({
-            f"{self._interpolation_prefix}.{name}": self.vectorized_chain.default_input_data[
+            f"{self._interpolation_prefix}.{name}": self.vectorized_chain.default_input_data[  # noqa: E501
                 name
-            ]  # noqa: E501
+            ]
             * ones(self.time_interpolation.shape)
             for name in self.interpolated_inputs
         })

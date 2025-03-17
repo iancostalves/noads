@@ -79,9 +79,9 @@ class MultiScenario(Model):
         self.mean_outputs = list(mean_outputs)
 
         default_input_data = {
-            f"{self._fixed_prefix}.{name}": self.temporal_scenario.discipline.default_input_data[
+            f"{self._fixed_prefix}.{name}": self.temporal_scenario.discipline.default_input_data[  # noqa: E501
                 name
-            ]  # noqa: E501
+            ]
             for name in self.fixed_inputs
         }
         default_input_data.update({
