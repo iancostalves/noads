@@ -21,7 +21,7 @@
          PETEILH Nicolas : portage to Python
 """
 
-# ruff: noqa D205, E501, N806, TRY002, N802, D103, N803
+# ruff: noqa: D205, E501, N806, TRY002, N802, D103, N803
 
 import numpy as np
 from jax.numpy import array

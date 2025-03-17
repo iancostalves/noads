@@ -21,7 +21,7 @@
          Nicolas PETEILH, Pascal ROCHES, Nicolas MONROLIN, Thierry DRUOT
          AircraftOperation & Systems, Air Transport Department, ENAC
 """
-# ruff: noqa D101, D107, E501, D102, N803, D205, TRY002, A002, A001, N806, SIM108, PTH123
+# ruff: noqa: D101, D107, E501, D102, N803, D205, TRY002, A002, A001, N806, SIM108, PTH123, D103
 
 import matplotlib.pyplot as plt
 from jax import config

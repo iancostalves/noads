@@ -22,7 +22,7 @@
          AircraftOperation & Systems, Air Transport Department, ENAC
 """
 
-# ruff: noqa E501, A001
+# ruff: noqa: E501, A001
 
 from generic_airplane_model import GAM
 

@@ -14,7 +14,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-# ruff: noqa D100, D103, E501
+# ruff: noqa: D100, D103, E501
 
 import matplotlib.pyplot as plt
 import numpy as np
