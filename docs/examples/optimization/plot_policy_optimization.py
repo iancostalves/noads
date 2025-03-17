@@ -31,11 +31,14 @@ from noads.application.visualization import plot_tech_scenario_comparison
 background_scenario = "SSP2-26"
 
 # %%
-# We will compare 3 scenarios:
+# We will compare 3 scenarios, all with introduction of new aircraft with alternative
+# energy carriers (Breakthrough mitigation):
 # - Baseline: minimize cumulative CO2 emissions, subject to trend traffic and 5% of
 # global production of electricity and biomass.
+#
 # - Extra availability: minimize cumulative CO2 emissions, subject to trend traffic and
 # 8.6% of global production of electricity and biomass.
+#
 # - Low demand: minimize the burden of demand avoidance, subject to 5% of global
 # production of electricity and biomass, and constrain cumulative emissions to 3% of the
 # 2°C carbon budget.

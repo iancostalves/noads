@@ -15,7 +15,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Utilities for visualizing decarbonization scenarios."""
 
-from matplotlib.pyplot import close
+import plotly.io as pio
 from matplotlib.pyplot import figure
 from matplotlib.pyplot import subplots
 from numpy import argwhere
@@ -31,6 +31,8 @@ from noads.application.background_scenario_data import co2_budget_1p8deg_66perce
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
 from noads.application.background_scenario_data import get_scenario_color
 from noads.application.background_scenario_data import lines_gen
+
+pio.renderers.default = "sphinx_gallery"
 
 propulsion_colors = {
     "Current": "y",
@@ -973,7 +975,7 @@ def plot_multi_scenario_result(
         ax.set_xlabel("Year")
         ax.set_title(mean_output)
         fig.show()
-        close(fig)
+        # close(fig)
 
     scenario_comparison = {}
     for scenario in scenario_names:
@@ -999,9 +1001,7 @@ def plot_multi_scenario_result(
     plot_scenario_comparison(scenario_comparison, year_endplots)
 
 
-def plot_traffic_emissions_pareto_front(
-    scenario_outputs, colors_markers, folder_name, figure_name, n_sub_opt
-):
+def plot_traffic_emissions_pareto_front(scenario_outputs, colors_markers, n_sub_opt):
     """Plot multi-scenario Traffic vs Emissions Pareto front."""
     fig, ax = subplots(layout="constrained")
     lines = lines_gen()
@@ -1068,50 +1068,50 @@ def plot_traffic_emissions_pareto_front(
     ax.set_ylabel("Cumulative emissions\n[Gt CO2]")
     ax.set_xlabel("Cumulative RPK\n[trillion pax-km]")
     ax.legend(loc="lower right")
-    fig.savefig(f"{folder_name}/{figure_name}.pdf")
+    fig.show()
 
 
-def plot_robustness_pareto_front(
-    target_scenario_name,
-    scenario_outputs,
-    colors_markers,
-    folder_name,
-    figure_name,
-    n_sub_opt,
-    low_demand,
-):
-    """Plot multi-scenario Target Scenario vs Mean Scenario Pareto front."""
-    fig, ax = subplots(layout="constrained")
-    lines = lines_gen()
-    objective_name = "cumulative.rpk" if low_demand else "cumulative.CO2"
-    objective_scale = 1.0 if low_demand else 1.0e-15
-    all_names = ""
-    for i, (scenario, output) in enumerate(scenario_outputs.items()):
-        if i != 0:
-            all_names += ", "
-        all_names += scenario
-        line = next(lines)
-        color, marker = colors_markers[i]
-        target = [
-            output[f"{j}.{target_scenario_name}.{objective_name}"] * objective_scale
-            for j in range(n_sub_opt + 1)
-            if f"{j}.{target_scenario_name}.{objective_name}" in output
-        ]
-        mean = [
-            output[f"{j}.mean.{objective_name}"] * objective_scale
-            for j in range(n_sub_opt + 1)
-            if f"{j}.mean.{objective_name}" in output
-        ]
-        ax.plot(
-            target, mean, color=color, marker=marker, linestyle=line, label=scenario
-        )
-
-    label_name = (
-        "Cumulative RPK [trillion pax-km]"
-        if low_demand
-        else "Cumulative emissions [Gt CO2]"
-    )
-    ax.set_xlabel(f"{target_scenario_name}\n{label_name}")
-    ax.set_ylabel(f"Mean ({all_names})\n{label_name}")
-    ax.legend(loc="upper right")
-    fig.savefig(f"{folder_name}/{figure_name}.pdf")
+# def plot_robustness_pareto_front(
+#     target_scenario_name,
+#     scenario_outputs,
+#     colors_markers,
+#     folder_name,
+#     figure_name,
+#     n_sub_opt,
+#     low_demand,
+# ):
+#     """Plot multi-scenario Target Scenario vs Mean Scenario Pareto front."""
+#     fig, ax = subplots(layout="constrained")
+#     lines = lines_gen()
+#     objective_name = "cumulative.rpk" if low_demand else "cumulative.CO2"
+#     objective_scale = 1.0 if low_demand else 1.0e-15
+#     all_names = ""
+#     for i, (scenario, output) in enumerate(scenario_outputs.items()):
+#         if i != 0:
+#             all_names += ", "
+#         all_names += scenario
+#         line = next(lines)
+#         color, marker = colors_markers[i]
+#         target = [
+#             output[f"{j}.{target_scenario_name}.{objective_name}"] * objective_scale
+#             for j in range(n_sub_opt + 1)
+#             if f"{j}.{target_scenario_name}.{objective_name}" in output
+#         ]
+#         mean = [
+#             output[f"{j}.mean.{objective_name}"] * objective_scale
+#             for j in range(n_sub_opt + 1)
+#             if f"{j}.mean.{objective_name}" in output
+#         ]
+#         ax.plot(
+#             target, mean, color=color, marker=marker, linestyle=line, label=scenario
+#         )
+#
+#     label_name = (
+#         "Cumulative RPK [trillion pax-km]"
+#         if low_demand
+#         else "Cumulative emissions [Gt CO2]"
+#     )
+#     ax.set_xlabel(f"{target_scenario_name}\n{label_name}")
+#     ax.set_ylabel(f"Mean ({all_names})\n{label_name}")
+#     ax.legend(loc="upper right")
+#     fig.savefig(f"{folder_name}/{figure_name}.pdf")

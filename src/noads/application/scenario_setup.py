@@ -43,7 +43,7 @@ def single_scenario_setup(
     scenario_name: str,
     start_year=2025,
     end_year=2075,
-    time_step=1.0,
+    time_step=2.5,
     interp_step=5.0,
     technology_index=0,
     integrate_constraints=False,
@@ -355,7 +355,6 @@ def multi_scenario_setup(
     integrate_constraints=False,
     demand_aversion=False,
     drop_in_only=False,
-    include_methane=False,
     preferential_energy=False,
     plot_scenario_data=False,
 ):
@@ -370,7 +369,6 @@ def multi_scenario_setup(
         integrate_constraints=integrate_constraints,
         demand_aversion=demand_aversion,
         drop_in_only=drop_in_only,
-        include_methane=include_methane,
         preferential_energy=preferential_energy,
         plot_scenario_data=plot_scenario_data,
     )

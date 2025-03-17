@@ -128,7 +128,7 @@ def single_policy_scenario_optimization(
             post_name="OptHistoryView",
             show=True,
             save=False,
-            fig_size=(11.0, 44.0),
+            fig_size=(11.0, 22.0),
         )
 
     if save_optimum:
@@ -214,6 +214,7 @@ def single_policy_robust_scenario_optimization(
     preferential_energy=False,
     plot_optimum=True,
     save_optimum=False,
+    plot_history_view=False,
 ):
     """Optimal decarbonization scenario robust to several background scenarios."""
     if drop_in_only:
@@ -243,7 +244,7 @@ def single_policy_robust_scenario_optimization(
             start_year=start_year,
             end_year=end_year,
             technology_index=technology_index,
-            plot_scenario_data=True,
+            plot_scenario_data=False,
             integrate_constraints=False,
             aggregate_constraints=False,
             demand_aversion=low_demand_formulation,
@@ -254,7 +255,7 @@ def single_policy_robust_scenario_optimization(
 
     gemseo_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
-        formulation="DisciplinaryOpt",
+        formulation_name="DisciplinaryOpt",
         objective_name=(
             "mean.cumulative.discounted_relative_price_change"
             if low_demand_formulation
@@ -283,27 +284,26 @@ def single_policy_robust_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
-    gemseo_scenario.execute({
-        "max_iter": 1500,
-        "algo": "NLOPT_SLSQP",
-        "algo_options": {
-            "ftol_rel": 1e-14,
-            "ftol_abs": 1e-14,
-            "ineq_tolerance": 1e-6,
-            "xtol_rel": 1e-11,
-            "xtol_abs": 1e-11,
-        },
-    })
-    gemseo_scenario.post_process(
-        "OptHistoryView",
-        save=True,
-        show=False,
-        directory_path=f"{formulation_name}/{scenario_name}",
+    gemseo_scenario.execute(
+        max_iter=1500,
+        algo_name="NLOPT_SLSQP",
+        ftol_rel=1e-14,
+        ftol_abs=1e-14,
+        ineq_tolerance=1e-6,
+        xtol_rel=1e-11,
+        xtol_abs=1e-11,
     )
 
     input_optimal = gemseo_scenario.optimization_result.x_opt_as_dict
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
-    # output_optimal.update(aeromax_scenario.discipline.default_inputs)
+
+    if plot_history_view:
+        gemseo_scenario.post_process(
+            post_name="OptHistoryView",
+            show=True,
+            save=False,
+            fig_size=(11.0, 44.0),
+        )
 
     if save_optimum:
         if not Path(formulation_name).is_dir():
@@ -314,10 +314,7 @@ def single_policy_robust_scenario_optimization(
             "inputs": {name: value.tolist() for name, value in input_optimal.items()}
         }
         result.update({
-            "outputs": {
-                name: value if len(value) == 1 else value.tolist()
-                for name, value in output_optimal.items()
-            }
+            "outputs": {name: value.tolist() for name, value in output_optimal.items()}
         })
         with Path(f"{formulation_name}/{scenario_name}/opt_result.json").open(
             "w"
@@ -328,8 +325,6 @@ def single_policy_robust_scenario_optimization(
         plot_multi_scenario_result(
             scenario_names=global_scenario_names,
             mean_outputs=aeromax_scenario.mean_outputs,
-            folder_name=f"./{formulation_name}/{scenario_name}",
-            figure_name="robust_scenario",
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
@@ -342,7 +337,6 @@ def single_policy_robust_scenario_optimization(
 def multi_policy_scenario_optimization(
     global_scenario_name,
     n_sub_optim=10,
-    # min_carbon_budget_percent=2.5,
     technology_index=0,
     drop_in_only=False,
     preferential_energy=False,
@@ -377,7 +371,7 @@ def multi_policy_scenario_optimization(
             time_step=2.0,
             interp_step=5.0,
             technology_index=technology_index,
-            plot_scenario_data=True,
+            plot_scenario_data=False,
             integrate_constraints=False,
             demand_aversion=False,
             drop_in_only=drop_in_only,
@@ -387,7 +381,7 @@ def multi_policy_scenario_optimization(
 
     min_co2_trend_traffic_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
-        formulation="DisciplinaryOpt",
+        formulation_name="DisciplinaryOpt",
         objective_name="cumulative.CO2",
         design_space=design_space,
     )
@@ -404,30 +398,28 @@ def multi_policy_scenario_optimization(
                 -1
             ] *= 0.1
 
-    min_co2_trend_traffic_scenario.execute({
-        "max_iter": 700,
-        "algo": "NLOPT_SLSQP",
-        "algo_options": {
-            "ftol_rel": 1e-14,
-            "ftol_abs": 1e-14,
-            "ineq_tolerance": 1e-6,
-            "xtol_rel": 1e-11,
-            "xtol_abs": 1e-11,
-        },
-    })
-    min_co2_trend_traffic_scenario.post_process(
-        "OptHistoryView",
-        save=True,
-        show=False,
-        directory_path=f"{formulation_name}/{scenario_name}/0",
+    min_co2_trend_traffic_scenario.execute(
+        max_iter=700,
+        algo_name="NLOPT_SLSQP",
+        ftol_rel=1e-14,
+        ftol_abs=1e-14,
+        ineq_tolerance=1e-6,
+        xtol_rel=1e-11,
+        xtol_abs=1e-11,
     )
+    # min_co2_trend_traffic_scenario.post_process(
+    #     "OptHistoryView",
+    #     save=True,
+    #     show=False,
+    #     directory_path=f"{formulation_name}/{scenario_name}/0",
+    # )
 
     input_optimal = min_co2_trend_traffic_scenario.optimization_result.x_opt_as_dict
     result = {"inputs": {name: value.tolist() for name, value in input_optimal.items()}}
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
     input_optimal.update({
         key: value
-        for key, value in aeromax_scenario.discipline.default_inputs.items()
+        for key, value in aeromax_scenario.discipline.default_input_data.items()
         if key not in input_optimal
     })
     max_budget = output_optimal["cumulative.CO2"]
@@ -456,7 +448,6 @@ def multi_policy_scenario_optimization(
     if plot_optimum:
         plot_single_scenario_result(
             scenario_name=scenario_name,
-            folder_name=f"./{formulation_name}/{scenario_name}/0",
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
@@ -478,7 +469,7 @@ def multi_policy_scenario_optimization(
             time_step=2.0,
             interp_step=5.0,
             technology_index=technology_index,
-            plot_scenario_data=True,
+            plot_scenario_data=False,
             integrate_constraints=False,
             demand_aversion=True,
             drop_in_only=drop_in_only,
@@ -487,7 +478,7 @@ def multi_policy_scenario_optimization(
     )
     min_co2_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
-        formulation="DisciplinaryOpt",
+        formulation_name="DisciplinaryOpt",
         objective_name="cumulative.CO2",
         design_space=design_space,
     )
@@ -498,30 +489,28 @@ def multi_policy_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             min_co2_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
-    min_co2_scenario.execute({
-        "max_iter": 700,
-        "algo": "NLOPT_SLSQP",
-        "algo_options": {
-            "ftol_rel": 1e-14,
-            "ftol_abs": 1e-14,
-            "ineq_tolerance": 1e-6,
-            "xtol_rel": 1e-11,
-            "xtol_abs": 1e-11,
-        },
-    })
-    min_co2_scenario.post_process(
-        "OptHistoryView",
-        save=True,
-        show=False,
-        directory_path=f"{formulation_name}/{scenario_name}/{n_sub_optim}",
+    min_co2_scenario.execute(
+        max_iter=700,
+        algo_name="NLOPT_SLSQP",
+        ftol_rel=1e-14,
+        ftol_abs=1e-14,
+        ineq_tolerance=1e-6,
+        xtol_rel=1e-11,
+        xtol_abs=1e-11,
     )
+    # min_co2_scenario.post_process(
+    #     "OptHistoryView",
+    #     save=True,
+    #     show=False,
+    #     directory_path=f"{formulation_name}/{scenario_name}/{n_sub_optim}",
+    # )
 
     input_optimal = min_co2_scenario.optimization_result.x_opt_as_dict
     result = {"inputs": {name: value.tolist() for name, value in input_optimal.items()}}
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
     input_optimal.update({
         key: value
-        for key, value in aeromax_scenario.discipline.default_inputs.items()
+        for key, value in aeromax_scenario.discipline.default_input_data.items()
         if key not in input_optimal
     })
     min_budget = output_optimal["cumulative.CO2"]
@@ -550,7 +539,6 @@ def multi_policy_scenario_optimization(
     if plot_optimum:
         plot_single_scenario_result(
             scenario_name=scenario_name,
-            folder_name=f"./{formulation_name}/{scenario_name}/{n_sub_optim}",
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
@@ -590,23 +578,21 @@ def multi_policy_scenario_optimization(
             1.0 / allocated_co2_budget
         )
 
-        sub_scenario.execute({
-            "max_iter": 700,
-            "algo": "NLOPT_SLSQP",
-            "algo_options": {
-                "ftol_rel": 1e-14,
-                "ftol_abs": 1e-14,
-                "ineq_tolerance": 1e-6,
-                "xtol_rel": 1e-11,
-                "xtol_abs": 1e-11,
-            },
-        })
-        sub_scenario.post_process(
-            "OptHistoryView",
-            save=True,
-            show=False,
-            directory_path=f"{formulation_name}/{scenario_name}/{i}",
+        sub_scenario.execute(
+            max_iter=700,
+            algo_name="NLOPT_SLSQP",
+            ftol_rel=1e-14,
+            ftol_abs=1e-14,
+            ineq_tolerance=1e-6,
+            xtol_rel=1e-11,
+            xtol_abs=1e-11,
         )
+        # sub_scenario.post_process(
+        #     "OptHistoryView",
+        #     save=True,
+        #     show=False,
+        #     directory_path=f"{formulation_name}/{scenario_name}/{i}",
+        # )
 
         input_optimal = sub_scenario.optimization_result.x_opt_as_dict
         result = {
@@ -615,7 +601,7 @@ def multi_policy_scenario_optimization(
         output_optimal = aeromax_scenario.discipline.execute(input_optimal)
         input_optimal.update({
             key: value
-            for key, value in aeromax_scenario.discipline.default_inputs.items()
+            for key, value in aeromax_scenario.discipline.default_input_data.items()
             if key not in input_optimal
         })
         result.update({
@@ -645,7 +631,6 @@ def multi_policy_scenario_optimization(
         if plot_optimum:
             plot_single_scenario_result(
                 scenario_name=scenario_name,
-                folder_name=f"./{formulation_name}/{scenario_name}/{i}",
                 output_optimal={**input_optimal, **output_optimal},
                 energy_mix=energy_mix,
                 fleet=fleet,
@@ -660,8 +645,6 @@ def multi_policy_scenario_optimization(
         plot_multi_scenario_result(
             scenario_names=[f"{i}" for i in range(n_sub_optim + 1)],
             mean_outputs=[],
-            folder_name=f"./{formulation_name}/{scenario_name}",
-            figure_name="pareto_front_comparison",
             output_optimal=pareto_outputs,
             energy_mix=energy_mix,
             fleet=fleet,
