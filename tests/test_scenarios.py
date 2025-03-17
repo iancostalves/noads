@@ -16,7 +16,6 @@
 
 import pytest
 from gemseo_jax.jax_discipline import DataType
-from numpy import array
 
 from noads.core.model import AutoModel
 from noads.core.model import JAXModel
@@ -185,7 +184,6 @@ def test_multi_scenario(
     interp_step,
     n_inputs,
 ):
-
     temporal_scenario = TemporalScenario(
         name="test",
         models=models,
