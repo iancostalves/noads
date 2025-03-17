@@ -44,7 +44,7 @@ def single_scenario_setup(
     start_year=2025,
     end_year=2075,
     time_step=1.0,
-    interp_step=2.0,
+    interp_step=5.0,
     technology_index=0,
     integrate_constraints=False,
     demand_aversion=False,

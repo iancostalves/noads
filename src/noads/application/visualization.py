@@ -484,7 +484,7 @@ def plot_single_scenario_result(
             width=1500,
             height=600,
         )
-        p_fig.show(renderer="sphinx_gallery_png")
+        p_fig.show()
 
 
 def plot_scenario_comparison(scenario_outputs, year_endplots):

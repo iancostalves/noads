@@ -115,8 +115,8 @@ tech_params_lower_upper_2020_2040_2060 = {
     ),
     "fuelcell_specific_power": (
         array([1, 2, 3]),
-        0.5 * (array([1, 2, 3]) + array([1, 5, 7])),
-        array([1, 5, 7]),
+        0.5 * (array([1, 2, 3]) + array([1, 3, 5])),
+        array([1, 3, 5]),
     ),
     "lh2tank_gravimetric_index": (
         array([0.2, 0.3, 0.4]) * 1e2,
@@ -125,8 +125,8 @@ tech_params_lower_upper_2020_2040_2060 = {
     ),
     "fuelcell_efficiency": (
         array([0.40, 0.45, 0.5]) * 1e2,
-        0.5 * (array([0.40, 0.45, 0.5]) * 1e2 + array([0.40, 0.65, 0.75]) * 1e2),
-        array([0.40, 0.65, 0.75]) * 1e2,
+        0.5 * (array([0.40, 0.45, 0.5]) * 1e2 + array([0.40, 0.50, 0.6]) * 1e2),
+        array([0.40, 0.50, 0.6]) * 1e2,
     ),
     "struct_weight_factor": (
         array([1, 0.85, 0.8]) * 1e2,

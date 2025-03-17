@@ -29,14 +29,29 @@ from noads.application.visualization import plot_tech_scenario_comparison
 # stay below +2°C temperature increase, but without major shifts from current trends.
 
 background_scenario = "SSP2-26"
+
+# %%
+# We will compare 3 scenarios:
+# - Baseline: minimize cumulative CO2 emissions, subject to trend traffic and 5% of
+# global production of electricity and biomass.
+# - Extra availability: minimize cumulative CO2 emissions, subject to trend traffic and
+# 8.6% of global production of electricity and biomass.
+# - Low demand: minimize the burden of demand avoidance, subject to 5% of global
+# production of electricity and biomass, and constrain cumulative emissions to 3% of the
+# 2°C carbon budget.
+#
+# Each of them further investigated with lower, mid, and upper aircraft technology (9
+# scenarios in total). The optimization results will only be shown for the lower and
+# upper technology , to compare the fleet composition and energy mix between the most
+# optimistic and pessimistic assumptions. The optimization history will only be shown
+# for the mid technology, to compare overall behaviour of the optimization problem as
+# constraints and objectives change.
+
 scenario_tech_outputs = {}
 
 # %%
-# # # Baseline
-# First let's run the baseline scenario: minimize cumulative CO2 emissions, subject to
-# trend traffic and 5% of global production of electricity and biomass.
-#
-# At first with lower aircraft technology.
+# ## Baseline
+# First let's run the baseline scenario with lower aircraft technology.
 
 baseline_outputs = []
 baseline_outputs.append(
@@ -48,7 +63,7 @@ baseline_outputs.append(
         low_demand_formulation=False,
         preferential_energy=False,
         plot_optimum=True,
-        save_optimum=True,
+        save_optimum=False,
     )
 )
 
@@ -61,10 +76,11 @@ baseline_outputs.append(
         carbon_budget_percent=3.0,
         technology_index=1,
         drop_in_only=False,
-        low_demand_formulation=True,
+        low_demand_formulation=False,
         preferential_energy=False,
-        plot_optimum=True,
-        save_optimum=True,
+        plot_optimum=False,
+        save_optimum=False,
+        plot_history_view=True,
     )
 )
 
@@ -77,16 +93,16 @@ baseline_outputs.append(
         carbon_budget_percent=3.0,
         technology_index=2,
         drop_in_only=False,
-        low_demand_formulation=True,
+        low_demand_formulation=False,
         preferential_energy=False,
         plot_optimum=True,
-        save_optimum=True,
+        save_optimum=False,
     )
 )
 scenario_tech_outputs["Baseline"] = baseline_outputs
 
 # %%
-# # # Extra Availability
+# ## Extra Availability
 # Now instead of 5%, we'll give aviation 8.6% of global energy production. This is
 # equivalent to the sector 2019 share of oil consumption.
 #
@@ -102,7 +118,7 @@ availability_outputs.append(
         low_demand_formulation=False,
         preferential_energy=True,
         plot_optimum=True,
-        save_optimum=True,
+        save_optimum=False,
     )
 )
 
@@ -117,8 +133,9 @@ availability_outputs.append(
         drop_in_only=False,
         low_demand_formulation=False,
         preferential_energy=True,
-        plot_optimum=True,
-        save_optimum=True,
+        plot_optimum=False,
+        save_optimum=False,
+        plot_history_view=True,
     )
 )
 
@@ -134,17 +151,16 @@ availability_outputs.append(
         low_demand_formulation=False,
         preferential_energy=True,
         plot_optimum=True,
-        save_optimum=True,
+        save_optimum=False,
     )
 )
 scenario_tech_outputs["Availability"] = availability_outputs
 
 # %%
-# # # Low demand
-# Also, let's run the low demand scenario: trend traffic is not entirely met and
-# instead minimize the burden of demand avoidance, subject to 5% of global production of
-# electricity and biomass, and constrain cumulative emissions to 3% of the 2°C carbon
-# budget.
+# ## Low demand
+# Also, let's run the low demand scenario, where trend traffic is not entirely met, and
+# instead we minimize the burden of demand avoidance, such that cumulative emissions are
+# constrained to 3% of the 2°C carbon budget.
 #
 # With lower aircraft technology.
 
@@ -158,7 +174,7 @@ low_demand_outputs.append(
         low_demand_formulation=True,
         preferential_energy=False,
         plot_optimum=True,
-        save_optimum=True,
+        save_optimum=False,
     )
 )
 
@@ -173,8 +189,9 @@ low_demand_outputs.append(
         drop_in_only=False,
         low_demand_formulation=True,
         preferential_energy=False,
-        plot_optimum=True,
-        save_optimum=True,
+        plot_optimum=False,
+        save_optimum=False,
+        plot_history_view=True,
     )
 )
 
@@ -190,7 +207,7 @@ low_demand_outputs.append(
         low_demand_formulation=True,
         preferential_energy=False,
         plot_optimum=True,
-        save_optimum=True,
+        save_optimum=False,
     )
 )
 scenario_tech_outputs["Low-demand"] = low_demand_outputs

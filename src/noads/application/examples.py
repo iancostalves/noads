@@ -41,6 +41,7 @@ def single_policy_scenario_optimization(
     preferential_energy=False,
     plot_optimum=True,
     save_optimum=False,
+    plot_history_view=False,
 ):
     """Optimal decarbonization scenario based on a single objective."""
     scenario_name = global_scenario_name
@@ -122,6 +123,14 @@ def single_policy_scenario_optimization(
     input_optimal = gemseo_scenario.optimization_result.x_opt_as_dict
     output_optimal = aeromax_scenario.discipline.execute(input_optimal)
 
+    if plot_history_view:
+        gemseo_scenario.post_process(
+            post_name="OptHistoryView",
+            show=True,
+            save=False,
+            fig_size=(11.0, 44.0),
+        )
+
     if save_optimum:
         if not Path(formulation_name).is_dir():
             Path(formulation_name).mkdir()
@@ -131,10 +140,7 @@ def single_policy_scenario_optimization(
             "inputs": {name: value.tolist() for name, value in input_optimal.items()}
         }
         result.update({
-            "outputs": {
-                name: value if len(value) == 1 else value.tolist()
-                for name, value in output_optimal.items()
-            }
+            "outputs": {name: value.tolist() for name, value in output_optimal.items()}
         })
         with Path(f"{formulation_name}/{scenario_name}/opt_result.json").open(
             "w"
@@ -142,11 +148,6 @@ def single_policy_scenario_optimization(
             dump(result, r_file)
 
     if plot_optimum:
-        gemseo_scenario.post_process(
-            post_name="OptHistoryView",
-            show=True,
-            save=False,
-        )
         plot_single_scenario_result(
             scenario_name=scenario_name,
             output_optimal={**input_optimal, **output_optimal},
