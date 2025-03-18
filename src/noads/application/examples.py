@@ -2,17 +2,18 @@
 # Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License version 3 as published by the Free Software Foundation.
+# modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
+# General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public License
+# You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 """Utilities for launching scenario optimization examples."""
 
 from json import dump
@@ -334,7 +335,7 @@ def single_policy_robust_scenario_optimization(
     return output_optimal
 
 
-def multi_policy_scenario_optimization(
+def multi_objective_policy_scenario_optimization(
     global_scenario_name,
     n_sub_optim=10,
     technology_index=0,

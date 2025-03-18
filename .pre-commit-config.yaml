@@ -64,17 +64,17 @@ repos:
   hooks:
     - id: insert-license
       name: insert LGPL license
-      exclude: ^docs
+      exclude: ^(docs.*\.py|src/noads/(application/(base_objects.py|(examples.py|scenario_setup.py))|core/models/(traffic.py|fleet/aircraft_operation.py)))$
       files: \.py$
       args:
         - --license-filepath
         - LICENSES/headers/LGPL-3.0.txt
     - id: insert-license
-      name: insert BSD license
-      files: ^docs/(examples|tutorials).*\.py$
+      name: insert GPL license
+      files: ^(docs.*\.py|src/noads/(application/(base_objects.py|(examples.py|scenario_setup.py))|core/models/(traffic.py|fleet/aircraft_operation.py)))$
       args:
         - --license-filepath
-        - LICENSES/headers/BSD-0-Clause.txt
+        - LICENSES/headers/GPL-3.0.txt
     - id: insert-license
       name: insert CC BY-SA license for rst files
       files: \.rst$

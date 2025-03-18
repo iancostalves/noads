@@ -44,10 +44,17 @@ Install the latest version with `pip install numerical-optimization-of-aviation-
 
 See [pip](https://pip.pypa.io/en/stable/getting-started/) for more information.
 
+## Licences
+
+Most of the repository is under the GNU Lesser General Public License v3 (LGPL3), same as [GEMSEO](https://github.com/gemseo/gemseo) and [GAM](https://gitlab.com/m6029/genericairplanemodel).
+
+However, some equations, such as sigmoid functions instead of custom time-dependent controls for aircraft penetration [noads.core.models.fleet.aircraft_operation] and quadratic load factor [noads.core.models.traffic] are a direct JAX re-implementation of [AeroMAPS](https://github.com/AeroMAPS/AeroMAPS) models, therefore they are left with GNU General Public License v3 (GPL3). The model instantiation [noads.application.base_objects], scenario setup [noads.application.scenario_setup.single_scenario_setup], scenario optimization examples [noads.application.examples] and the documentation that depend on these are also GPL3.
+
+See [pip](https://pip.pypa.io/en/stable/getting-started/) for more information.
+
 ## Bugs and questions
 
-Please use the [gitlab issue tracker](https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios/-/issues)
-to submit bugs or questions.
+Please use the [gitlab issue tracker](https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios/-/issues) to submit bugs or questions.
 
 ## Contributing
 
