@@ -15,7 +15,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """Utilities for visualizing decarbonization scenarios."""
 
-import plotly.io as pio
 from matplotlib.pyplot import figure
 from matplotlib.pyplot import subplots
 from numpy import argwhere
@@ -31,8 +30,6 @@ from noads.application.background_scenario_data import co2_budget_1p8deg_66perce
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
 from noads.application.background_scenario_data import get_scenario_color
 from noads.application.background_scenario_data import lines_gen
-
-pio.renderers.default = "sphinx_gallery"
 
 propulsion_colors = {
     "Current": "y",
@@ -486,7 +483,7 @@ def plot_single_scenario_result(
             width=1500,
             height=600,
         )
-        p_fig.show()
+        p_fig.write_html(f"./sankey_{scenario_name}_{year}.html")
 
 
 def plot_scenario_comparison(scenario_outputs, year_endplots):

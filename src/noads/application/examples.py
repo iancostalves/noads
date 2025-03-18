@@ -559,7 +559,7 @@ def multi_policy_scenario_optimization(
         # design_space.set_current_value(input_optimal)
         sub_scenario = create_scenario(
             disciplines=aeromax_scenario.discipline,
-            formulation="DisciplinaryOpt",
+            formulation_name="DisciplinaryOpt",
             objective_name="cumulative.discounted_relative_price_change",
             design_space=design_space,
         )

@@ -55,6 +55,10 @@ scenario_tech_outputs = {}
 # %%
 # ## Baseline
 # First let's run the baseline scenario with lower aircraft technology.
+#
+# Interactive sankey diagrams may be visualized for the years
+# [2030](./sankey_SSP2-26-low_2030.html), [2045](./sankey_SSP2-26-low_2045.html), and
+# [2060](./sankey_SSP2-26-low_2060.html).
 
 baseline_outputs = []
 baseline_outputs.append(
@@ -89,6 +93,10 @@ baseline_outputs.append(
 
 # %%
 # Finally with upper aircraft technology.
+#
+# Interactive sankey diagrams may be visualized for the years
+# [2030](./sankey_SSP2-26-up_2030.html), [2045](./sankey_SSP2-26-up_2045.html), and
+# [2060](./sankey_SSP2-26-up_2060.html).
 
 baseline_outputs.append(
     single_policy_scenario_optimization(
@@ -110,6 +118,10 @@ scenario_tech_outputs["Baseline"] = baseline_outputs
 # equivalent to the sector 2019 share of oil consumption.
 #
 # With lower aircraft technology.
+#
+# Interactive sankey diagrams may be visualized for the years
+# [2030](./sankey_SSP2-26-E-low_2030.html), [2045](./sankey_SSP2-26-E-low_2045.html),
+# and [2060](./sankey_SSP2-26-E-low_2060.html).
 
 availability_outputs = []
 availability_outputs.append(
@@ -144,6 +156,10 @@ availability_outputs.append(
 
 # %%
 # And upper technology.
+#
+# Interactive sankey diagrams may be visualized for the years
+# [2030](./sankey_SSP2-26-E-uplow_2030.html), [2045](./sankey_SSP2-26-E-up_2045.html),
+# and [2060](./sankey_SSP2-26-E-up_2060.html).
 
 availability_outputs.append(
     single_policy_scenario_optimization(
@@ -166,6 +182,10 @@ scenario_tech_outputs["Availability"] = availability_outputs
 # constrained to 3% of the 2°C carbon budget.
 #
 # With lower aircraft technology.
+#
+# Interactive sankey diagrams may be visualized for the years
+# [2030](./sankey_SSP2-26-LD-low_2030.html), [2045](./sankey_SSP2-26-LD-low_2045.html),
+# and [2060](./sankey_SSP2-26-LD-low_2060.html).
 
 low_demand_outputs = []
 low_demand_outputs.append(
@@ -200,6 +220,10 @@ low_demand_outputs.append(
 
 # %%
 # And upper technology.
+#
+# Interactive sankey diagrams may be visualized for the years
+# [2030](./sankey_SSP2-26-LD-up_2030.html), [2045](./sankey_SSP2-26-LD-up_2045.html),
+# and [2060](./sankey_SSP2-26-LD-up_2060.html).
 
 low_demand_outputs.append(
     single_policy_scenario_optimization(
