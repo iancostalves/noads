@@ -1,93 +1,67 @@
-# NOADS - Numerical Optimization of Aviation Decarbonization Scenarios
+<!--
+Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+Copyright 2021 IRT Saint Exupéry, https://www.irt-saintexupery.com
+
+This work is licensed under the Creative Commons Attribution-ShareAlike 4.0
+International License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/4.0/ or send a letter to Creative
+Commons, PO Box 1866, Mountain View, CA 94042, USA.
+-->
+
+# Numerical Optimization of Aviation Decarbonization Scenarios (NOADS)
+
+[![PyPI - License](https://img.shields.io/pypi/l/numerical-optimization-of-aviation-decarbonization-scenarios)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/numerical-optimization-of-aviation-decarbonization-scenarios)](https://pypi.org/project/numerical-optimization-of-aviation-decarbonization-scenarios/)
+[![PyPI](https://img.shields.io/pypi/v/numerical-optimization-of-aviation-decarbonization-scenarios)](https://pypi.org/project/numerical-optimization-of-aviation-decarbonization-scenarios/)
+[![Codecov branch](https://img.shields.io/codecov/c/gitlab/gemseo:dev/numerical-optimization-of-aviation-decarbonization-scenarios/develop)](https://app.codecov.io/gl/gemseo:dev/numerical-optimization-of-aviation-decarbonization-scenarios)
+
+## Overview
+
+Numerical Optimization of Aviation Decarbonization Scenarios with GEMSEO-JAX
+
+Despite being considered a hard-to-abate sector, aviation's emissions will play an important role in long-term climate mitigation of transportation. The introduction of low-carbon energy carriers and the deployment of new aircraft in the current fleet are modeled as a technology-centered decarbonization policy, and supply constraints in targeted market segments are modeled as demand-side policy.
+
+Mitigation scenarios are formulated as optimization problems and three applications are demonstrated: single-policy optimization, scenario-robust policy, and multi-objective policy trade-off.
+
+The usual burdens associated with nonlinear optimization with high-dimensional variables are dealt with by jointly using libraries for Multidisciplinary Optimization (GEMSEO) and Automatic Differentiation (JAX), which resulted in speedups of two orders of magnitude at the optimization level, while reducing associated implementation efforts.
 
 
+## Credits
 
-## Getting started
+The [Generic Airplane Model (GAM)](https://gitlab.com/m6029/genericairplanemodel) code was re-written in JAX together with Yri Amandine KAMBIRI. For more information on the GAM model please check [Kambiri et al., *Energy consumption of Aircraft with new propulsion systems and storage media*, Scitech Forum, Orlando, January 2024](https://doi.org/10.2514/6.2024-1707).
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Furthermore, open-access data are also used for calibration of air traffic demand (World Bank, ICAO) and for linking the background with a scenario from the IPCC's 6th Assessment Report (AR6 scenario database):
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- Population, total, SP.POP.TOTL; GDP (current US$), NY.GDP.MKTP.CD; Air transport, registered carrier departures worldwide, IS.AIR.DPRT. World Development Indicators. World Bank Group Archives, Washington, D.C., United States.
 
-## Add your files
+- RPK. World Airlines Traffic and Capacity, Airlines for America. Source: ICAO. url: https://www.airlines.org/dataset/world-airlines-traffic-and-capacity/
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/ian.costa-alves1/noads.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.com/ian.costa-alves1/noads/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- Primary Energy (Biomass); Final Energy (Electricity); Emissions Energy Supply (Electricity); GDP; Population. Variables are taken for a select scenario range, C1 (limit warming to 1.5°C with no or limited overshoot) to C6 (limit warming to 3°C), and can be vizualized [here](https://data.ece.iiasa.ac.at/ar6//#/workspaces/share/3b43eae5-2f6f-494d-8376-146fd252c11d). Source: Byers et al, 2022. AR6 Scenarios Database hosted by IIASA. International Institute for Applied Systems Analysis, 2022. doi: 10.5281/zenodo.5886911 | url: data.ece.iiasa.ac.at/ar6/
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Install the latest version with `pip install numerical-optimization-of-aviation-decarbonization-scenarios`.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+See [pip](https://pip.pypa.io/en/stable/getting-started/) for more information.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## Licences
+
+Most of the repository is under the GNU Lesser General Public License v3 (LGPL3), same as [GEMSEO](https://github.com/gemseo/gemseo) and [GAM](https://gitlab.com/m6029/genericairplanemodel).
+
+However, some equations, such as sigmoid functions instead of custom time-dependent controls for aircraft penetration [noads.core.models.fleet.aircraft_operation] and quadratic load factor [noads.core.models.traffic] are a direct JAX re-implementation of [AeroMAPS](https://github.com/AeroMAPS/AeroMAPS) models, therefore they are left with GNU General Public License v3 (GPL3). The model instantiation [noads.application.base_objects], scenario setup [noads.application.scenario_setup.single_scenario_setup], scenario optimization examples [noads.application.examples] and the documentation that depend on these are also GPL3.
+
+See [pip](https://pip.pypa.io/en/stable/getting-started/) for more information.
+
+## Bugs and questions
+
+Please use the [gitlab issue tracker](https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios/-/issues) to submit bugs or questions.
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+See the [contributing section of GEMSEO](https://gemseo.readthedocs.io/en/stable/software/developing.html#dev).
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+## Contributors
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- Ian COSTA ALVES
+- François GALLARD
+- Yri Amandine KAMBIRI
