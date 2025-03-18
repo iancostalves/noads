@@ -71,7 +71,7 @@ repos:
         - LICENSES/headers/LGPL-3.0.txt
     - id: insert-license
       name: insert GPL license
-      files: ^(docs.*\.py|src/noads/(application/(base_objects.py|(examples.py|scenario_setup.py))|core/models/(traffic.py|fleet/aircraft_operation.py)))$
+      files: ^(docs.examples*\.py|src/noads/(application/(base_objects.py|(examples.py|scenario_setup.py))|core/models/(traffic.py|fleet/aircraft_operation.py)))$
       args:
         - --license-filepath
         - LICENSES/headers/GPL-3.0.txt
