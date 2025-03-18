@@ -1,0 +1,38 @@
+<html>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+      <div class="mermaid">
+
+        classDiagram
+          class AdjointMethod {
+            name
+          }
+          class MultiScenario {
+            fixed_inputs : list[str]
+            mean_outputs : list[str]
+            scenario_inputs : list[str]
+            scenario_names : list[str]
+            scenario_outputs : list[str]
+            temporal_scenario
+          }
+          class TemporalScenario {
+            constant_inputs : list[str]
+            constrained_control_groups : Mapping[str:Sequence[str]]
+            control_delay_times : Mapping[str, float]
+            cubic_interpolation : bool
+            custom_controls : Sequence[str]
+            interpolated_inputs : list[str]
+            interpolation_prefix
+            models : list[Model]
+            non_modified_inputs : list[str]
+            time_integrated_outputs : list[str]
+            time_interpolation
+            time_vector
+            unvectorized_chain : JAXChain
+            vectorized_chain : JAXChain
+          }
+          TemporalScenario --* MultiScenario : temporal_scenario
+
+       </div>
+  </body>
+</html>
