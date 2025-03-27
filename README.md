@@ -15,6 +15,11 @@ Commons, PO Box 1866, Mountain View, CA 94042, USA.
 [![PyPI](https://img.shields.io/pypi/v/numerical-optimization-of-aviation-decarbonization-scenarios)](https://pypi.org/project/numerical-optimization-of-aviation-decarbonization-scenarios/)
 [![Codecov branch](https://img.shields.io/codecov/c/gitlab/gemseo:dev/numerical-optimization-of-aviation-decarbonization-scenarios/develop)](https://app.codecov.io/gl/gemseo:dev/numerical-optimization-of-aviation-decarbonization-scenarios)
 
+## Work in progress
+
+This repository is still a Work in progress, source files are ready, but the installation and documentation are not deployed yet. To have a preliminary view of the functionalities check `docs/user_guide`, and `docs/examples` for some examples.
+
+
 ## Overview
 
 Numerical Optimization of Aviation Decarbonization Scenarios with GEMSEO-JAX
