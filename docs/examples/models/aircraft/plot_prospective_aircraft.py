@@ -17,17 +17,17 @@
 """Prospective aircraft design accounting for technology maturing."""
 
 from jax import vmap
+from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
 from numpy import array
 from numpy import linspace
 
-from noads.application.base_objects import aeroscope_category_conso
 from noads.application.base_objects import categories_mission
+from noads.application.base_objects import category_conso
 from noads.application.base_objects import propulsion_architectures
 from noads.application.base_objects import propulsion_mission
-from noads.application.base_objects import tech_params_lower_upper_2020_2040_2060
+from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
 from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
@@ -132,7 +132,7 @@ name_to_fullname = {
     "struct_weight_factor": "Structural weight reduction",
 }
 propulsion_colors = {
-    "JetA-GasTurbine": "dimgray",
+    "JetA-GasTurbine": "maroon",
     "Battery-Electric": "limegreen",
     "lH2-FuelCell": "royalblue",
     "lH2-GasTurbine": "orangered",
@@ -143,13 +143,13 @@ propulsion_colors = {
 
 years = linspace(2020, 2060, 41)
 fig1, axes1 = subplots(
-    4,
     2,
-    figsize=(8, 15),
+    4,
+    figsize=(12, 7),
     layout="constrained",
 )
 tech_params = {}
-for i, (name, values) in enumerate(tech_params_lower_upper_2020_2040_2060.items()):
+for i, (name, values) in enumerate(tech_params_lower_mid_upper_2020_2040_2060.items()):
     lower, mid, upper = values
     lower_param = AircraftTechParameter(name, (lower[0], lower[1], lower[2]))
     mid_param = AircraftTechParameter(name, (mid[0], mid[1], mid[2]))
@@ -185,12 +185,32 @@ for i, (name, values) in enumerate(tech_params_lower_upper_2020_2040_2060.items(
             markersize=8,
         )
 
-axes1[0, 0].legend(loc="upper left", framealpha=0.4)
+# axes1[0, 0].legend(loc="upper left", framealpha=0.4)
+axes1[-1, -1].clear()
+axes1[-1, -1].set_axis_off()
+
+legend_handles = [
+    Line2D([0], [0], color="k", ls="-", lw=2, label="Lower"),
+    Line2D([0], [0], color="k", ls=":", lw=2, label="Mid"),
+    Patch(alpha=0.2, facecolor="k", label="Upper-to-Lower"),
+]
+legend_handles.extend([
+    Line2D([0], [0], ls="None", marker=marker, markersize=8, label=name, color=f"C{j}")
+    for j, (name, marker) in enumerate(markers_sources.items())
+])
+
+axes1[-1, -1].legend(handles=legend_handles, loc="center")
+
+
 fig1.suptitle(
     "Aircraft Technology Parameters evolution",
     fontsize="large",
 )
-show()
+fig1.savefig("./aircraft_technology.pdf")
+print(
+    "Aircraft technology parameters evolution figure saved as 'aircraft_technology.pdf'"
+)
+# show()
 
 # %%
 # # Prospective Aircraft Design
@@ -198,32 +218,55 @@ show()
 # their overall empty weight and mission energy consumption.
 #
 # Unfeasible designs may yield infinite mass and energy, therefore the (mass/energy)
-# metric is calculated on a per (pax-km) basis and then inverted. They are therefore a
+# metric is calculated on a per (seat-km) basis and then inverted. They are therefore a
 # measure of traffic per (mass/energy). The highest the metric the lower the
 # (mass/energy).
 
-fig2, axes2 = subplots(3, 2, layout="constrained", figsize=(8, 12))
-fig2.suptitle("Aircraft Energy Efficiency\n[pax km / MJ]", fontsize="x-large")
+fig2, axes2 = subplots(2, 3, layout="constrained", figsize=(12, 8))
+fig2.suptitle("Aircraft Energy Efficiency\n[seat km / MJ]", fontsize="x-large")
 
-fig3, axes3 = subplots(3, 2, layout="constrained", figsize=(8, 12))
-fig3.suptitle("Aircraft Empty-Mass Efficiency\n[pax km / kg]", fontsize="x-large")
+fig3, axes3 = subplots(2, 3, layout="constrained", figsize=(12, 8))
+fig3.suptitle("Aircraft Empty-Mass Efficiency\n[seat km / kg]", fontsize="x-large")
 
 categories = categories_mission.keys()
 ymax = 4.0
 
 for cat, category in enumerate(categories):
     max_range = 1e-3 * categories_mission[category]["range"]
-    pax = categories_mission[category]["npax"]
+    seat = categories_mission[category]["npax"]
 
     ax_e = axes2.flat[cat]
     ax_m = axes3.flat[cat]
 
-    reference_energy_per_ask = aeroscope_category_conso[category]
+    current_energy_per_ask = category_conso[category]
     reference_aircraft = AircraftOperation(
         name=f"{category}_RECENT",
         propulsion=None,
-        energy_per_ask=reference_energy_per_ask,
+        energy_per_ask=current_energy_per_ask[1],
         recent=True,
+    )
+    ax_e.hlines(
+        y=1.0 / current_energy_per_ask[0],
+        xmin=years[0],
+        xmax=years[-1],
+        colors="dimgray",
+        linestyles="-",
+        linewidth=1.5,
+    )
+    ax_e.hlines(
+        y=1.0 / current_energy_per_ask[1],
+        xmin=years[0],
+        xmax=years[-1],
+        colors="dimgray",
+        linestyles=":",
+        linewidth=1.5,
+    )
+    ax_e.fill_between(
+        [years[0], years[-1]],
+        [1.0 / current_energy_per_ask[0], 1.0 / current_energy_per_ask[0]],
+        [1.0 / current_energy_per_ask[2], 1.0 / current_energy_per_ask[2]],
+        alpha=0.4,
+        color="dimgray",
     )
     for _prop, propulsion in enumerate(propulsion_architectures.keys()):
         ask_per_energy_low_to_up = []
@@ -253,7 +296,7 @@ for cat, category in enumerate(categories):
                 1.0 / outputs[f"{category}_{propulsion}.energy_per_ask"]
             )
             ask_per_owe_low_to_up.append(
-                pax * max_range / outputs[f"{category}_{propulsion}.owe"]
+                seat * max_range / outputs[f"{category}_{propulsion}.owe"]
             )
 
         ax_e.fill_between(
@@ -276,14 +319,6 @@ for cat, category in enumerate(categories):
             color=propulsion_colors[propulsion],
             linestyle=":",
             linewidth=3,
-        )
-        ax_e.hlines(
-            y=1.0 / reference_energy_per_ask,
-            xmin=years[0],
-            xmax=years[-1],
-            colors="k",
-            linestyles="--",
-            linewidth=2,
         )
 
         ax_m.fill_between(
@@ -310,12 +345,12 @@ for cat, category in enumerate(categories):
 
     ax_e.set_ylim(ymin=0.0, ymax=ymax)
     ax_e.set_title(
-        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
+        f"{category.replace('_', ' ')}\n({seat} seat, {max_range} km)",
         fontsize="large",
     )
     ax_m.set_ylim(ymin=0.0)
     ax_m.set_title(
-        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
+        f"{category.replace('_', ' ')}\n({seat} seat, {max_range} km)",
         fontsize="large",
     )
 
@@ -325,11 +360,15 @@ axes3[-1, -1].clear()
 axes3[-1, -1].set_axis_off()
 
 # Manually add legend
+
+handles = [
+    Patch(color=color, label=prop_name)
+    for prop_name, color in propulsion_colors.items()
+]
+handles.append(Patch(color="dimgray", label="Current Technology"))
+
 axes2[-1, -1].legend(
-    handles=[
-        Patch(color=color, label=prop_name)
-        for prop_name, color in propulsion_colors.items()
-    ],
+    handles=handles,
     loc="center",
 )
 axes2[-1, 0].set_xlabel("Entry-Into-Service")
@@ -342,4 +381,11 @@ axes3[-1, -1].legend(
     loc="center",
 )
 axes3[-1, 0].set_xlabel("Entry-Into-Service")
-show()
+
+fig2.savefig("./aircraft_prospective_energy.pdf")
+fig3.savefig("./aircraft_prospective_mass.pdf")
+print(
+    "Figures saved as aircraft_prospective_energy.pdf and aircraft_prospective_mass.pdf"
+)
+
+# show()

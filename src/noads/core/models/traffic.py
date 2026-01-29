@@ -36,7 +36,7 @@ def generalised_logistic(
     """Generalized logistic function."""
     y = left_asymptote + divide(
         capacity - left_asymptote,
-        (asymptote_coeff + exp(-growth_rate * (x - x_lag))) ** (1 / logistic_nu),
+        (asymptote_coeff + exp(-growth_rate * (x - x_lag))) ** (1.0 / logistic_nu),
     )
     return y  # noqa: RET504
 
@@ -53,24 +53,44 @@ class AirTraffic(AutoModel):
         year=2025.0,
         gdp_per_capita=2.0e4,
         population=7742682218.0,
+        gdp_per_capita_2019=1.5e4,
         gdp_per_capita_covid_end=1.5e4,
         load_factor_end_year=85.0,
         end_year=2050.0,
+        capacity_factor=1.0,
     ):
         # RPKpc logistic and total RPK
-        gdp_per_capita_2019 = 8.77281e13 / 7742682218.0
-        covid_shift = gdp_per_capita_covid_end - gdp_per_capita_2019
-        rpk_per_capita = (
-            generalised_logistic(
+        gdp_per_capita_2019_mean = 0.5 * (
+            gdp_per_capita_2019 + 8.77281e13 / 7742682218.0
+        )
+        covid_shift = gdp_per_capita_covid_end - gdp_per_capita_2019_mean
+        rpk_per_capita = 1.0e6 * (
+            generalised_logistic(  # Logistic calibration
                 gdp_per_capita,
                 left_asymptote=0.0,
-                capacity=0.00556283,
-                growth_rate=0.00011641,
-                logistic_nu=0.21666014,
-                asymptote_coeff=1.17810123,
-                x_lag=492.0691946 + covid_shift,
+                capacity=0.01118996,
+                growth_rate=0.00010489,
+                logistic_nu=0.18720497,
+                asymptote_coeff=1.27603214,
+                x_lag=0.0 + covid_shift,
+                # generalised_logistic(  # Logistic calibration + price effect
+                #     gdp_per_capita,
+                #     left_asymptote=0.0,
+                #     capacity=0.00889545,
+                #     growth_rate=0.00011641,
+                #     logistic_nu=0.18192608,
+                #     asymptote_coeff=1.16370027,
+                #     x_lag=0.0 + covid_shift,
             )
-            * 1e6
+            * generalised_logistic(
+                gdp_per_capita,
+                left_asymptote=3.0 / (2 * capacity_factor + 1.0),
+                capacity=capacity_factor,
+                growth_rate=0.5 / gdp_per_capita_covid_end,
+                logistic_nu=1.0,
+                asymptote_coeff=1.0,
+                x_lag=2.0 * gdp_per_capita_covid_end,
+            )
         )
         rpk_trend = population * rpk_per_capita
 

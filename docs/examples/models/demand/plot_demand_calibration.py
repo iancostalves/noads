@@ -39,10 +39,11 @@ configure_logger()
 # are often multi-modal), we use a Multi-Start strategy, i.e., run several optimizations
 # with several starting points (chosen with a Design of Experiments algorithm).
 # ## Globally aggregated
-run_region_calibration("WLD", plot_calibration=True)
-
-# %%
-# ## Regional
+results = run_region_calibration("WLD", plot_calibration=True)
+print(results[0])
+#
+# # %%
+# # ## Regional
 countries = ["USA", "GBR", "EUU", "BOL", "BRA", "CHN", "IND"]
 fig, ax = subplots(figsize=(7, 4), layout="constrained")
 for country in countries:
@@ -52,6 +53,7 @@ for country in countries:
     x_ordered = linspace(min(x_data), max(x_data), 100)
     # Disciplines and Chain with gemseo-jax
     model = AutoJAXDiscipline(generalised_logistic)
+    print(country, best_fit)
     best_fit.update({"x": x_ordered})
     results = model.execute(best_fit)
     lines = ax.plot(
@@ -79,7 +81,8 @@ fig.show()
 # # ICAO RPK data
 # Now, we explore ICAO data on Revenue Passenger-Kilometers. The data here is only
 # available on the global level.
-run_global_rpk_calibration(plot_calibration=True)
+results = run_global_rpk_calibration(plot_calibration=True)
+print(results[0])
 # %%
 # The parameters obtained in this calibration are set as default for the air traffic
 # estimation based on socioeconomic drivers (population, income) from the AR6 scenarios.

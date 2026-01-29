@@ -25,7 +25,8 @@ from gemseo_jax.jax_discipline import JAXDiscipline
 from numpy import array as np_array
 from numpy import ones as np_ones
 
-from noads.application.background_scenario_data import get_ar6_data
+from noads.application.background_scenario_data import get_ar6_input_data
+from noads.application.base_objects import category_lifetime
 from noads.application.base_objects import initialize_base_objects
 from noads.core.models.interpolation import interpolate_data
 from noads.core.models.traffic import AirTraffic
@@ -41,22 +42,24 @@ refuel_eu_efuel = [0.01, 0.02, 0.05, 0.10, 0.15, 0.35, 0.7, 1.0]
 
 
 def single_scenario_setup(
-    scenario_name: str,
+    name: str,
+    background_scenario_name: str,
     start_year=2025,
     end_year=2075,
     time_step=1.0,
-    interp_step=5.0,
+    interp_step=2.5,
     technology_index=0,
     integrate_constraints=False,
     demand_aversion=False,
     drop_in_only=False,
+    fossil_kerosene_only=False,
     preferential_energy=False,
     plot_scenario_data=False,
     compile_jit=True,
 ):
     """Setup decarbonization scenario based on a single objective."""
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
-    ar6_data, years_data = get_ar6_data(plot_data=plot_scenario_data)
+    ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
     energy_mix, fleet = initialize_base_objects(drop_in_only, technology_index)
 
     temporal_constraints = [
@@ -82,20 +85,34 @@ def single_scenario_setup(
             "discounted_relative_price_change",
         ])
 
+    capacity_factor = 1.0
+    if "SSP5" in background_scenario_name:
+        capacity_factor = 1.5
+    elif "SSP1" in background_scenario_name:
+        capacity_factor = 0.9
     constants = {
+        "capacity_factor": capacity_factor,
         "load_factor_end_year": 92.0,
+        "gdp_per_capita_2019": float(
+            interpolate_data(
+                x=2019.0,
+                x_data=np_array(years_data),
+                y_data=np_array(ar6_data["gdp_per_capita"][background_scenario_name]),
+                cubic=True,
+            )
+        ),
         "gdp_per_capita_covid_end": float(
             interpolate_data(
                 x=2024.0,
                 x_data=np_array(years_data),
-                y_data=np_array(ar6_data["gdp_per_capita"][scenario_name]),
+                y_data=np_array(ar6_data["gdp_per_capita"][background_scenario_name]),
                 cubic=True,
             )
         ),
-        "discount_rate": 0.04,
+        "discount_rate": 3.0e-2,
         "start_year": start_year,
         "end_year": end_year,
-        "price_elasticity": -0.6,
+        "price_elasticity": -0.25587624,
         "ELECTRICITY.fair_share": resources_fair_share,
         "BIOMASS.fair_share": resources_fair_share,
         "commuter.share": 1e-2 * 22.133471276729583,
@@ -174,10 +191,13 @@ def single_scenario_setup(
                 controls_in_group.append(f"{pathway.name}.share")
         if controls_in_group:
             constrained_control_groups.update({energy.name: controls_in_group})
-    fleet_lifetimes = [15.0, 20.0, 25.0, 25.0, 25.0]
+    fleet_lifetimes = [
+        tech_tup[technology_index] for tech_tup in category_lifetime.values()
+    ]
     # https://aviation.report/Resources/Whitepapers/c7ca1e8f-fd11-4a96-9500-85609082abf7_whitepaper%201.pdf
+    final_rates = []
     for i, fleet_i in enumerate(fleet.fleets):
-        controls_delay_times.update({f"{fleet_i.name}.demand_shift_ratio": 7.5})
+        controls_delay_times.update({f"{fleet_i.name}.demand_shift_ratio": 10.0})
         controls_in_group = []
         for aircraft in fleet_i.operating_aircraft:
             if aircraft != fleet_i.operating_aircraft[0]:
@@ -192,6 +212,8 @@ def single_scenario_setup(
                 controls_delay_times.update({f"{aircraft.name}.share": aircraft_tau})
                 controls_in_group.append(f"{aircraft.name}.share")
                 custom_controls.append(f"{aircraft.name}.share")
+            else:
+                final_rates.append(f"{aircraft.name}.share")
         if controls_in_group:
             constrained_control_groups.update({fleet_i.name: controls_in_group})
 
@@ -200,12 +222,13 @@ def single_scenario_setup(
     models.extend(fleet.models)
 
     temporal_scenario = TemporalScenario(
-        name="Single scenario",
+        name=name,
         models=models,
         constant_inputs=list(constants.keys()),
         control_delay_times=controls_delay_times,
         constrained_control_groups=constrained_control_groups,
         custom_controls=custom_controls,
+        final_rates=final_rates,
         interpolated_inputs=list(interpolated_2025_2035_2050.keys()),
         time_integrated_outputs=time_integrated_outputs,
         start_year=start_year,
@@ -243,7 +266,7 @@ def single_scenario_setup(
             interpolate_data(
                 x=temporal_scenario.time_vector,
                 x_data=np_array(years_data),
-                y_data=np_array(ar6_data[name][scenario_name]),
+                y_data=np_array(ar6_data[name][background_scenario_name]),
                 cubic=True,
             )
         )
@@ -258,17 +281,25 @@ def single_scenario_setup(
         for pathway in energy.pathways:
             if pathway != energy.pathways[-1]:
                 if pathway.name == "Biofuel":
-                    upper_value = interpolate_data(
-                        x=temporal_scenario.time_interpolation,
-                        x_data=np_array(refuel_eu_years),
-                        y_data=np_array(refuel_eu_biofuel),
+                    upper_value = (
+                        0.0
+                        if fossil_kerosene_only
+                        else interpolate_data(
+                            x=temporal_scenario.time_interpolation,
+                            x_data=np_array(refuel_eu_years),
+                            y_data=np_array(refuel_eu_biofuel),
+                        )
                     )
                     value = 0.1 * upper_value
                 elif pathway.name == "Electrofuel":
-                    upper_value = interpolate_data(
-                        x=temporal_scenario.time_interpolation,
-                        x_data=np_array(refuel_eu_years),
-                        y_data=np_array(refuel_eu_efuel),
+                    upper_value = (
+                        0.0
+                        if fossil_kerosene_only
+                        else interpolate_data(
+                            x=temporal_scenario.time_interpolation,
+                            x_data=np_array(refuel_eu_years),
+                            y_data=np_array(refuel_eu_efuel),
+                        )
                     )
                     value = 0.1 * upper_value
                 else:
@@ -289,7 +320,7 @@ def single_scenario_setup(
                 f"control.{fleet_i.name}.demand_shift_ratio",
                 size=temporal_scenario.time_interpolation.size,
                 lower_bound=0.0,
-                upper_bound=0.6,
+                upper_bound=0.9,
                 # * (np_ones(
                 #     temporal_scenario.time_interpolation.shape
                 # ) - np_eye(1, temporal_scenario.time_interpolation.size)[0]),
@@ -309,33 +340,46 @@ def single_scenario_setup(
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.entry_into_service",
-                    lower_bound=2035.0,
-                    upper_bound=2060.0,
-                    value=2060.0,
+                    lower_bound=(
+                        2032.0 if "JetA-GasTurbine-v1" in aircraft.name else 2035.0
+                    ),
+                    upper_bound=(
+                        2047.5 if "JetA-GasTurbine-v1" in aircraft.name else 2060.0
+                    ),
+                    # value=2060.0,
+                    value=2035.0
+                    if (
+                        "JetA-GasTurbine-v1" in aircraft.name
+                        or "lH2-GasTurbine" in aircraft.name
+                    )
+                    else 2060.0,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.lifetime",
                     lower_bound=3.0 * fleet_tau,
-                    upper_bound=16.0 * fleet_tau,
-                    value=13.0 * fleet_tau,
+                    upper_bound=45.0,
+                    value=4.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.ramp_up_duration",
                     lower_bound=2.0 * fleet_tau,
-                    upper_bound=4.0 * fleet_tau,
-                    value=4.0 * fleet_tau,
+                    upper_bound=3.0 * fleet_tau,
+                    value=2.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.ramp_down_duration",
                     lower_bound=2.0 * fleet_tau,
-                    upper_bound=4.0 * fleet_tau,
-                    value=4.0 * fleet_tau,
+                    upper_bound=3.0 * fleet_tau,
+                    value=2.0 * fleet_tau,
                 )
 
     optimization_constraints = {
         f"cumulative.{name}" if integrate_constraints else name: (0.0, False)
         for name in temporal_constraints
     }
+    optimization_constraints.update({
+        f"final_rate.{name_i}": (0.0, False) for name_i in final_rates
+    })
     for aircraft in fleet.operating_aircraft:
         if "Electric" in aircraft.name:
             optimization_constraints.update({
@@ -346,7 +390,8 @@ def single_scenario_setup(
 
 
 def multi_scenario_setup(
-    scenario_names: Sequence[str],
+    name: str,
+    background_scenario_names: Sequence[str],
     start_year=2025,
     end_year=2075,
     time_step=2.0,
@@ -355,13 +400,15 @@ def multi_scenario_setup(
     aggregate_constraints=False,
     integrate_constraints=False,
     demand_aversion=False,
+    fossil_kerosene_only=False,
     drop_in_only=False,
     preferential_energy=False,
     plot_scenario_data=False,
 ):
     """Setup decarbonization scenario robust to several background scenarios."""
     temporal_scenario, _, constraints, energy_mix, fleet = single_scenario_setup(
-        scenario_name=scenario_names[0],
+        name=name,
+        background_scenario_name=background_scenario_names[0],
         start_year=start_year,
         end_year=end_year,
         time_step=time_step,
@@ -369,16 +416,24 @@ def multi_scenario_setup(
         technology_index=technology_index,
         integrate_constraints=integrate_constraints,
         demand_aversion=demand_aversion,
+        fossil_kerosene_only=fossil_kerosene_only,
         drop_in_only=drop_in_only,
         preferential_energy=preferential_energy,
         plot_scenario_data=plot_scenario_data,
     )
+    final_rates = temporal_scenario.final_rates
     meaned = [
         f"cumulative.{name}" for name in temporal_scenario.time_integrated_outputs
     ]
     meaned.extend(temporal_scenario.time_integrated_outputs)
+    meaned.extend(final_rates)
     if aggregate_constraints:
         meaned.extend([name for name in constraints if name not in meaned])
+        meaned.extend([
+            f"final_rate.{name}"
+            for name in final_rates
+            if f"final_rate.{name}" not in meaned
+        ])
 
     fixed = ["year"]
     fixed.extend([
@@ -391,12 +446,13 @@ def multi_scenario_setup(
     ])
     # all except controls
 
-    ar6_data, years_data = get_ar6_data()
+    ar6_data, years_data = get_ar6_input_data(plot_data=False)
 
     multi_scenario = MultiScenario(
+        name=name,
         temporal_scenario=temporal_scenario,
         mean_outputs=meaned,
-        scenario_names=scenario_names,
+        scenario_names=background_scenario_names,
         fixed_inputs=fixed,
     )
     multi_scenario_inputs = {
@@ -405,7 +461,7 @@ def multi_scenario_setup(
     }
     multi_scenario_inputs.update({
         f"{scenario}.{name}": temporal_scenario.discipline.default_input_data[name]
-        for scenario in scenario_names
+        for scenario in background_scenario_names
         for name in temporal_scenario.discipline.input_grammar.names
         if name not in fixed
     })
@@ -419,7 +475,7 @@ def multi_scenario_setup(
                 cubic=True,
             )
         )
-        for scenario in scenario_names
+        for scenario in background_scenario_names
         for name, scenario_dict in ar6_data.items()
     })
     multi_scenario_inputs.update({
@@ -430,13 +486,13 @@ def multi_scenario_setup(
                 y_data=np_array(ar6_data["gdp_per_capita"][scenario]),
             )
         ])
-        for scenario in scenario_names
+        for scenario in background_scenario_names
     })
     multi_scenario.discipline.default_input_data = multi_scenario_inputs
     multi_scenario.discipline.compile_jit(pre_run=False)
 
     design_space = create_design_space()
-    for scenario in scenario_names:
+    for scenario in background_scenario_names:
         for energy in energy_mix.produced_energies:
             for pathway in energy.pathways:
                 if pathway != energy.pathways[-1]:
@@ -446,14 +502,14 @@ def multi_scenario_setup(
                             x_data=np_array(refuel_eu_years),
                             y_data=np_array(refuel_eu_biofuel),
                         )
-                        value = 0.5 * upper_value
+                        value = 0.1 * upper_value
                     elif pathway.name == "Electrofuel":
                         upper_value = interpolate_data(
                             x=temporal_scenario.time_interpolation,
                             x_data=np_array(refuel_eu_years),
                             y_data=np_array(refuel_eu_efuel),
                         )
-                        value = 0.5 * upper_value
+                        value = 0.1 * upper_value
                     else:
                         n_pathways = len(energy.pathways)
                         upper_value = 1.0
@@ -473,7 +529,7 @@ def multi_scenario_setup(
                     f"{scenario}.control.{fleet_i.name}.demand_shift_ratio",
                     size=temporal_scenario.time_interpolation.size,
                     lower_bound=0.0,
-                    upper_bound=0.6,
+                    upper_bound=0.9,
                     # * (np_ones(
                     #     temporal_scenario.time_interpolation.shape
                     # ) - np_eye(1, temporal_scenario.time_interpolation.size)[0]),
@@ -482,16 +538,25 @@ def multi_scenario_setup(
                     #     temporal_scenario.time_interpolation.shape
                     # ) - np_eye(1, temporal_scenario.time_interpolation.size)[0]),
                 )
-    fleet_lifetimes = [15.0, 20.0, 25.0, 25.0, 25.0]
+    fleet_lifetimes = [
+        tech_tup[technology_index] for tech_tup in category_lifetime.values()
+    ]
     for i, fleet_i in enumerate(fleet.fleets):
         fleet_tau = fleet_lifetimes[i] / 4.0
         for aircraft in fleet_i.operating_aircraft:
             if aircraft != fleet_i.operating_aircraft[0]:
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.entry_into_service",
-                    lower_bound=2035.0,
+                    lower_bound=(
+                        2032.0 if "JetA-GasTurbine-v1" in aircraft.name else 2035.0
+                    ),
                     upper_bound=2060.0,
-                    value=2060.0,
+                    value=2035.0
+                    if (
+                        "JetA-GasTurbine-v1" in aircraft.name
+                        or "lH2-GasTurbine" in aircraft.name
+                    )
+                    else 2060.0,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.max_share",
@@ -502,19 +567,19 @@ def multi_scenario_setup(
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.lifetime",
                     lower_bound=3.0 * fleet_tau,
-                    upper_bound=16.0 * fleet_tau,
-                    value=3.0 * fleet_tau,
+                    upper_bound=45.0,
+                    value=4.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.ramp_up_duration",
                     lower_bound=2.0 * fleet_tau,
-                    upper_bound=4.0 * fleet_tau,
+                    upper_bound=3.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.ramp_down_duration",
                     lower_bound=2.0 * fleet_tau,
-                    upper_bound=4.0 * fleet_tau,
+                    upper_bound=3.0 * fleet_tau,
                     value=2.0 * fleet_tau,
                 )
 
@@ -523,7 +588,7 @@ def multi_scenario_setup(
         if aggregate_constraints:
             optimization_constraints[f"mean.{name}"] = value
         else:
-            for scenario in scenario_names:
+            for scenario in background_scenario_names:
                 optimization_constraints[f"{scenario}.{name}"] = value
 
     return multi_scenario, design_space, optimization_constraints, energy_mix, fleet

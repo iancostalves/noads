@@ -32,6 +32,7 @@ from gemseo_jax.jax_discipline import DataType
 from gemseo_jax.jax_discipline import JAXDiscipline
 from jax import vmap
 from jax.numpy import array
+from jax.numpy import diff
 from jax.numpy import ones
 from jax.numpy import sum as jnp_sum
 from jax.numpy import where
@@ -72,6 +73,8 @@ class TemporalScenario(Model):
 
     _constraint_prefix: str = "constraint"
 
+    _final_rate_prefix: str = "final_rate"
+
     __adjoint: AbstractAdjoint
 
     models: list[Model]
@@ -91,6 +94,9 @@ class TemporalScenario(Model):
 
     custom_controls: Sequence[str]
     """List of inputs subject to a delay with custom time-interpolation."""
+
+    final_rates: Sequence[str]
+    """List of outputs to compute rate of change at final time."""
 
     non_modified_inputs: list[str]
     """List of inputs not to be vectorized."""
@@ -121,6 +127,7 @@ class TemporalScenario(Model):
         control_delay_times: Mapping[str, float],
         constrained_control_groups: Mapping[str : Sequence[str]],
         custom_controls: Sequence[str],
+        final_rates: Sequence[str],
         interpolated_inputs: Sequence[str],
         time_integrated_outputs: Sequence[str],
         start_year: float = 2025.0,
@@ -137,6 +144,7 @@ class TemporalScenario(Model):
         self.control_delay_times = control_delay_times
         self.constrained_control_groups = constrained_control_groups
         self.custom_controls = custom_controls
+        self.final_rates = final_rates
         self.interpolated_inputs = list(interpolated_inputs)
         self.time_integrated_outputs = list(time_integrated_outputs)
         self.time_vector = append(arange(start_year, end_year, time_step), end_year)
@@ -183,9 +191,9 @@ class TemporalScenario(Model):
         self.vectorized_chain = JAXChain(vectorized)
 
         self.non_modified_inputs = [
-            name
-            for name in self.vectorized_chain.input_grammar.names
-            if name
+            name_i
+            for name_i in self.vectorized_chain.input_grammar.names
+            if name_i
             not in set(self.constant_inputs)
             .union(self.interpolated_inputs)
             .union(self.control_delay_times.keys())
@@ -193,41 +201,41 @@ class TemporalScenario(Model):
         ]
 
         default_input_data = {
-            f"{self._constant_prefix}.{name}": self.unvectorized_chain.default_input_data[  # noqa: E501
-                name
+            f"{self._constant_prefix}.{name_i}": self.unvectorized_chain.default_input_data[  # noqa: E501
+                name_i
             ]
-            for name in self.unvectorized_chain.input_grammar.names
+            for name_i in self.unvectorized_chain.input_grammar.names
         }
         default_input_data.update({
-            f"{self._constant_prefix}.{name}": self.vectorized_chain.default_input_data[
-                name
+            f"{self._constant_prefix}.{name_i}": self.vectorized_chain.default_input_data[  # noqa: E501
+                name_i
             ]
-            for name in self.constant_inputs
-            if name not in self.unvectorized_chain.input_grammar.names
+            for name_i in self.constant_inputs
+            if name_i not in self.unvectorized_chain.input_grammar.names
         })
         default_input_data.update({
-            f"{self._interpolation_prefix}.{name}": self.vectorized_chain.default_input_data[  # noqa: E501
-                name
+            f"{self._interpolation_prefix}.{name_i}": self.vectorized_chain.default_input_data[  # noqa: E501
+                name_i
             ]
             * ones(self.time_interpolation.shape)
-            for name in self.interpolated_inputs
+            for name_i in self.interpolated_inputs
         })
         default_input_data.update({
-            f"{self._control_prefix}.{name}": self.vectorized_chain.default_input_data[
-                name
+            f"{self._control_prefix}.{name_i}": self.vectorized_chain.default_input_data[  # noqa: E501
+                name_i
             ]
             * ones(self.time_interpolation.shape)
-            for name in self.control_delay_times
+            for name_i in self.control_delay_times
             if (
-                f"{self._control_prefix}.{name}"
+                f"{self._control_prefix}.{name_i}"
                 not in self.unvectorized_chain.output_grammar.names
             )
-            and name not in self.custom_controls
+            and name_i not in self.custom_controls
         })
         default_input_data.update({
-            name: self.vectorized_chain.default_input_data[name]
+            name_i: self.vectorized_chain.default_input_data[name_i]
             * ones(self.time_vector.shape)
-            for name in self.non_modified_inputs
+            for name_i in self.non_modified_inputs
         })
 
         output_names = [
@@ -244,12 +252,15 @@ class TemporalScenario(Model):
         output_names.extend(self.interpolated_inputs)
         output_names.extend(self.control_delay_times.keys())
         output_names.extend([
-            f"{self._interpolation_prefix}.{self._control_prefix}.{name}"
-            for name in self.control_delay_times
+            f"{self._interpolation_prefix}.{self._control_prefix}.{name_i}"
+            for name_i in self.control_delay_times
         ])
         output_names.extend([
-            f"{self._integration_prefix}.{name}"
-            for name in self.time_integrated_outputs
+            f"{self._final_rate_prefix}.{name_i}" for name_i in self.final_rates
+        ])
+        output_names.extend([
+            f"{self._integration_prefix}.{name_i}"
+            for name_i in self.time_integrated_outputs
         ])
 
         discipline = JAXDiscipline(
@@ -400,6 +411,12 @@ class TemporalScenario(Model):
         vectorized_func = vmap(self.vectorized_chain.jax_out_func)
         stacked_outputs = vectorized_func(stacked_inputs)
         output_data.update(stacked_outputs)
+
+        output_data.update({
+            f"{self._final_rate_prefix}.{name}": diff(stacked_outputs[name])[-1]
+            / diff(self.time_vector)[-1]
+            for name in self.final_rates
+        })
 
         time_integrated = {
             f"{self._integration_prefix}.{name}": trapezoid(
