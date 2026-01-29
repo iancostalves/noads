@@ -1,0 +1,15 @@
+digraph {
+	"general Demand avoidance" -> "general mean consumption and impacts" [label="general.ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"general Demand avoidance" -> "general ASK mix" [label="general.ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Current_fleet_general ASK share" -> "general ASK mix" [label="Current_fleet_general.share" color=black dir=forward fontcolor=black penwidth=1.0]
+	"general consumption" -> "general mean consumption and impacts" [label="general.JET-A.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	"general ASK mix" -> "Current_fleet_general consumption" [label="Current_fleet_general.ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"general ASK mix" -> "JetA-GasTurbine_general consumption" [label="JetA-GasTurbine_general.ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Current_fleet_general consumption" -> "general consumption" [label="Current_fleet_general.JET-A.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	"JetA-GasTurbine_general consumption" -> "general consumption" [label="JetA-GasTurbine_general.JET-A.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	"JetA-GasTurbine_general design" -> "JetA-GasTurbine_general consumption" [label="JetA-GasTurbine_general.energy_per_ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"general mean consumption and impacts" -> "_general mean consumption and impacts" [label="general.JET-A.mean_consumption_per_ask,general.mean_energy_per_ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"_general mean consumption and impacts" [style=invis]
+	"JetA-GasTurbine_general control" -> "_JetA-GasTurbine_general control" [label="control.JetA-GasTurbine_general.share.times,control.JetA-GasTurbine_general.share.values" color=black dir=forward fontcolor=black penwidth=1.0]
+	"_JetA-GasTurbine_general control" [style=invis]
+}
