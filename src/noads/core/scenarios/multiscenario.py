@@ -54,6 +54,7 @@ class MultiScenario(Model):
 
     def __init__(
         self,
+        name: str,
         temporal_scenario: TemporalScenario,
         mean_outputs: Sequence[str],
         scenario_names: Sequence[str],

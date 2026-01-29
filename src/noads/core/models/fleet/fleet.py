@@ -19,7 +19,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from gemseo import generate_coupling_graph
 from jax.numpy import array
+from jax.numpy import power
 from jax.numpy import sum as jnp_sum
 
 from noads.core.model import JAXModel
@@ -112,7 +114,10 @@ class Fleet:
 
         # elast = (dASK/ASKtrend) / (dP/Ptrend)
         # dP/Ptrend = (-SR)/elast
-        relative_price_change = -demand_shift_ratio / price_elasticity
+        relative_price_change = power(
+            1.0 - demand_shift_ratio,
+            1.0 / price_elasticity,
+        )
 
         discount_factor = (1 + discount_rate) ** (start_year - year)
         discounted_relative_price_change = relative_price_change * discount_factor
@@ -261,6 +266,7 @@ class FleetAssembly(Fleet):
     def __init__(
         self,
         fleets: Sequence[Fleet],
+        plot_coupling_graph=False,
     ):
         """Initialize FleetAssembly."""
         self.fleets = list(fleets)
@@ -270,6 +276,8 @@ class FleetAssembly(Fleet):
                 aircraft for fleet in fleets for aircraft in fleet.operating_aircraft
             ],
         )
+        if plot_coupling_graph:
+            self.plot_pretty_couplings()
 
     @property
     def models(self):
@@ -284,6 +292,42 @@ class FleetAssembly(Fleet):
         models.extend([model for fleet in self.fleets for model in fleet.models])
         return models
 
+    def plot_pretty_couplings(self):
+        """Plot fleet coupling graph."""
+        # traffic = AirTraffic()
+        # assembly_models = [
+        #     self.demand_avoidance_model(),
+        #     self.last_share_model(),
+        #     self.consumption_model(),
+        #     self.mean_consumption_impacts_model(),
+        #     self.ask_model(),
+        #     traffic,
+        # ]
+        # assembly_discs = [
+        #     JAXChain(
+        #         [model.discipline for model in fleet.models],
+        #         name=fleet.name,
+        #     ) for fleet in self.fleets
+        # ]
+        # assembly_discs.extend([model.discipline for model in assembly_models])
+        # # generate_coupling_graph(
+        # #     assembly_discs, "fleet_assembly.pdf"
+        # # )
+        # assembly_discs.extend([
+        #     model.discipline for fleet in self.fleets for model in fleet.models
+        # ])
+        # generate_coupling_graph(
+        #     assembly_discs, "fleet.pdf"
+        # )
+        generate_coupling_graph(
+            [model.discipline for model in self.fleets[0].models],
+            f"{self.fleets[0].name}.pdf",
+        )
+        # for fleet in self.fleets:
+        #     generate_coupling_graph(
+        #         [model.discipline for model in fleet.models], f"{fleet.name}.pdf"
+        #     )
+
     def demand_avoidance_model(self):
         """Aggregation of demand avoidance among Fleets."""
         default_inputs = {
@@ -297,6 +341,7 @@ class FleetAssembly(Fleet):
         default_inputs.update({
             f"{fleet.name}.relative_price_change": 0.0 for fleet in self.fleets
         })
+        default_inputs.update({f"{fleet.name}.ask_trend": 0.0 for fleet in self.fleets})
 
         output_names = [
             "rpk",
@@ -326,6 +371,9 @@ class FleetAssembly(Fleet):
         load_factor = input_data["load_factor"]
 
         asks = array([input_data[f"{fleet.name}.ask"] for fleet in self.fleets])
+        asks_trend = array([
+            input_data[f"{fleet.name}.ask_trend"] for fleet in self.fleets
+        ])
         price_changes = array([
             input_data[f"{fleet.name}.relative_price_change"] for fleet in self.fleets
         ])
@@ -347,7 +395,7 @@ class FleetAssembly(Fleet):
 
         rpk = ask * load_factor * 1e-2
 
-        relative_price_change = jnp_sum(asks * price_changes) / ask
+        relative_price_change = jnp_sum(asks_trend * price_changes) / ask_trend
         # avoidance_burden = jnp_sum(trend_shares * shift_ratios)
 
         discount_factor = (1 + discount_rate) ** (start_year - year)

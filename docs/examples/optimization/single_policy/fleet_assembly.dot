@@ -1,0 +1,17 @@
+digraph {
+	general -> "Global consumption" [label="general.BATTERY.consumption,general.JET-A.consumption,general.LIQUID-H2.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	commuter -> "Global consumption" [label="commuter.BATTERY.consumption,commuter.JET-A.consumption,commuter.LIQUID-H2.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	regional -> "Global consumption" [label="regional.JET-A.consumption,regional.LIQUID-H2.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	short_medium -> "Global consumption" [label="short_medium.JET-A.consumption,short_medium.LIQUID-H2.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	long_range -> "Global consumption" [label="long_range.JET-A.consumption,long_range.LIQUID-H2.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global consumption" -> "Global fleet mean consumption" [label="BATTERY.consumption,JET-A.consumption,LIQUID-H2.consumption" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global ASK trend" -> general [label="general.ask_trend" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global ASK trend" -> commuter [label="commuter.ask_trend" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global ASK trend" -> regional [label="regional.ask_trend" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global ASK trend" -> short_medium [label="short_medium.ask_trend" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global ASK trend" -> long_range [label="long_range.ask_trend" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Air Traffic from Socioeconomic Drivers" -> "Global Demand avoidance" [label="ask_trend,load_factor" color=black dir=forward fontcolor=black penwidth=1.0]
+	"Air Traffic from Socioeconomic Drivers" -> "Global ASK trend" [label=ask_trend color=black dir=forward fontcolor=black penwidth=1.0]
+	"Global fleet mean consumption" -> "_Global fleet mean consumption" [label="BATTERY.mean_consumption_per_ask,JET-A.mean_consumption_per_ask,LIQUID-H2.mean_consumption_per_ask,mean_energy_per_ask" color=black dir=forward fontcolor=black penwidth=1.0]
+	"_Global fleet mean consumption" [style=invis]
+}

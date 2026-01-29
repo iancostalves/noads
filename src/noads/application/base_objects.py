@@ -31,12 +31,28 @@ from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParamete
 from noads.core.models.fleet.fleet import Fleet
 from noads.core.models.fleet.fleet import FleetAssembly
 
-aeroscope_category_conso = {
-    "general": 1.87014607,
-    "commuter": 1.18419916,
-    "regional": 0.97249364,
-    "short_medium": 1.0504334,
-    "long_range": 1.0504334,
+category_conso = {
+    "general": (2.7355931281666916, 1.9140569910448313, 1.4709811219423268),
+    "commuter": (1.2471681199434796, 1.014373482550286, 0.8806485123652082),
+    "regional": (0.8721753476178873, 0.804966734517787, 0.7304364463650426),
+    "short_medium": (1.0041690806234553, 0.8710601781283808, 0.8223594455080704),
+    "long_range": (1.0371264261013249, 0.9195081834700178, 0.8283365677650192),
+}
+
+category_lifetime = {
+    # 3rd quartile, median, 1st quartile
+    # "general": (33.8, 22.2, 11.2),
+    # "commuter": (26.5, 21.9, 18.6),
+    # "regional": (20.5, 15.3, 9.2),
+    # "short_medium": (33.8, 24.8, 12.4),
+    # "long_range": (29.5, 23.6, 18.7),--------------------------------------------
+    # 3rd quartile, (half-way between), median
+    # This avoids too low lifetime values for the 1st quartile
+    "general": (33.8, (33.8 + 22.2) / 2, 22.2),
+    "commuter": (26.5, (26.5 + 21.9) / 2, 21.9),
+    "regional": (20.5, (20.5 + 15.3) / 2, 15.3),
+    "short_medium": (33.8, (33.8 + 24.8) / 2, 24.8),
+    "long_range": (29.5, (29.5 + 23.6) / 2, 23.6),
 }
 
 categories_mission = {
@@ -49,7 +65,6 @@ categories_mission = {
 
 propulsion_mission = {
     "JetA-GasTurbine": {"speed": 0.8 * 340, "altitude": 28000 * 0.3048},
-    # "Turboprop": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
     "Battery-Electric": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
     "lH2-FuelCell": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
     "lH2-GasTurbine": {"speed": 0.8 * 340, "altitude": 28000 * 0.3048},
@@ -64,12 +79,6 @@ propulsion_architectures = {
         "energy_type": "kerosene",
         "bpr": 12.0,
     },
-    # "Turboprop": {
-    #     "engine_count": 2,
-    #     "engine_type": "turboprop",
-    #     "thruster_type": "propeller",
-    #     "energy_type": "kerosene",
-    # },
     "Battery-Electric": {
         "engine_count": 2,
         "engine_type": "emotor",
@@ -98,49 +107,46 @@ propulsion_architectures = {
     # },
 }
 
-tech_params_lower_upper_2020_2040_2060 = {
+tech_params_lower_mid_upper_2020_2040_2060 = {
     "battery_specific_energy": (
         array([200, 350, 600]),
-        0.5 * (array([200, 350, 600]) + array([200, 700, 1300])),
-        array([200, 700, 1300]),
+        0.5 * (array([200, 350, 600]) + array([200, 800, 1500])),
+        array([200, 800, 1500]),
     ),
     "emotor_specific_power": (
-        array([2, 15, 20]),
-        0.5 * (array([2, 15, 20]) + array([2, 20, 26])),
-        array([2, 20, 26]),
+        array([2, 10, 15]),
+        0.5 * (array([2, 10, 15]) + array([2, 20, 28])),
+        array([2, 20, 28]),
     ),
     "electronics_specific_power": (
         array([2, 15, 20]),
-        0.5 * (array([2, 15, 20]) + array([2, 22, 30])),
-        array([2, 22, 30]),
+        0.5 * (array([2, 15, 20]) + array([2, 25, 32])),
+        array([2, 25, 32]),
     ),
     "fuelcell_specific_power": (
         array([1, 2, 3]),
-        0.5 * (array([1, 2, 3]) + array([1, 3, 5])),
-        array([1, 3, 5]),
+        0.5 * (array([1, 2, 3]) + array([1, 3, 6])),
+        array([1, 3, 6]),
     ),
     "lh2tank_gravimetric_index": (
-        array([0.2, 0.3, 0.4]) * 1e2,
-        0.5 * (array([0.2, 0.3, 0.4]) * 1e2 + array([0.2, 0.6, 0.75]) * 1e2),
-        array([0.2, 0.6, 0.75]) * 1e2,
+        array([0.2, 0.3, 0.35]) * 1e2,
+        0.5 * (array([0.2, 0.3, 0.35]) * 1e2 + array([0.2, 0.65, 0.8]) * 1e2),
+        array([0.2, 0.65, 0.8]) * 1e2,
     ),
     "fuelcell_efficiency": (
         array([0.40, 0.45, 0.5]) * 1e2,
-        0.5 * (array([0.40, 0.45, 0.5]) * 1e2 + array([0.40, 0.50, 0.6]) * 1e2),
-        array([0.40, 0.50, 0.6]) * 1e2,
+        0.5 * (array([0.40, 0.45, 0.5]) * 1e2 + array([0.40, 0.55, 0.65]) * 1e2),
+        array([0.40, 0.55, 0.65]) * 1e2,
     ),
     "struct_weight_factor": (
-        array([1, 0.85, 0.8]) * 1e2,
-        0.5 * (array([1, 0.85, 0.8]) * 1e2 + array([1, 0.7, 0.6]) * 1e2),
-        array([1, 0.7, 0.6]) * 1e2,
+        array([1, 0.9, 0.85]) * 1e2,
+        0.5 * (array([1, 0.9, 0.85]) * 1e2 + array([1, 0.66, 0.55]) * 1e2),
+        array([1, 0.66, 0.55]) * 1e2,
     ),
 }
 
 
-def initialize_base_objects(
-    drop_in_only=False,
-    technology_index=0,
-):
+def initialize_base_objects(drop_in_only=False, technology_index=0):
     """Initialize base model objects."""
     if technology_index < 0 or technology_index > 2:
         msg = "Please enter 0, 1 or 2 as technology index (low, mid, up)"
@@ -153,14 +159,14 @@ def initialize_base_objects(
     oil = Energy("OIL")
     biomass = Energy("BIOMASS")
     electricity = Energy("ELECTRICITY")
-    Energy("NATURAL_GAS")
+    # natural_gas = Energy("NATURAL_GAS")
 
     # Production Pathways and their associated Secondary energies ......................
 
     # Kerosene from oil -------------------
     refinery = ProductionPathway(
         "Refinery",
-        impacts=[],
+        impacts=[co2],
         input_streams=[oil],
     )
     kerosene = ProducedEnergy(
@@ -187,6 +193,7 @@ def initialize_base_objects(
         "BIOFUEL",
         pathways=[bio_ft, bio_atj, bio_hefa],
     )
+
     # Gas-Hydrogen
     electrolysis = ProductionPathway(
         "Electrolysis",
@@ -201,7 +208,7 @@ def initialize_base_objects(
     gh2 = ProducedEnergy(
         "GAS-H2",
         pathways=[electrolysis, gas],
-    )  # gas_ccs, coal_ccs,
+    )
     # E-fuel
     ptl = ProductionPathway(
         "Power_to_liquid",
@@ -212,6 +219,7 @@ def initialize_base_objects(
         "E-FUEL",
         pathways=[ptl],
     )
+
     # # Gas methane
     # fossil_ch4 = ProductionPathway(
     #     "GM_fossil",
@@ -301,7 +309,6 @@ def initialize_base_objects(
     energies = [kerosene, biofuel, e_fuel, drop_in, gh2]
     prop_systems = {
         "JetA-GasTurbine": PropulsionSystem("turbofan", {drop_in: 1.0}),
-        # "Turboprop": PropulsionSystem("turboprop", {drop_in: 1.0}),
     }
     if not drop_in_only:
         energies.extend([lh2, battery])
@@ -321,7 +328,10 @@ def initialize_base_objects(
 
     # Aircraft technology evolution parameters
     aircraft_tech_params = []
-    for param_name, lower_mid_upper in tech_params_lower_upper_2020_2040_2060.items():
+    for (
+        param_name,
+        lower_mid_upper,
+    ) in tech_params_lower_mid_upper_2020_2040_2060.items():
         param_values = lower_mid_upper[technology_index]
         aircraft_tech_params.append(
             AircraftTechParameter(
@@ -337,7 +347,7 @@ def initialize_base_objects(
         aircraft_reference_2019 = AircraftOperation(
             name=f"Current_fleet_{cat_name}",
             propulsion=prop_systems["JetA-GasTurbine"],
-            energy_per_ask=aeroscope_category_conso[cat_name],
+            energy_per_ask=category_conso[cat_name][technology_index],
             recent=True,
             lifetime=20.0,
         )
@@ -354,6 +364,8 @@ def initialize_base_objects(
                 if cat_name == "general" or (
                     cat_name == "commuter" and technology_index > 0
                 ):
+                    # Electric aircraft always included for general market, commuter
+                    # market only if not lower technology
                     aircraft.append(
                         AircraftDesign(
                             name=f"{prop_name}_{cat_name}",
@@ -364,6 +376,25 @@ def initialize_base_objects(
                             reference_aircraft=aircraft_reference_2019,
                         )
                     )
+            elif "JetA-GasTurbine" in prop_name:
+                aircraft.extend((
+                    AircraftDesign(
+                        name=f"{prop_name}-v1_{cat_name}",
+                        propulsion=prop_systems[prop_name],
+                        mission=mission,
+                        power_system=propulsion_architectures[prop_name],
+                        aircraft_tech_params=aircraft_tech_params,
+                        reference_aircraft=aircraft_reference_2019,
+                    ),
+                    AircraftDesign(
+                        name=f"{prop_name}-v2_{cat_name}",
+                        propulsion=prop_systems[prop_name],
+                        mission=mission,
+                        power_system=propulsion_architectures[prop_name],
+                        aircraft_tech_params=aircraft_tech_params,
+                        reference_aircraft=aircraft_reference_2019,
+                    ),
+                ))
             else:
                 aircraft.append(
                     AircraftDesign(

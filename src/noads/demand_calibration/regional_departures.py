@@ -91,7 +91,7 @@ def plot_calibration_result(
     ax2.set_xlabel("GDP per capita [current US$/hab.]")
     ax2.legend(loc="upper left")
     fig2.show()
-    # close(fig2)
+    # close(fig_paper)
 
     opt_result.update({"x": x_raw})
     results = model.execute(opt_result)
@@ -171,7 +171,7 @@ def run_region_calibration(region, plot_calibration=True):
         "logistic_nu", lower_bound=0.1, upper_bound=10, value=np_array(1.0)
     )
     design_space.add_variable(
-        "asymptote_coeff", lower_bound=0.5, upper_bound=2.0, value=np_array(1.0)
+        "asymptote_coeff", lower_bound=0.1, upper_bound=10.0, value=np_array(1.0)
     )
 
     # Create the MDO scenario with an MDF formulation:

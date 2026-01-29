@@ -43,12 +43,6 @@ def filter_nans(data_iterable, exclude_covid=True):
 
 
 # def get_historic_ask_rpk_co2():
-#     """Get """
-#     read_excel(
-#         "../../../src/noads/demand_calibration/calibration_data/Traffic_1929_to_2021"
-#         ".xlsx",
-#         decimal=",",
-#     )
 #     array([
 #         549.6,
 #         531.5,
@@ -87,13 +81,13 @@ def get_rpk_data(y_start):
     """Get data for Revenue Passenger Kilometers calibration."""
     # Socio-economic indicators
     gdp_data = read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/GDP.xls",
+        "../../../../src/noads/demand_calibration/calibration_data/GDP.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/Population.xls",
+        "../../../../src/noads/demand_calibration/calibration_data/Population.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -101,7 +95,8 @@ def get_rpk_data(y_start):
 
     # Air traffic indicators
     rpk_data = read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/Traffic_1929_to_2021.xlsx",
+        "../../../../src/noads/demand_calibration/"
+        "calibration_data/Traffic_1929_to_2021.xlsx",
         decimal=",",
     )
 
@@ -131,13 +126,13 @@ def get_departures_data(region):
     """Get data for Carrier Departures calibration."""
     # Socio-economic indicators
     gdp_data = read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/GDP.xls",
+        "../../../../src/noads/demand_calibration/calibration_data/GDP.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/Population.xls",
+        "../../../../src/noads/demand_calibration/calibration_data/Population.xls",
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -145,7 +140,7 @@ def get_departures_data(region):
 
     # Air traffic indicators
     dep_data = read_excel(
-        "../../../src/noads/demand_calibration/calibration_data/AirTraffic-carrier-departures.xls",
+        "../../../../src/noads/demand_calibration/calibration_data/AirTraffic-carrier-departures.xls",  # noqa: E501
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,

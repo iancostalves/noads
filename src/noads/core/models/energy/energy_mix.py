@@ -19,7 +19,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gemseo import generate_coupling_graph
 from jax.numpy import array
 from jax.numpy import sum as jnp_sum
 from jax.numpy import where
@@ -144,16 +143,16 @@ class EnergyMix:
         impact_models.append(self.total_impacts_model())
         prod_conso_models.append(self.input_streams_model())
 
-        generate_coupling_graph(
-            [model.discipline for model in impact_models], "energy_mix_impact.png"
-        )
-        generate_coupling_graph(
-            [model.discipline for model in prod_conso_models],
-            "energy_mix_prod_conso.png",
-        )
-        generate_coupling_graph(
-            [model.discipline for model in self.models], "energy_mix_complete.png"
-        )
+        # generate_coupling_graph(
+        #     [model.discipline for model in impact_models], "energy_mix_impact.pdf"
+        # )
+        # generate_coupling_graph(
+        #     [model.discipline for model in prod_conso_models],
+        #     "energy_mix_prod_conso.pdf",
+        # )
+        # generate_coupling_graph(
+        #     [model.discipline for model in self.models], "energy_mix_complete.pdf"
+        # )
 
     def input_streams_model(self):
         """Aggregate consumption of input streams model."""

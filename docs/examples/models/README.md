@@ -10,4 +10,4 @@
 
 # Models
 
-An initial view of the models used in the optimization.
+An initial view of some of the elementary models used in the optimization.
