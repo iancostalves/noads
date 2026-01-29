@@ -84,7 +84,24 @@ nav:
   - Changelog: changelog.md
   - Credits: credits.md
   - Licenses: licenses.md
-- User guide: user_guide/
+- User Guide (Original): user_guide/
+- Extended User Guide:
+  - user_guide_extended/index.md
+  - Object-Oriented Architecture: user_guide_extended/oop_architecture.md
+  - Workflow Management: user_guide_extended/workflow_management.md
+  - Core Concepts: user_guide_extended/core_concepts.md
+- Model Documentation:
+  - model_documentation/index.md
+  - Model Assumptions: model_documentation/assumptions.md
+  - Model Equations: model_documentation/equations.md
+  - Calibration Methodology: model_documentation/calibration.md
+- Scenario Trends (Paper):
+  - scenario_trends/index.md
+  - Introduction and Methods: scenario_trends/intro_methods.md
+  - Main Results: scenario_trends/main_results.md
+  - Discussion: scenario_trends/discussion.md
+- Full Results (SI):
+  - full_results/index.md
 - Examples:
   - generated/examples/optimization
   - generated/examples/models
