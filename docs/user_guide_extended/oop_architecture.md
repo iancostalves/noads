@@ -85,25 +85,29 @@ classDiagram
 
 ## Visualization of Couplings
 
-The following diagrams show how different components of the system interact. These visualizations are generated from the `.dot` files in the `docs/examples/optimization/single_policy/` directory.
+The following diagrams show how different components of the system interact. These visualizations are available as GraphViz `.dot` files in the `docs/examples/optimization/single_policy/` directory.
+
+**Note**: The `.dot` files are GraphViz source files that define the coupling diagrams. To view them:
+- Copy the contents and paste into an online GraphViz viewer (e.g., [dreampuf.github.io/GraphvizOnline](https://dreampuf.github.io/GraphvizOnline/))
+- Or install GraphViz locally and use: `dot -Tpng file.dot -o output.png`
 
 ### General System Overview
 
 The general system overview shows the high-level data flow between major components:
 
-![General system overview](../examples/optimization/single_policy/general.dot)
+📄 [general.dot](../examples/optimization/single_policy/general.dot) - Download to view with GraphViz
 
 ### Fleet Assembly
 
 Fleet assembly shows how different aircraft types are composed into a complete fleet:
 
-![Fleet assembly](../examples/optimization/single_policy/fleet_assembly.dot)
+📄 [fleet_assembly.dot](../examples/optimization/single_policy/fleet_assembly.dot) - Download to view with GraphViz
 
 ### All Couplings
 
 The complete coupling diagram shows all interactions between models:
 
-![All couplings](../examples/optimization/single_policy/all_couplings.dot)
+📄 [all_couplings.dot](../examples/optimization/single_policy/all_couplings.dot) - Download to view with GraphViz
 
 ### Energy Mix Couplings
 
@@ -111,19 +115,19 @@ The complete coupling diagram shows all interactions between models:
 
 The complete energy mix showing all production pathways and their connections:
 
-![Energy mix complete](../examples/optimization/single_policy/energy_mix_complete.dot)
+📄 [energy_mix_complete.dot](../examples/optimization/single_policy/energy_mix_complete.dot) - Download to view with GraphViz
 
 #### Production and Consumption
 
 Energy production and consumption flows:
 
-![Energy mix production and consumption](../examples/optimization/single_policy/energy_mix_prod_conso.dot)
+📄 [energy_mix_prod_conso.dot](../examples/optimization/single_policy/energy_mix_prod_conso.dot) - Download to view with GraphViz
 
 #### Impact Calculation
 
 How impacts are calculated through the energy system:
 
-![Energy mix impact](../examples/optimization/single_policy/energy_mix_impact.dot)
+📄 [energy_mix_impact.dot](../examples/optimization/single_policy/energy_mix_impact.dot) - Download to view with GraphViz
 
 ## Benefits of This Architecture
 

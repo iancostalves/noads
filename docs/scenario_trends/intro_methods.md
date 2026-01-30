@@ -42,7 +42,13 @@ Global Integrated Assessment Models (IAMs) lack technology and fleet detail conc
 
 ## Methodology Overview
 
-The optimization approach is illustrated in the conceptual data-flow diagram:
+The optimization approach follows a structured process:
+
+**Conceptual Data Flow**: For visualization of model couplings and data flow, see the [OOP Architecture diagrams](../user_guide_extended/oop_architecture.md) which include:
+- General system overview
+- Fleet assembly structure  
+- All model couplings
+- Energy mix interactions
 
 ### Before Optimization Loop
 

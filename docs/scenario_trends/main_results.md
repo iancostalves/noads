@@ -283,7 +283,20 @@ For detailed figures showing:
 - Energy sankey diagrams
 - Fuel blend evolution
 
-See the [Full Results](../full_results/index.md) section, organized by scenario.
+**Available Result Figures**:
+
+### Scenario Comparison Figures
+- [Baseline Scenarios](../../examples/optimization/single_policy/single_policy/baseline.pdf) - Comparison of SSP1, SSP2, SSP5 baselines
+- [Drop-in Scenarios](../../examples/optimization/single_policy/single_policy/dropin.pdf) - SAF mitigation results
+- [Breakthrough Scenarios](../../examples/optimization/single_policy/single_policy/breakthrough.pdf) - Alternative aircraft results
+- [AR6 Comparison](../../examples/optimization/single_policy/ar6_comparison.pdf) - Comparison with AR6 ensemble
+
+### Detailed Results by Scenario
+See the [Full Results](../full_results/index.md) section, organized by scenario. Each scenario folder contains:
+- `fleet_*.pdf` - Fleet composition by market
+- `energy_*.pdf` - Energy production pathways
+- `conso_*.pdf` - Energy consumption by carrier
+- `demand_*.pdf` - Demand evolution (low-demand scenarios only)
 
 ## Summary Table of Key Metrics
 
