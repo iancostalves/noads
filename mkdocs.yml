@@ -84,12 +84,26 @@ nav:
   - Changelog: changelog.md
   - Credits: credits.md
   - Licenses: licenses.md
-- User guide: user_guide/
+- Introduction: introduction/index.md
+- Methods:
+  - methods/index.md
+  - Formulation and Numerical Methods: methods/formulation.md
+- Model Documentation:
+  - models/index.md
+  - Demand Model: models/demand.md
+  - Aircraft Models: models/aircraft.md
+  - Fleet Model: models/fleet.md
+  - Energy Mix Model: models/energy.md
+- Results:
+  - results/index.md
+  - Main Results: results/main_results.md
+  - Full Results: results/full_results.md
+- Discussion and Conclusion: discussion/index.md
+- User Guide (Reference): user_guide/
 - Examples:
   - generated/examples/optimization
   - generated/examples/models
-
-- API documentation: reference/noads/
+- API Documentation: reference/noads/
 
 markdown_extensions:
 - admonition
