@@ -22,7 +22,9 @@ dynamic = ["version"]
 requires-python = ">=3.9, <3.13"
 dependencies = [
     "gemseo-jax >=2.0.2, <3",
-    "diffrax >=0.6.0, <0.6.1",
+    # diffrax <0.7 is incompatible with jax >=0.4.36 (jax.core.ConcreteArray
+    # was removed); 0.7.x is the validated series.
+    "diffrax >=0.7, <0.8",
     "xlrd >=2.0.1, <2.1",
 ]
 
@@ -34,25 +36,21 @@ test = [
     "pytest-xdist",
 ]
 doc = [
-    "black",
-    "griffe-inherited-docstrings",
-    "markdown-exec[ansi]",
-    "mike",
-    "mkdocs-bibtex",
-    "mkdocs-gallery",
-    "mkdocs-gen-files",
-    "mkdocs-include-markdown-plugin",
-    "mkdocs-literate-nav",
-    "mkdocs-material",
-    "mkdocs-section-index",
-    "mkdocstrings[python]",
+    "sphinx >=7",
+    "myst-parser",
+    "sphinx-book-theme >=1.1",
+    "sphinx-gallery",
+    "sphinxcontrib-bibtex",
+    "sphinx-design",
+    "sphinx-copybutton",
+    "sphinxcontrib-mermaid",
     "plotly >=5.24.0, <5.24.1",
 ]
 
 [project.urls]
-Homepage = "https://gitlab.com/gemseo"
-Source = "https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios"
-Tracker = "https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios/-/issues"
+Homepage = "https://iancostalves.github.io/noads/"
+Source = "https://github.com/iancostalves/noads"
+Tracker = "https://github.com/iancostalves/noads/issues"
 
 [project.readme]
 file = "README.md"
@@ -72,6 +70,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 license-files = [
-    "LICENSE.txt",
-    "CREDITS.md",
+    "LICENSES/LGPLv3.txt",
+    "LICENSES/GPLv3.txt",
 ]

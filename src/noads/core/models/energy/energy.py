@@ -36,7 +36,14 @@ if TYPE_CHECKING:
 
 
 class Energy(Stream):
-    """Basic Energy flow."""
+    """A primary energy flow, consumed but not produced within the system.
+
+    Primary resources (oil, biomass, electricity) are the leaves of the energy
+    production graph: their consumption is aggregated from the pathways that use
+    them, and their carbon intensity (``<name>.CO2_index``) is a scenario input
+    (constant, or time-dependent like the grid emission factor). Energies produced
+    by pathways are modeled with :class:`ProducedEnergy` instead.
+    """
 
     unit = "MJ"
 
@@ -46,7 +53,15 @@ class Energy(Stream):
 
 
 class ProducedEnergy(Energy):
-    """Energy flow produced by a set of ProductionPathway's."""
+    """An energy flow produced by one or several production pathways.
+
+    When several pathways compete (e.g. HEFA, ATJ, and FT for biofuel), the share of
+    each pathway is a time-dependent control used as optimization variable, and the
+    energy's impact index is the share-weighted mean of the pathway indices. The
+    class provides the production, consumption, and impact-index models described in
+    the energy-mix formulation of the extended paper (intensive impacts computed
+    primary-to-final, extensive production computed final-to-primary).
+    """
 
     impacts: list[Impact]
     """Set of all impacts accounted."""
@@ -226,7 +241,12 @@ class ProducedEnergy(Energy):
 
 
 class EnergyCarrier(Energy, MaterialStream):
-    """Basic flow of energy carrier (energy and material embarked in aircraft)."""
+    """An energy carrier embarked in aircraft, with its material properties.
+
+    Carriers (Jet-A, liquid hydrogen, batteries) carry a density and a specific
+    energy so that aircraft design can convert between energy, mass, and volume
+    when sizing tanks and computing take-off weight.
+    """
 
     specific_energy: float
 
@@ -260,7 +280,12 @@ class EnergyCarrier(Energy, MaterialStream):
 
 
 class ProducedEnergyCarrier(ProducedEnergy, EnergyCarrier):
-    """Energy Carrier flow produced by a set of ProductionPathway's."""
+    """A final energy carrier produced by pathways and embarked in aircraft.
+
+    Combines :class:`ProducedEnergy` (production, consumption, and impact models)
+    with :class:`EnergyCarrier` (density and specific energy for aircraft design).
+    Its direct consumption is the sum over the aircraft that embark it.
+    """
 
     def __init__(
         self,

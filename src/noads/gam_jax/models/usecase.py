@@ -18,8 +18,7 @@
 
 # ruff: noqa: E501
 
-from generic_airplane_model import GAM  # import the toolbox
-
+from noads.gam_jax.models.generic_airplane_model import GAM
 from noads.gam_jax.utils import unit
 
 # ----- INITIALIZATION

@@ -664,9 +664,10 @@ class GAM:  # Data Driven Modelling
     def holding_fuel(
         self, start_mass, time, altp, speed, speed_type, mtow, max_power, power_system
     ):
-        """Compute the fuel for a given holding time
-        WARNING : when fuel is used, returned value is fuel mass (kg)
-                  when battery is used, returned value is energy (J).
+        """Compute the fuel for a given holding time.
+
+        WARNING: when fuel is used, returned value is fuel mass (kg);
+        when battery is used, returned value is energy (J).
         """
         _pamb, tamb, g = phd.atmosphere_g(altp, self.disa)
         tas, _mach = self.get_tas(tamb, speed, speed_type)
@@ -740,9 +741,10 @@ class GAM:  # Data Driven Modelling
         altitude_data,
         reserve_data,
     ):
-        """Compute the total fuel required for a mission
-        WARNING : when fuel is used, returned value is fuel mass (kg)
-                  when battery is used, returned value is energy (J).
+        """Compute the total fuel required for a mission.
+
+        WARNING: when fuel is used, returned value is fuel mass (kg);
+        when battery is used, returned value is energy (J).
         """
         speed_type = "tas" if cruise_speed > 1 else "mach"
 
@@ -878,21 +880,23 @@ class GAM:  # Data Driven Modelling
         }
 
     def design_airplane(self, power_system, mission):
-        """Perform the design of the aircraft with a target on Range
+        """Perform the design of the aircraft with a target on Range.
+
         * power_system : a dictionnary with 5 entries:
-            - energy_type : "petrol","kerosene","gasoline","compressed_h2","liquid_h2","liquid_ch4","liquid_nh3" or "battery"
-            - engine_type : "turbofan","turboprop","piston" or "emotor" (eletric motor)
-            - engine_count : the number of engines
-            - thruster_type: "fan" or "propeller"
-            - bpr : bypass ratio in the case of a fan truster.
+
+          - energy_type : "petrol","kerosene","gasoline","compressed_h2","liquid_h2","liquid_ch4","liquid_nh3" or "battery"
+          - engine_type : "turbofan","turboprop","piston" or "emotor" (eletric motor)
+          - engine_count : the number of engines
+          - thruster_type: "fan" or "propeller"
+          - bpr : bypass ratio in the case of a fan truster.
 
         * design_mission : a dictionnary with 5 entries
-            - category : "general" (ex: TB20), "commuter" (PC-6), "regional" (ATR72), "business" (Falcon2000), "short_medium" (A320) or "long_range" (B787).
-            - npax : number of passengers. Used to determine the maximum payload.
-            - range : the horizontal distance to cover for the design mission
-            - speed : Cruise Mach number (adim). Can be obtained from True Air Speed, `utils/physical_data.py` with `mach_from_vtas()`
-            - altitude : typical cruise altitude.
 
+          - category : "general" (ex: TB20), "commuter" (PC-6), "regional" (ATR72), "business" (Falcon2000), "short_medium" (A320) or "long_range" (B787).
+          - npax : number of passengers. Used to determine the maximum payload.
+          - range : the horizontal distance to cover for the design mission
+          - speed : Cruise Mach number (adim). Can be obtained from True Air Speed, `utils/physical_data.py` with `mach_from_vtas()`
+          - altitude : typical cruise altitude.
         """
         if "bpr" not in power_system:
             power_system["bpr"] = None
@@ -1433,10 +1437,7 @@ class GAM:  # Data Driven Modelling
         }
 
     def print_design(self, dict, name=None):
-        if name is not None:
-            pass
-        if dict["cruise_speed"] > 1:
-            pass
+        pass
         # print(" Maximum mass efficiency factor, P.K/M max = ", "%.2f" % unit.convert_to("km/kg", dict["pk_o_mass_max"]), " pax.km/kg")
         # print(" Minimum mass efficiency factor, P.K/M min = ", "%.2f" % unit.convert_to("km/kg", dict["pk_o_mass_min"]), " pax.km/kg")
 
@@ -1586,9 +1587,6 @@ if __name__ == "__main__":
         df1.at[n, "estimated_owe"] = ac_dict["owe"]
 
         df1.at[n, "error_mtow"] = (ac_dict["mtow"] - df1["mtow"][n]) / df1["mtow"][n]
-
-        if abs(df1["error_mtow"][n]) > 0.25:
-            pass
 
         # print("%.0f" % (ac_dict[abs] / 1000))
 

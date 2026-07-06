@@ -14,7 +14,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Air traffic demand estimation from AR6 scenarios."""
+"""
+Air traffic demand estimation from AR6 scenarios
+================================================
+"""
 
 from jax import vmap
 from matplotlib.pyplot import figure
@@ -31,7 +34,8 @@ from noads.core.models.interpolation import interpolate_data
 from noads.core.models.traffic import AirTraffic
 
 # %%
-# # AR6 scenario data
+# AR6 scenario data
+# -----------------
 # Let's start by getting the AR6 scenario data and taking a look at it.
 from noads.demand_calibration.calibration_utils import get_rpk_data
 
@@ -125,7 +129,8 @@ gdp_per_capita_2019 = {
 }
 
 # %%
-# # Model vectorization
+# Model vectorization
+# -------------------
 # When a model must be evaluated yearly, rather than once, we must vectorize its
 # function to account for vectorized inputs. When running a TemporalScenario this is
 # done automatically, but here we must to it manually.
@@ -133,7 +138,8 @@ model = AirTraffic()
 model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
 
 # %%
-# # Results
+# Results
+# -------
 # Now let's visualize the results for each scenario
 # Also we will make the paper plot with historical and COVID effects
 

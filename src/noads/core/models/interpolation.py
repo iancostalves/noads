@@ -220,6 +220,7 @@ class InterpolatedUnivariateSpline:  # noqa: D101
 
         # Saving spline parameters for evaluation later
         self.k = k
+        self._endpoints = endpoints
         self._x = x
         self._y = y
         self._coefficients = coefficients

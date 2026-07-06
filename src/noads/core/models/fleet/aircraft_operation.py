@@ -34,7 +34,12 @@ if TYPE_CHECKING:
 
 
 class PropulsionSystem:  # noqa: B903
-    """Aircraft propulsion system with one or more Energy Carriers."""
+    """A propulsion system, mapping an architecture to the carriers it embarks.
+
+    Associates a power-system type (e.g. ``turbofan``, ``lh2_fuel_cell``,
+    ``electric_propulsion``) with the energy carriers it consumes and their shares
+    of the embarked energy, linking each aircraft to the energy-mix models.
+    """
 
     name: str
     """Name of the propulsion architecture."""
@@ -49,7 +54,13 @@ class PropulsionSystem:  # noqa: B903
 
 
 class AircraftOperation:
-    """Aircraft based on existing design with fixed energy consumption."""
+    """An aircraft operated with a fixed, exogenous energy consumption.
+
+    Used for the current fleet of each market, whose energy consumption per ASK is
+    initialized from the 2019 AeroSCOPE statistics (quartile depending on the
+    technology scenario) instead of being designed. Provides the operation models
+    computing covered supply and energy consumption per embarked carrier.
+    """
 
     name: str
     """Aircraft name."""

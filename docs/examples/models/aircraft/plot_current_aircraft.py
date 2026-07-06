@@ -14,7 +14,10 @@
 # along with this program; if not. write to the Free Software Foundation.
 # Inc.. 51 Franklin Street. Fifth Floor. Boston. MA  02110-1301. USA.
 
-"""Current aircraft data analysis."""
+"""
+Current aircraft data analysis
+==============================
+"""
 
 from matplotlib.pyplot import subplots
 from numpy import array
@@ -22,6 +25,7 @@ from numpy import full_like
 from numpy import isfinite
 from numpy import nan
 from pandas import read_csv
+from pandas.errors import EmptyDataError
 
 retirement_ages = {
     "general": [
@@ -3409,36 +3413,60 @@ fig1.savefig("current_aircraft_lifetime.pdf")
 fig2, ax2 = subplots(1, 1, figsize=(4.2, 4.2), layout="constrained")
 
 
-aeroscope_df = read_csv("./AeroSCOPE_dataset.csv")
-distances = aeroscope_df["distance_km"].to_numpy()
-asks = aeroscope_df["ask"].to_numpy()
-rpks = aeroscope_df["rpk"].to_numpy()
-co2 = aeroscope_df["co2"].to_numpy()
+# The AeroSCOPE dataset is not distributed with the repository: place the
+# per-route 2019 export (columns distance_km, ask, rpk, co2) next to this
+# script to reproduce the passenger-efficiency distribution.
+energy_post = None
+try:
+    aeroscope_df = read_csv("./AeroSCOPE_dataset.csv")
+except EmptyDataError:
+    print("AeroSCOPE_dataset.csv is empty - skipping passenger efficiency figure.")
+else:
+    distances = aeroscope_df["distance_km"].to_numpy()
+    asks = aeroscope_df["ask"].to_numpy()
+    rpks = aeroscope_df["rpk"].to_numpy()
+    co2 = aeroscope_df["co2"].to_numpy()
 
-valid = isfinite(distances) & isfinite(asks) & isfinite(co2) & (asks != 0) & (co2 > 0)
+    valid = (
+        isfinite(distances) & isfinite(asks) & isfinite(co2) & (asks != 0) & (co2 > 0)
+    )
 
-co2_per_ask = full_like(asks, nan, dtype=float)
-co2_per_ask[valid] = co2[valid] / asks[valid]
+    co2_per_ask = full_like(asks, nan, dtype=float)
+    co2_per_ask[valid] = co2[valid] / asks[valid]
 
-ask_per_mj_categories = [
-    ((1.0e3 / 88.7) * co2_per_ask[(valid) & (distances <= 500)]) ** (-1),
-    ((1.0e3 / 88.7) * co2_per_ask[(valid) & (distances > 500) & (distances <= 1500)])
-    ** (-1),
-    ((1.0e3 / 88.7) * co2_per_ask[(valid) & (distances > 1500) & (distances <= 4500)])
-    ** (-1),
-    ((1.0e3 / 88.7) * co2_per_ask[(valid) & (distances > 4500) & (distances <= 8000)])
-    ** (-1),
-    ((1.0e3 / 88.7) * co2_per_ask[(valid) & (distances > 8000) & (distances <= 15000)])
-    ** (-1),
-]
+    ask_per_mj_categories = [
+        ((1.0e3 / 88.7) * co2_per_ask[(valid) & (distances <= 500)]) ** (-1),
+        (
+            (1.0e3 / 88.7)
+            * co2_per_ask[(valid) & (distances > 500) & (distances <= 1500)]
+        )
+        ** (-1),
+        (
+            (1.0e3 / 88.7)
+            * co2_per_ask[(valid) & (distances > 1500) & (distances <= 4500)]
+        )
+        ** (-1),
+        (
+            (1.0e3 / 88.7)
+            * co2_per_ask[(valid) & (distances > 4500) & (distances <= 8000)]
+        )
+        ** (-1),
+        (
+            (1.0e3 / 88.7)
+            * co2_per_ask[(valid) & (distances > 8000) & (distances <= 15000)]
+        )
+        ** (-1),
+    ]
 
-energy_post = ax2.boxplot(ask_per_mj_categories, showmeans=True)
-ax2.set_title("Aircraft passenger efficiency")
-ax2.set_ylabel("seat-km / MJ")
-ax2.set_ylim(0, 2.5)
-ax2.set_xticks([1, 2, 3, 4, 5], labels=["<0.5", "0.5-1.5", "1.5-4.5", "4.5-8", "8-15"])
-ax2.set_xlabel("Flight distance (thousand km)")
-fig2.savefig("current_aircraft_energy.pdf")
+    energy_post = ax2.boxplot(ask_per_mj_categories, showmeans=True)
+    ax2.set_title("Aircraft passenger efficiency")
+    ax2.set_ylabel("seat-km / MJ")
+    ax2.set_ylim(0, 2.5)
+    ax2.set_xticks(
+        [1, 2, 3, 4, 5], labels=["<0.5", "0.5-1.5", "1.5-4.5", "4.5-8", "8-15"]
+    )
+    ax2.set_xlabel("Flight distance (thousand km)")
+    fig2.savefig("current_aircraft_energy.pdf")
 
 for i, market in enumerate(retirement_ages.keys()):
     print(market)
@@ -3446,9 +3474,10 @@ for i, market in enumerate(retirement_ages.keys()):
     print(min(retirement_post["boxes"][i].get_ydata()))
     print(min(retirement_post["medians"][i].get_ydata()))
     print(max(retirement_post["boxes"][i].get_ydata()))
-    print("MJ/ASK (1st quart, median, 3rd quart):")
-    print((min(energy_post["boxes"][i].get_ydata())) ** -1)
-    print((min(energy_post["medians"][i].get_ydata())) ** -1)
-    print((max(energy_post["boxes"][i].get_ydata())) ** -1)
+    if energy_post is not None:
+        print("MJ/ASK (1st quart, median, 3rd quart):")
+        print((min(energy_post["boxes"][i].get_ydata())) ** -1)
+        print((min(energy_post["medians"][i].get_ydata())) ** -1)
+        print((max(energy_post["boxes"][i].get_ydata())) ** -1)
     print()
     print("------------------------------------------------------------")

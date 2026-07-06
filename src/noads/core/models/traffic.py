@@ -33,7 +33,12 @@ def generalised_logistic(
     asymptote_coeff=1.27603214,
     x_lag=0.0,
 ):
-    """Generalized logistic function."""
+    """Generalized logistic (Richards) function.
+
+    Used to model the saturation of per-capita air traffic demand with rising
+    per-capita income; see the demand model of the extended paper for the
+    calibrated parameters and their interpretation.
+    """
     y = left_asymptote + divide(
         capacity - left_asymptote,
         (asymptote_coeff + exp(-growth_rate * (x - x_lag))) ** (1.0 / logistic_nu),
@@ -42,7 +47,15 @@ def generalised_logistic(
 
 
 class AirTraffic(AutoModel):
-    """Air Traffic model from function with named arguments."""
+    """The air traffic demand model.
+
+    Computes trend RPK from population and per-capita income through the calibrated
+    generalized logistic function, applies the SSP storyline multiplier and the
+    COVID-recovery adjustment, converts demand into supply (ASK) with the
+    time-quadratic load factor, and applies the market supply-shift ratios of the
+    low-demand formulation, together with the associated relative ticket price
+    change and its discounted burden.
+    """
 
     def __init__(self):
         """Initialize AirTraffic."""

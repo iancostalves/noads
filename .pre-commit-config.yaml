@@ -11,13 +11,18 @@ repos:
       # !! prefix is specific to mkdocs
       exclude: \.gitlab-ci.yml|mkdocs.yml
     - id: check-added-large-files
+      # The scenario-robust pre-computed optima bundle three background
+      # scenarios each and are legitimately up to ~800 KB.
+      args: [--maxkb=1000]
     - id: check-json
     - id: pretty-format-json
       args: [
         --autofix,
         --no-sort-keys,
       ]
-      exclude: \.ipynb
+      # Leave the machine-generated optimization results untouched (reformatting
+      # them only bloats the committed data).
+      exclude: \.ipynb|^docs/examples/optimization/results/.*\.json$
     - id: check-toml
     - id: destroyed-symlinks
     - id: check-symlinks
@@ -53,6 +58,8 @@ repos:
   rev: v0.44.0
   hooks:
   - id: markdownlint
+    # The gallery README.md files hold reST, not Markdown.
+    exclude: ^docs/examples/.*/README\.md$
     args: [
       --fix,
       --disable,
@@ -86,6 +93,9 @@ repos:
     - id: insert-license
       name: insert CC BY-SA license for md files
       files: \.md$
+      # The gallery README.md files are consumed by sphinx-gallery as reST, so
+      # they carry a reST (``..``) header, not an HTML one.
+      exclude: ^docs/examples/.*/README\.md$
       args:
         - --license-filepath
         - LICENSES/headers/CC-BY-SA-4.0.txt

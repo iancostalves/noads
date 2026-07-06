@@ -1,0 +1,19 @@
+/* NOADS documentation custom styles. */
+
+/* Slightly wider content column for wide result figures. */
+.bd-main .bd-content .bd-article-container {
+    max-width: 60rem;
+}
+
+/* Keep gallery thumbnails tidy. */
+.sphx-glr-thumbcontainer {
+    min-height: 200px;
+}
+
+/* Partner-logo banner (ISAE / IRT / ISA) spans the full sidebar width. */
+.sidebar-primary-items__start .navbar-brand img,
+.bd-sidebar-primary .navbar-brand img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}

@@ -1,2 +1,19 @@
 include:
   - remote: "https://gitlab.com/gemseo/dev/ci-includes/-/raw/test/plugin.yml"
+
+# The shared gemseo template assumes an mkdocs+mike documentation setup; the
+# documentation is now built with Sphinx, so the pages job is overridden here.
+# NOTE: validate against the remote template on the first CI run after this
+# change (job names and stages must not clash).
+pages:
+  image: python:3.11
+  stage: deploy
+  script:
+    - pip install .[doc]
+    - sphinx-build -b html -W --keep-going docs docs/_build/html
+    - mv docs/_build/html public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

@@ -28,7 +28,19 @@ from noads.core.scenarios.temporalscenario import TemporalScenario
 
 
 class MultiScenario(Model):
-    """Multi-scenario assembly of a time-dependent scenario."""
+    """Batch a temporal scenario across several background scenarios.
+
+    The wrapped :class:`~noads.core.scenarios.temporalscenario.TemporalScenario` is
+    vectorized with ``jax.vmap`` over an ensemble of background scenarios (e.g.
+    SSP2-1.9, SSP2-2.6, SSP2-3.4), so the whole ensemble is evaluated and
+    differentiated in a single compiled call. Inputs listed in ``fixed_inputs`` are
+    shared by all scenarios (exposed as ``fixed.<name>``), while the remaining
+    inputs are scenario-specific (exposed as ``<scenario>.<name>``); the same
+    convention applies to the outputs. Outputs listed in ``mean_outputs`` are also
+    averaged across the ensemble and exposed as ``mean.<name>``, which provides the
+    objective of scenario-robust policy optimization (see the robustness
+    formulation of the extended paper).
+    """
 
     _fixed_prefix: str = "fixed"
 
@@ -61,7 +73,23 @@ class MultiScenario(Model):
         fixed_inputs: Sequence[str],
         differentiation_method: JAXDiscipline.DifferentiationMethod = JAXDiscipline.DifferentiationMethod.REVERSE,  # noqa: E501
     ):
-        """Initialize MultiScenario."""
+        """Batch the temporal scenario over the ensemble.
+
+        Args:
+                temporal_scenario: The temporal scenario to batch over the ensemble.
+                mean_outputs: The outputs to average across scenarios, exposed with the
+                    ``mean.`` prefix.
+                scenario_names: The names of the background scenarios of the ensemble;
+                    used to prefix scenario-specific inputs and outputs.
+                fixed_inputs: The inputs shared across all scenarios (e.g. the aircraft
+                    mix variables of a robust policy), exposed with the ``fixed.``
+                    prefix.
+                differentiation_method: The JAX automatic differentiation mode.
+
+        Raises:
+                ValueError: If the differentiation method is ``AUTO``.
+
+        """
         if differentiation_method == JAXDiscipline.DifferentiationMethod.AUTO:
             msg = "Chose either forward or reverse AutoDiff method."
             raise ValueError(msg)

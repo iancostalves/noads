@@ -14,7 +14,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Calibration of air traffic demand models: global and regionalized."""
+"""
+Calibration of air traffic demand models: global and regionalized
+=================================================================
+"""
 
 from gemseo import configure_logger
 from gemseo_jax.auto_jax_discipline import AutoJAXDiscipline
@@ -28,7 +31,8 @@ from noads.demand_calibration.regional_departures import run_region_calibration
 configure_logger()
 
 # %%
-# # World Bank Departures data
+# World Bank Departures data
+# --------------------------
 # At first we explore World Bank data on registered carrier departures. The intent is to
 # fit a generalized logistic function to estimate traffic per capita from income per
 # capita.
@@ -38,7 +42,8 @@ configure_logger()
 # more prone to getting stuck on local minima (especially in calibration problems, which
 # are often multi-modal), we use a Multi-Start strategy, i.e., run several optimizations
 # with several starting points (chosen with a Design of Experiments algorithm).
-# ## Globally aggregated
+# Globally aggregated
+# ^^^^^^^^^^^^^^^^^^^
 results = run_region_calibration("WLD", plot_calibration=True)
 print(results[0])
 #
@@ -78,7 +83,8 @@ ax.set_xscale("log")
 fig.show()
 
 # %%
-# # ICAO RPK data
+# ICAO RPK data
+# -------------
 # Now, we explore ICAO data on Revenue Passenger-Kilometers. The data here is only
 # available on the global level.
 results = run_global_rpk_calibration(plot_calibration=True)

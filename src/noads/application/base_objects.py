@@ -14,7 +14,19 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Initialize object-oriented model structure."""
+"""Instantiation of the scenario building blocks of the paper.
+
+This module declares the market segmentation (missions, current-fleet consumption
+quartiles, and lifetimes per distance band), the propulsion architectures and their
+cruise conditions, the aircraft component technology parameters per technology
+scenario, and the energy production graph (resources, pathways, and carriers).
+:func:`initialize_base_objects` assembles them into the
+:class:`~noads.core.models.energy.energy_mix.EnergyMix` and
+:class:`~noads.core.models.fleet.fleet.FleetAssembly` used by
+:mod:`noads.application.scenario_setup`. To change the fleet partitioning or add
+aircraft, pathways, or resources, see the "Extending the analysis" section of the
+documentation.
+"""
 
 from numpy import array
 
@@ -147,7 +159,22 @@ tech_params_lower_mid_upper_2020_2040_2060 = {
 
 
 def initialize_base_objects(drop_in_only=False, technology_index=0):
-    """Initialize base model objects."""
+    """Build the energy mix and global fleet of the paper's scenarios.
+
+    Args:
+        drop_in_only: Whether to restrict the system to drop-in (Jet-A) aircraft,
+            excluding hydrogen and battery-electric architectures and their energy
+            supply chains.
+        technology_index: The aircraft technology scenario (0: Lower, 1: Mid,
+            2: Upper), selecting the component technology parameters, the
+            current-fleet consumption quartile, and the fleet lifetimes.
+
+    Returns:
+        The energy mix and the fleet assembly.
+
+    Raises:
+        RuntimeError: If the technology index is not 0, 1 or 2.
+    """
     if technology_index < 0 or technology_index > 2:
         msg = "Please enter 0, 1 or 2 as technology index (low, mid, up)"
         raise RuntimeError(msg)
