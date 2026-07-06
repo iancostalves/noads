@@ -20,7 +20,14 @@
 *.png binary
 *.pptx binary
 *.xcf binary
+*.xls binary
 *.xlsm binary
 *.xlsx binary
+*.xlt binary
 *.eot binary
 *.ttf binary
+*.woff binary
+*.woff2 binary
+*.ico binary
+*.jpeg binary
+*.zip binary
