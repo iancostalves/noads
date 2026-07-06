@@ -138,7 +138,7 @@ The mathematical symbols used throughout the models are collected in the
 ## Code availability
 
 All the scripts and data required to reproduce the results from this work are openly
-available in <https://gitlab.com/ian.costa-alves1/noads>.
+available in <https://github.com/iancostalves/noads>.
 
 ## Acknowledgements
 

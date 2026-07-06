@@ -10,10 +10,9 @@ Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 # Numerical Optimization of Aviation Decarbonization Scenarios (NOADS)
 
-[![PyPI - License](https://img.shields.io/pypi/l/numerical-optimization-of-aviation-decarbonization-scenarios)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/numerical-optimization-of-aviation-decarbonization-scenarios)](https://pypi.org/project/numerical-optimization-of-aviation-decarbonization-scenarios/)
-[![PyPI](https://img.shields.io/pypi/v/numerical-optimization-of-aviation-decarbonization-scenarios)](https://pypi.org/project/numerical-optimization-of-aviation-decarbonization-scenarios/)
-[![docs](https://github.com/iancostalves/noads/actions/workflows/docs.yml/badge.svg)](https://iancostalves.github.io/noads/)
+[![Documentation](https://github.com/iancostalves/noads/actions/workflows/docs.yml/badge.svg)](https://iancostalves.github.io/noads/)
+[![License: LGPL v3](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
+[![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 
 ## Overview
 
