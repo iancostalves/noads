@@ -32,7 +32,16 @@ if TYPE_CHECKING:
 
 
 class AircraftDesign(AircraftOperation):
-    """Aircraft based on a new design using GAM."""
+    """A prospective aircraft, designed on the fly with the Generic Airplane Model.
+
+    The design model sizes the aircraft for its market mission (range, seats) and
+    propulsion architecture (cruise speed and altitude, power system), using the
+    aircraft technology parameters evaluated at the entry-into-service year, which
+    is an optimization variable. Its outputs (energy consumption per ASK, masses,
+    efficiency gain relative to the reference aircraft) feed the fleet operation
+    models, so that a later entry-into-service yields a more efficient but
+    later-deployed aircraft.
+    """
 
     reference_aircraft: AircraftOperation
     """Reference aircraft for performance comparison."""

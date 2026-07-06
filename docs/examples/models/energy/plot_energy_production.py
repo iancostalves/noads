@@ -14,359 +14,241 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Energy production modelling."""
+"""
+Energy production system
+========================
+"""
 
 from jax import vmap
-from matplotlib.patches import Patch
 from matplotlib.pyplot import show
 from matplotlib.pyplot import subplots
-from numpy import array
+from numpy import full
+from numpy import interp
 from numpy import linspace
 
-from noads.application.base_objects import aeroscope_category_conso
-from noads.application.base_objects import categories_mission
-from noads.application.base_objects import propulsion_architectures
-from noads.application.base_objects import propulsion_mission
-from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
-from noads.application.scenario_setup import single_scenario_setup
-from noads.core.models.fleet.aircraft_design import AircraftDesign
-from noads.core.models.fleet.aircraft_operation import AircraftOperation
-from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+from noads.application.background_scenario_data import get_ar6_input_data
+from noads.application.base_objects import initialize_base_objects
 
-scenario_names = [
-    "SSP1-19",
-    "SSP2-19",
-    "SSP2-26",
-    "SSP2-34",
-    "SSP5-45",
+# %%
+# Building the energy mix
+# -----------------------
+# The energy mix assembles the production graph of the paper: primary resources
+# (oil, biomass, electricity), production pathways, and the energy carriers embarked
+# in aircraft. Here we build it and evaluate its *intensive* models (impact and
+# consumption per unit produced) over time, under the SSP2-2.6 background scenario.
+
+BACKGROUND = "SSP2-26"
+
+energy_mix, _fleet = initialize_base_objects(drop_in_only=False, technology_index=1)
+
+years = linspace(2025.0, 2065.0, 41)
+
+
+def find_energy(name):
+    """Return a produced energy of the mix by name."""
+    return next(e for e in energy_mix.produced_energies if e.name == name)
+
+
+# %%
+# Scenario-dependent inputs
+# ^^^^^^^^^^^^^^^^^^^^^^^^^
+# The emission factor of grid electricity comes from the AR6 scenario database, and
+# the efficiencies of the electricity-based processes mature in time (2025, 2035,
+# 2050 values, constant afterwards). The remaining coefficients are the constants of
+# the energy pathway table of the paper.
+
+ar6_data, years_data = get_ar6_input_data(
+    start_year=2010, end_year=2080, plot_data=False
+)
+grid_ci = interp(years, years_data, ar6_data["ELECTRICITY.CO2_index"][BACKGROUND])
+
+
+def maturing(v2025, v2035, v2050):
+    """Interpolate a maturing coefficient onto the years vector."""
+    return interp(years, [2025.0, 2035.0, 2050.0], [v2025, v2035, v2050])
+
+
+data = {
+    # Primary resource emission indices [g CO2 / MJ]
+    "OIL.CO2_index": full(years.shape, 73.2 * 0.865),
+    "BIOMASS.CO2_index": full(years.shape, 0.0),
+    "ELECTRICITY.CO2_index": grid_ci,
+    # Fossil kerosene
+    "Refinery.direct.CO2_index": full(years.shape, 88.7 - 73.2),
+    "Refinery.OIL.efficiency": full(years.shape, 0.865),
+    # Biofuels [MJ biofuel / MJ biomass]
+    "HEFA.direct.CO2_index": full(years.shape, 62.75),
+    "HEFA.BIOMASS.efficiency": full(years.shape, 0.59),
+    "FT.direct.CO2_index": full(years.shape, 35.3),
+    "FT.BIOMASS.efficiency": full(years.shape, 0.20),
+    "ATJ.direct.CO2_index": full(years.shape, 51.55),
+    "ATJ.BIOMASS.efficiency": full(years.shape, 0.30),
+    # Gaseous hydrogen (all from electrolysis here)
+    "Electrolysis.direct.CO2_index": full(years.shape, 0.0),
+    "Electrolysis.ELECTRICITY.efficiency": maturing(0.71, 0.71 * 1.03, 0.71 * 1.06),
+    "Gas_reforming.direct.CO2_index": full(years.shape, 100.0),
+    "Electrolysis.share": full(years.shape, 1.0),
+    # Electrofuel
+    "Power_to_liquid.direct.CO2_index": full(years.shape, 0.0),
+    "Power_to_liquid.ELECTRICITY.efficiency": maturing(1.53, 1.53 * 1.08, 1.53 * 1.16),
+    "Power_to_liquid.GAS-H2.efficiency": maturing(0.53, 0.53 * 1.06, 0.53 * 1.12),
+    # Liquid hydrogen
+    "H2_liquefaction.direct.CO2_index": full(years.shape, 0.0),
+    "H2_liquefaction.GAS-H2.efficiency": full(years.shape, 1.0),
+    "H2_liquefaction.ELECTRICITY.efficiency": maturing(4.54, 4.54 * 1.2, 4.54 * 1.4),
+    # Batteries
+    "Charging.direct.CO2_index": full(years.shape, 0.0),
+    "Charging.ELECTRICITY.efficiency": full(years.shape, 0.98),
+}
+
+# %%
+# Evaluating the intensive chain
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Impact indices are computed from primary to final energies: each pathway model
+# adds the indirect impacts of its inputs to its direct impacts, and each energy
+# model mixes its pathways. The models are plain JAX disciplines, so one ``vmap``
+# evaluates all the years at once.
+
+gh2 = find_energy("GAS-H2")
+chain = [
+    find_energy("KEROSENE").pathways[0].impact_index_model(),  # Refinery
+    *[pathway.impact_index_model() for pathway in find_energy("BIOFUEL").pathways],
+    *[pathway.impact_index_model() for pathway in gh2.pathways],
+    gh2.impact_index_model(),  # mixes electrolysis and gas reforming
+    find_energy("E-FUEL").pathways[0].impact_index_model(),  # Power-to-liquid
+    find_energy("LIQUID-H2").pathways[0].impact_index_model(),  # Liquefaction
+    find_energy("BATTERY").pathways[0].impact_index_model(),  # Charging
 ]
 
-for scenario_name in scenario_names:
-    aeromax_scenario, design_space, constraints, energy_mix, fleet = (
-        single_scenario_setup(
-            name=scenario_name,
-            background_scenario_name=scenario_name,
-            start_year=2025.0,
-            end_year=2075.0,
-            technology_index=1,
-            plot_scenario_data=False,
-            integrate_constraints=False,
-            demand_aversion=False,
-            drop_in_only=False,
-            fossil_kerosene_only=False,
-            preferential_energy=False,
-        )
-    )
-
+for model in chain:
+    model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
+    inputs = {name: data[name] for name in model.discipline.input_grammar.names}
+    data.update(model.discipline.execute(inputs))
 
 # %%
-# # Aircraft Technology Evolution
-# Let's start by initializing the time evolution of some key aircraft technology
-# components, according to several literature sources.
+# Carbon intensity of the produced energies
+# -----------------------------------------
+# Fossil kerosene and biofuels have constant well-to-wake carbon intensities, while
+# the electricity-based products (electrofuel, liquid hydrogen, battery charging)
+# decarbonize with the background grid and with maturing process efficiencies.
 
-data_sources = {
-    "NASA": {
-        "battery_specific_energy": array([[2035, 2040], [500, 750]]),
-        "emotor_specific_power": array([[2022, 2035, 2035], [2, 13, 16]]),
-        "lh2tank_gravimetric_index": array([[], []]),
-        "fuelcell_specific_power": array([[], []]),
-        "fuelcell_efficiency": array([[2035], [55.2]]),
-        "electronics_specific_power": array([[2035, 2040, 2050], [13, 19, 26]]),
-        "struct_weight_factor": array([[], []]),
-    },
-    "IATA": {
-        "battery_specific_energy": array([[2020, 2030, 2035], [200, 225, 400]]),
-        "emotor_specific_power": array([[], []]),
-        "lh2tank_gravimetric_index": array([
-            [2025, 2035, 2035, 2050],
-            [20, 35, 50, 70],
-        ]),
-        "fuelcell_specific_power": array([[2025, 2040, 2050], [4, 8, 10]]),
-        "fuelcell_efficiency": array([[], []]),
-        "electronics_specific_power": array([[], []]),
-        "struct_weight_factor": array([
-            [2030, 2030, 2030, 2030, 2030, 2050, 2050, 2050, 2050, 2050, 2050, 2050],
-            [86, 80, 88, 83, 90, 80, 72, 68, 70, 83, 73, 61],
-        ]),
-    },
-    "ATI": {
-        "battery_specific_energy": array([[2025], [220]]),
-        "emotor_specific_power": array([[2026, 2035, 2050], [13, 23, 25]]),
-        "lh2tank_gravimetric_index": array([
-            [2035, 2035, 2040, 2040, 2040, 2050, 2050, 2050],
-            [47, 58, 61, 66, 72, 64, 69, 75],
-        ]),
-        "fuelcell_specific_power": array([
-            [2025, 2030, 2035, 2050],
-            [1.5, 2.0, 2.5, 5.0],
-        ]),
-        "fuelcell_efficiency": array([[2025, 2030, 2035, 2050], [60, 65, 70, 75]]),
-        "electronics_specific_power": array([[2026, 2030, 2050], [8.92, 20, 30]]),
-        "struct_weight_factor": array([[2025, 2030, 2035, 2050], [80, 75, 70, 60]]),
-    },
-    "ICCT": {
-        "battery_specific_energy": array([[2025, 2030, 2050], [250, 300, 500]]),
-        "emotor_specific_power": array([[], []]),
-        "lh2tank_gravimetric_index": array([[2035, 2035], [20, 35]]),
-        "fuelcell_specific_power": array([[2035, 2035], [1, 2]]),
-        "fuelcell_efficiency": array([[2035, 2035], [45, 65]]),
-        "electronics_specific_power": array([[2025], [8]]),
-        "struct_weight_factor": array([[], []]),
-    },
-    "EASA": {
-        "battery_specific_energy": array([[2022], [210]]),
-        "emotor_specific_power": array([[2022, 2022], [57.6 / 22.7, 73.5 / 56.6]]),
-        "lh2tank_gravimetric_index": array([[], []]),
-        "fuelcell_specific_power": array([[], []]),
-        "fuelcell_efficiency": array([[], []]),
-        "electronics_specific_power": array([[], []]),
-        "struct_weight_factor": array([[], []]),
-    },
-    "Adler et al. (2025)": {
-        "battery_specific_energy": array([[2023, 2030], [300, 600]]),
-        "emotor_specific_power": array([[2025], [8]]),
-        "lh2tank_gravimetric_index": array([[2035], [50]]),
-        "fuelcell_specific_power": array([[2035, 2050], [2, 6]]),
-        "fuelcell_efficiency": array([[2035, 2050], [60, 75]]),
-        "electronics_specific_power": array([[], []]),
-        "struct_weight_factor": array([[], []]),
-    },
-}
-markers_sources = {
-    "NASA": "o",
-    "IATA": "s",
-    "ATI": "d",
-    "ICCT": "X",
-    "EASA": "*",
-    "Adler et al. (2025)": "P",
-}
-units = {
-    "battery_specific_energy": "Wh/kg",
-    "emotor_specific_power": "kW/kg",
-    "electronics_specific_power": "kW/kg",
-    "fuelcell_specific_power": "kW/kg",
-    "lh2tank_gravimetric_index": "%",
-    "fuelcell_efficiency": "%",
-    "struct_weight_factor": "%",
-}
-name_to_fullname = {
-    "battery_specific_energy": "Battery Specific Energy",
-    "emotor_specific_power": "E-motor Specific Power",
-    "electronics_specific_power": "Power electronics Specific Power",
-    "fuelcell_specific_power": "Fuel cell Specific Power",
-    "lh2tank_gravimetric_index": "LH2 tank Gravimetric Index",
-    "fuelcell_efficiency": "Fuel cell Efficiency",
-    "struct_weight_factor": "Structural weight reduction",
-}
-propulsion_colors = {
-    "JetA-GasTurbine": "dimgray",
-    "Battery-Electric": "limegreen",
-    "lH2-FuelCell": "royalblue",
-    "lH2-GasTurbine": "orangered",
+carbon_intensities = {
+    "Fossil kerosene": ("Refinery.CO2_index", "dimgray"),
+    "Biofuel HEFA": ("HEFA.CO2_index", "olive"),
+    "Biofuel ATJ": ("ATJ.CO2_index", "darkkhaki"),
+    "Biofuel FT": ("FT.CO2_index", "darkseagreen"),
+    "Electrofuel (PtL)": ("Power_to_liquid.CO2_index", "goldenrod"),
+    "Liquid hydrogen": ("H2_liquefaction.CO2_index", "royalblue"),
+    "Battery charging": ("Charging.CO2_index", "limegreen"),
 }
 
-# %%
-# Now let's visualize how the Technology Evolution scenarios compare with these sources.
-
-years = linspace(2020, 2060, 41)
-fig1, axes1 = subplots(
-    4,
-    2,
-    figsize=(8, 15),
-    layout="constrained",
-)
-tech_params = {}
-for i, (name, values) in enumerate(tech_params_lower_mid_upper_2020_2040_2060.items()):
-    lower, mid, upper = values
-    lower_param = AircraftTechParameter(name, (lower[0], lower[1], lower[2]))
-    mid_param = AircraftTechParameter(name, (mid[0], mid[1], mid[2]))
-    upper_param = AircraftTechParameter(name, (upper[0], upper[1], upper[2]))
-    tech_params[name] = (lower_param, mid_param, upper_param)
-
-    lower_values = lower_param.value_at_entry_into_service(years)
-    mid_values = mid_param.value_at_entry_into_service(years)
-    upper_values = upper_param.value_at_entry_into_service(years)
-
-    ax = axes1.flat[i]
-    ax.fill_between(
-        years,
-        lower_values,
-        upper_values,
-        alpha=0.2,
-        color="k",
-        label="Upper-to-Lower",
-    )
-    ax.plot(years, lower_values, "k-", linewidth=2, label="Lower")
-    ax.plot(years, mid_values, "k:", linewidth=2, label="Mid")
-    ax.set_title(name_to_fullname[name], fontsize="medium")
-    ax.set_ylabel(units[name])
-    ax.set_xlabel("Year")
-    for source, source_data in data_sources.items():
-        x_data = source_data[name][0]
-        y_data = source_data[name][1]
-        ax.plot(
-            x_data,
-            y_data,
-            markers_sources[source],
-            label=source,
-            markersize=8,
-        )
-
-axes1[0, 0].legend(loc="upper left", framealpha=0.4)
-fig1.suptitle(
-    "Aircraft Technology Parameters evolution",
-    fontsize="large",
-)
+fig1, ax1 = subplots(layout="constrained")
+for label, (name, color) in carbon_intensities.items():
+    ax1.plot(years, data[name], label=label, color=color, linewidth=2)
+ax1.plot(years, grid_ci, "k:", label=f"Grid electricity ({BACKGROUND})", linewidth=2)
+ax1.set_xlabel("Year")
+ax1.set_ylabel("Carbon intensity [g CO2 / MJ]")
+ax1.set_title("Well-to-wake carbon intensity of produced energies")
+ax1.legend(fontsize="small")
 show()
 
 # %%
-# # Prospective Aircraft Design
-# Now for each year of Entry-Into-Service we'll design an airplane using GAM and compare
-# their overall empty weight and mission energy consumption.
-#
-# Unfeasible designs may yield infinite mass and energy, therefore the (mass/energy)
-# metric is calculated on a per (pax-km) basis and then inverted. They are therefore a
-# measure of traffic per (mass/energy). The highest the metric the lower the
-# (mass/energy).
+# Biomass intensity of biofuels
+# -----------------------------
+# The biofuel pathways trade emissions against biomass use: HEFA emits the most but
+# consumes the least biomass, Fischer-Tropsch the reverse.
 
-fig2, axes2 = subplots(3, 2, layout="constrained", figsize=(8, 12))
-fig2.suptitle("Aircraft Energy Efficiency\n[pax km / MJ]", fontsize="x-large")
+biomass_intensity = {
+    "Biofuel HEFA": ("HEFA.BIOMASS.consumption_index", "olive"),
+    "Biofuel ATJ": ("ATJ.BIOMASS.consumption_index", "darkkhaki"),
+    "Biofuel FT": ("FT.BIOMASS.consumption_index", "darkseagreen"),
+}
 
-fig3, axes3 = subplots(3, 2, layout="constrained", figsize=(8, 12))
-fig3.suptitle("Aircraft Empty-Mass Efficiency\n[pax km / kg]", fontsize="x-large")
+fig2, ax2 = subplots(layout="constrained")
+for label, (name, color) in biomass_intensity.items():
+    ax2.plot(years, data[name], label=label, color=color, linewidth=2)
+ax2.set_xlabel("Year")
+ax2.set_ylabel("Biomass intensity [MJ biomass / MJ biofuel]")
+ax2.set_title("Biomass consumption per unit of biofuel")
+ax2.legend()
+show()
 
-categories = categories_mission.keys()
-ymax = 4.0
+# %%
+# Electricity intensity of the embarked energies
+# ----------------------------------------------
+# For the electricity-based carriers, the total (direct plus upstream) electricity
+# consumed per MJ embarked is chained through gaseous hydrogen: electrofuel and
+# liquid hydrogen consume electricity both directly and through electrolysis.
 
-for cat, category in enumerate(categories):
-    max_range = 1e-3 * categories_mission[category]["range"]
-    pax = categories_mission[category]["npax"]
+elec_per_gh2 = data["GAS-H2.ELECTRICITY.consumption_index"]
+electricity_intensity = {
+    "Electrofuel (PtL)": (
+        data["Power_to_liquid.ELECTRICITY.consumption_index"]
+        + data["Power_to_liquid.GAS-H2.consumption_index"] * elec_per_gh2,
+        "goldenrod",
+    ),
+    "Liquid hydrogen": (
+        data["H2_liquefaction.ELECTRICITY.consumption_index"]
+        + data["H2_liquefaction.GAS-H2.consumption_index"] * elec_per_gh2,
+        "royalblue",
+    ),
+    "Battery": (data["Charging.ELECTRICITY.consumption_index"], "limegreen"),
+}
 
-    ax_e = axes2.flat[cat]
-    ax_m = axes3.flat[cat]
+fig3, ax3 = subplots(layout="constrained")
+for label, (values, color) in electricity_intensity.items():
+    ax3.plot(years, values, label=label, color=color, linewidth=2)
+ax3.set_xlabel("Year")
+ax3.set_ylabel("Electricity intensity [MJ electricity / MJ embarked]")
+ax3.set_title("Electricity consumption per unit of embarked energy")
+ax3.legend()
+show()
 
-    reference_energy_per_ask = aeroscope_category_conso[category]
-    reference_aircraft = AircraftOperation(
-        name=f"{category}_RECENT",
-        propulsion=None,
-        energy_per_ask=reference_energy_per_ask,
-        recent=True,
-    )
-    for _prop, propulsion in enumerate(propulsion_architectures.keys()):
-        ask_per_energy_low_to_up = []
-        ask_per_owe_low_to_up = []
-        for tech_idx in range(3):
-            aircraft = AircraftDesign(
-                name=f"{category}_{propulsion}",
-                propulsion=None,
-                mission={
-                    **categories_mission[category],
-                    **propulsion_mission[propulsion],
-                    "category": category,
-                },
-                power_system=propulsion_architectures[propulsion],
-                aircraft_tech_params=[
-                    tech_param[tech_idx]
-                    for tech_name, tech_param in tech_params.items()
-                ],
-                reference_aircraft=reference_aircraft,
-            )
-            model = aircraft.design_model()
-            model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
-            outputs = model.discipline.execute({
-                f"{category}_{propulsion}.entry_into_service": years
-            })
-            ask_per_energy_low_to_up.append(
-                1.0 / outputs[f"{category}_{propulsion}.energy_per_ask"]
-            )
-            ask_per_owe_low_to_up.append(
-                pax * max_range / outputs[f"{category}_{propulsion}.owe"]
-            )
+# %%
+# Carbon intensity versus resource intensity
+# ------------------------------------------
+# The trade-off between climate impact and resource consumption, evaluated at 2025,
+# 2035, 2050, and 2065. The biofuel pathways are fixed points; the
+# electricity-based carriers move down-left as the grid decarbonizes and the
+# processes mature (marker size grows with the year).
 
-        ax_e.fill_between(
-            years,
-            ask_per_energy_low_to_up[0],
-            ask_per_energy_low_to_up[-1],
-            alpha=0.2,
-            color=propulsion_colors[propulsion],
-        )
-        ax_e.plot(
-            years,
-            ask_per_energy_low_to_up[0],
-            color=propulsion_colors[propulsion],
-            linestyle="-",
-            linewidth=3,
-        )
-        ax_e.plot(
-            years,
-            ask_per_energy_low_to_up[1],
-            color=propulsion_colors[propulsion],
-            linestyle=":",
-            linewidth=3,
-        )
-        ax_e.hlines(
-            y=1.0 / reference_energy_per_ask,
-            xmin=years[0],
-            xmax=years[-1],
-            colors="k",
-            linestyles="--",
-            linewidth=2,
-        )
+snapshot_years = [2025.0, 2035.0, 2050.0, 2065.0]
+snapshots = [int((y - years[0]) / (years[1] - years[0])) for y in snapshot_years]
+sizes = [20, 60, 120, 200]
 
-        ax_m.fill_between(
-            years,
-            ask_per_owe_low_to_up[0],
-            ask_per_owe_low_to_up[-1],
-            alpha=0.2,
-            color=propulsion_colors[propulsion],
-        )
-        ax_m.plot(
-            years,
-            ask_per_owe_low_to_up[0],
-            color=propulsion_colors[propulsion],
-            linestyle="-",
-            linewidth=3,
-        )
-        ax_m.plot(
-            years,
-            ask_per_owe_low_to_up[1],
-            color=propulsion_colors[propulsion],
-            linestyle=":",
-            linewidth=3,
-        )
+fig4, (ax_bio, ax_elec) = subplots(1, 2, figsize=(9, 4.5), layout="constrained")
 
-    ax_e.set_ylim(ymin=0.0, ymax=ymax)
-    ax_e.set_title(
-        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
-        fontsize="large",
-    )
-    ax_m.set_ylim(ymin=0.0)
-    ax_m.set_title(
-        f"{category.replace('_', ' ')}\n({pax} pax, {max_range} km)",
-        fontsize="large",
-    )
+# Fossil kerosene is the reference: it consumes neither biomass nor electricity,
+# so it sits on the vertical axis of both panels at its constant carbon intensity.
+kerosene_ci = float(data["Refinery.CO2_index"][0])
 
-axes2[-1, -1].clear()
-axes2[-1, -1].set_axis_off()
-axes3[-1, -1].clear()
-axes3[-1, -1].set_axis_off()
+for label, (name, color) in biomass_intensity.items():
+    ci = data[label.replace("Biofuel ", "") + ".CO2_index"]
+    for i, size in zip(snapshots, sizes):
+        ax_bio.scatter(data[name][i], ci[i], s=size, color=color, alpha=0.6)
+    ax_bio.annotate(label, (data[name][-1], ci[-1]), fontsize="small")
+ax_bio.scatter(0.0, kerosene_ci, marker="*", s=180, color="dimgray", zorder=5)
+ax_bio.annotate("Fossil kerosene", (0.0, kerosene_ci), fontsize="small")
+ax_bio.set_xlabel("Biomass intensity [MJ biomass / MJ biofuel]")
+ax_bio.set_ylabel("Carbon intensity [g CO2 / MJ]")
+ax_bio.set_title("Biofuels")
 
-# Manually add legend
-axes2[-1, -1].legend(
-    handles=[
-        Patch(color=color, label=prop_name)
-        for prop_name, color in propulsion_colors.items()
-    ],
-    loc="center",
-)
-axes2[-1, 0].set_xlabel("Entry-Into-Service")
+ci_names = {
+    "Electrofuel (PtL)": "Power_to_liquid.CO2_index",
+    "Liquid hydrogen": "H2_liquefaction.CO2_index",
+    "Battery": "Charging.CO2_index",
+}
+for label, (values, color) in electricity_intensity.items():
+    ci = data[ci_names[label]]
+    ax_elec.plot(values, ci, color=color, alpha=0.4, linewidth=1)
+    for i, size in zip(snapshots, sizes):
+        ax_elec.scatter(values[i], ci[i], s=size, color=color, alpha=0.6)
+    ax_elec.annotate(label, (values[-1], ci[-1]), fontsize="small")
+ax_elec.scatter(0.0, kerosene_ci, marker="*", s=180, color="dimgray", zorder=5)
+ax_elec.annotate("Fossil kerosene", (0.0, kerosene_ci), fontsize="small")
+ax_elec.set_xlabel("Electricity intensity [MJ electricity / MJ embarked]")
+ax_elec.set_ylabel("Carbon intensity [g CO2 / MJ]")
+ax_elec.set_title(f"Electricity-based carriers ({BACKGROUND} grid)")
 
-axes3[-1, -1].legend(
-    handles=[
-        Patch(color=color, label=prop_name)
-        for prop_name, color in propulsion_colors.items()
-    ],
-    loc="center",
-)
-axes3[-1, 0].set_xlabel("Entry-Into-Service")
+fig4.suptitle("Carbon intensity vs. resource intensity (2025, 2035, 2050, 2065)")
 show()

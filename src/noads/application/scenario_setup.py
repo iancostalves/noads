@@ -57,7 +57,41 @@ def single_scenario_setup(
     plot_scenario_data=False,
     compile_jit=True,
 ):
-    """Setup decarbonization scenario based on a single objective."""
+    """Set up a single-objective decarbonization scenario.
+
+    Builds the fleet and energy-mix objects, loads the AR6 background data of the
+    chosen scenario, assembles everything into a
+    :class:`~noads.core.scenarios.temporalscenario.TemporalScenario`, fills in the
+    default inputs (pathway efficiencies and emission indices, market shares, fair
+    shares, demand-model constants), and creates the design space (aircraft
+    entry-into-service and maximum market shares, energy pathway shares, and, with
+    ``demand_aversion``, the market supply-shift ratios) together with the
+    optimization constraints.
+
+    Args:
+        name: The name of the scenario.
+        background_scenario_name: The AR6 background scenario (e.g. ``"SSP2-26"``).
+        start_year: The first simulated year.
+        end_year: The last simulated year.
+        time_step: The simulation time step in years.
+        interp_step: The spacing in years of the control knots.
+        technology_index: The aircraft technology scenario (0: Lower, 1: Mid,
+            2: Upper).
+        integrate_constraints: Whether to time-integrate constraint violations
+            instead of imposing path-wise constraints.
+        demand_aversion: Whether to use the low-demand formulation (supply caps and
+            discounted price-increase burden).
+        drop_in_only: Whether to restrict the fleet to drop-in (Jet-A) aircraft.
+        fossil_kerosene_only: Whether to restrict Jet-A to fossil kerosene.
+        preferential_energy: Whether to use the preferential (8.6 %) instead of the
+            conservative (5.0 %) fair share of biomass and electricity.
+        plot_scenario_data: Whether to plot the AR6 background data.
+        compile_jit: Whether to JIT-compile the assembled discipline.
+
+    Returns:
+        The temporal scenario, the design space, the constraints (mapping each
+        constraint name to its bound and sign), the energy mix, and the fleet.
+    """
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
     ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
     energy_mix, fleet = initialize_base_objects(drop_in_only, technology_index)
@@ -405,7 +439,15 @@ def multi_scenario_setup(
     preferential_energy=False,
     plot_scenario_data=False,
 ):
-    """Setup decarbonization scenario robust to several background scenarios."""
+    """Set up a decarbonization scenario robust to several background scenarios.
+
+    Same as :func:`single_scenario_setup`, but the temporal scenario is batched
+    across the given ensemble of background scenarios with a
+    :class:`~noads.core.scenarios.multiscenario.MultiScenario`: the aircraft mix
+    variables are shared across the ensemble (``fixed.`` prefix) while the energy
+    mix variables are scenario-specific, and ensemble-mean outputs (``mean.``
+    prefix) are exposed for the robust objective.
+    """
     temporal_scenario, _, constraints, energy_mix, fleet = single_scenario_setup(
         name=name,
         background_scenario_name=background_scenario_names[0],
@@ -476,7 +518,7 @@ def multi_scenario_setup(
             )
         )
         for scenario in background_scenario_names
-        for name, scenario_dict in ar6_data.items()
+        for name in ar6_data
     })
     multi_scenario_inputs.update({
         f"{scenario}.constant.gdp_per_capita_covid_end": np_array([

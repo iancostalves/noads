@@ -12,9 +12,11 @@
 /.vscode
 /tags
 
-/docs/generated/examples
+/docs/_build
+/docs/gallery
+/docs/reference/generated
+/docs/sg_execution_times.rst
 /docs/examples/**/*.png
-/site
 
 /htmlcov
 

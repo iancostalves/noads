@@ -34,7 +34,15 @@ if TYPE_CHECKING:
 
 
 class ProductionPathway:
-    """Energy production pathway, consumes input streams and generates impacts."""
+    """An energy conversion process, consuming inputs to produce an output energy.
+
+    A pathway is an edge of the energy production graph: it consumes input streams
+    (``<pathway>.<input>.efficiency``, in MJ of input per MJ produced) and generates
+    direct impacts (``<pathway>.direct.<impact>_index``, e.g. g CO2 per MJ). Its
+    total impact index adds the indirect impacts of its inputs, following Eq. (11)
+    of the extended paper. These coefficients are scenario inputs, set in
+    :mod:`noads.application.scenario_setup`.
+    """
 
     name: str
     """Name of the pathway."""

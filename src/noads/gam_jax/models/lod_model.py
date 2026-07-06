@@ -24,8 +24,7 @@
 
 # ruff: noqa: E501, A001
 
-from generic_airplane_model import GAM
-
+from noads.gam_jax.models.generic_airplane_model import GAM
 from noads.gam_jax.utils import data_analysis as uda
 from noads.gam_jax.utils import unit
 

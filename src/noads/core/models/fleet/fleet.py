@@ -34,7 +34,17 @@ if TYPE_CHECKING:
 
 
 class Fleet:
-    """Fleet operation of a mix of competing aircraft."""
+    """The fleet of one market segment, where aircraft compete for supply.
+
+    A fleet holds the current (reference) aircraft and the candidate new designs of
+    one market. Each new aircraft's market penetration is a ramped-pulse control
+    parameterized by its entry-into-service year and maximum market share (both
+    optimization variables), applied through a first-order delay whose time constant
+    derives from the market's fleet-replacement lifetime; the current aircraft
+    covers the remaining supply. The fleet generates the models aggregating supply
+    (ASK) and energy consumption per carrier, plus the constraint that the shares of
+    all aircraft sum to at most one at every time step.
+    """
 
     name: str
     """Fleet name."""
@@ -258,7 +268,12 @@ class Fleet:
 
 
 class FleetAssembly(Fleet):
-    """Assembly of a mix of Fleet operations."""
+    """The global fleet, assembling the fleets of all market segments.
+
+    Aggregates the per-market fleets into system-wide outputs (total supply, direct
+    energy consumption per carrier, and mean energy intensity), each market taking
+    its constant share of trend supply.
+    """
 
     fleets: list[Fleet]
     """List of Fleets."""

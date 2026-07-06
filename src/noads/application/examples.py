@@ -19,6 +19,7 @@
 from json import dump
 from json import load
 from logging import getLogger
+from os import environ
 from pathlib import Path
 
 from gemseo import configure_logger
@@ -32,6 +33,16 @@ from noads.application.visualization import plot_multi_scenario_result
 from noads.application.visualization import plot_single_scenario_result
 
 LOGGER = getLogger(__name__)
+
+
+def _results_dir() -> Path:
+    """Return the directory storing optimization results.
+
+    Set the ``NOADS_RESULTS_DIR`` environment variable to share pre-computed
+    results across working directories; defaults to ``results`` in the current
+    working directory.
+    """
+    return Path(environ.get("NOADS_RESULTS_DIR", "results"))
 
 
 def single_policy_scenario_optimization(
@@ -90,11 +101,11 @@ def single_policy_scenario_optimization(
 
     configure_logger()
 
-    formulation_name = "single_policy"
+    results_folder = _results_dir()
 
     # If loading existing results, read from file and return
     if load_optimum:
-        result_path = Path(f"{formulation_name}/{scenario_name}/opt_result.json")
+        result_path = results_folder / scenario_name / "opt_result.json"
         if result_path.exists():
             with result_path.open() as f:
                 result = load(f)
@@ -129,7 +140,7 @@ def single_policy_scenario_optimization(
                         fleet=fleet,
                         low_demand=low_demand_formulation,
                         save_figs=save_figs,
-                        directory_path=f"{formulation_name}/{scenario_name}",
+                        directory_path=str(results_folder / scenario_name),
                     )
 
                 return output_optimal
@@ -206,24 +217,19 @@ def single_policy_scenario_optimization(
             post_name="OptHistoryView",
             show=False,
             save=True,
-            directory_path=f"{formulation_name}/{scenario_name}",
+            directory_path=str(results_folder / scenario_name),
             fig_size=(11.0, 22.0),
         )
 
     if save_optimum:
-        if not Path(formulation_name).is_dir():
-            Path(formulation_name).mkdir()
-        if not Path(f"{formulation_name}/{scenario_name}").is_dir():
-            Path(f"{formulation_name}/{scenario_name}").mkdir()
+        (results_folder / scenario_name).mkdir(parents=True, exist_ok=True)
         result = {
             "inputs": {name: value.tolist() for name, value in input_optimal.items()}
         }
         result.update({
             "outputs": {name: value.tolist() for name, value in output_optimal.items()}
         })
-        with Path(f"{formulation_name}/{scenario_name}/opt_result.json").open(
-            "w"
-        ) as r_file:
+        with (results_folder / scenario_name / "opt_result.json").open("w") as r_file:
             dump(result, r_file)
 
     if plot_optimum:
@@ -234,7 +240,7 @@ def single_policy_scenario_optimization(
             fleet=fleet,
             low_demand=low_demand_formulation,
             save_figs=save_figs,
-            directory_path=f"{formulation_name}/{scenario_name}",
+            directory_path=str(results_folder / scenario_name),
         )
 
     return output_optimal
@@ -275,11 +281,11 @@ def single_policy_robust_scenario_optimization(
 
     configure_logger()
 
-    formulation_name = "robust_policy"
+    results_folder = _results_dir()
 
     # If loading existing results, read from file and return
     if load_optimum:
-        result_path = Path(f"{formulation_name}/{scenario_name}/opt_result.json")
+        result_path = results_folder / scenario_name / "opt_result.json"
         if result_path.exists():
             with result_path.open() as f:
                 result = load(f)
@@ -316,7 +322,7 @@ def single_policy_robust_scenario_optimization(
                         year_endplots=2075.0,
                         low_demand=low_demand_formulation,
                         save_figs=save_figs,
-                        directory_path=f"{formulation_name}/{scenario_name}",
+                        directory_path=str(results_folder / scenario_name),
                     )
 
                 return output_optimal
@@ -394,24 +400,19 @@ def single_policy_robust_scenario_optimization(
             post_name="OptHistoryView",
             show=False,
             save=True,
-            directory_path=f"{formulation_name}/{scenario_name}",
+            directory_path=str(results_folder / scenario_name),
             fig_size=(11.0, 44.0),
         )
 
     if save_optimum:
-        if not Path(formulation_name).is_dir():
-            Path(formulation_name).mkdir()
-        if not Path(f"{formulation_name}/{scenario_name}").is_dir():
-            Path(f"{formulation_name}/{scenario_name}").mkdir()
+        (results_folder / scenario_name).mkdir(parents=True, exist_ok=True)
         result = {
             "inputs": {name: value.tolist() for name, value in input_optimal.items()}
         }
         result.update({
             "outputs": {name: value.tolist() for name, value in output_optimal.items()}
         })
-        with Path(f"{formulation_name}/{scenario_name}/opt_result.json").open(
-            "w"
-        ) as r_file:
+        with (results_folder / scenario_name / "opt_result.json").open("w") as r_file:
             dump(result, r_file)
 
     if plot_optimum:
@@ -424,6 +425,6 @@ def single_policy_robust_scenario_optimization(
             year_endplots=2075.0,
             low_demand=low_demand_formulation,
             save_figs=save_figs,
-            directory_path=f"{formulation_name}/{scenario_name}",
+            directory_path=str(results_folder / scenario_name),
         )
     return output_optimal

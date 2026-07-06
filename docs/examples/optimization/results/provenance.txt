@@ -1,0 +1,17 @@
+Pre-computed optimization results (opt_result.json per scenario).
+
+Loaded by the example scripts through the NOADS_RESULTS_DIR environment
+variable (see noads.application.examples); docs/conf.py points sphinx-gallery
+here so the documentation build never re-runs the optimizations. To recompute
+a scenario, delete its directory and run precompute_missing.py from this
+directory.
+
+Provenance:
+- SSP2-26-* scenarios: computed for the paper (original single_policy results,
+  relocated here 2026-07-03).
+- SSP1-19-Fossil-*, SSP5-45-Fossil-*, robust-SSP2-midTech,
+  robust-SSP2-lowdemand-LowDemand-midTech: computed 2026-07-03 with
+  precompute_missing.py on Windows 10, Python 3.11.9,
+  jax/jaxlib 0.4.38, diffrax 0.7.1, equinox 0.13.4, lineax 0.1.0,
+  optimistix 0.0.11, gemseo 6.3.2, gemseo-jax 2.1.1,
+  NLOPT_SLSQP (see noads.application.examples for solver settings).

@@ -36,7 +36,16 @@ if TYPE_CHECKING:
 
 
 class EnergyMix:
-    """Mix of Energy types among Production Pathways."""
+    """The assembled energy production system.
+
+    Collects all energies and their pathways, and generates the models linking them:
+    impact indices from primary to final energies, production and input consumption
+    from final to primary energies, aggregate impact production, and the fair-share
+    consumption constraints on the resources listed in ``inputs_to_constrain``
+    (requiring the ``<resource>.fair_share`` and ``<resource>.global_production``
+    scenario inputs). Because intensive and extensive computations are separated,
+    the resulting model chain is coupling-free and evaluated in one pass.
+    """
 
     produced_energies: list[ProducedEnergy]
     """List of all energy types with explicit production from Pathways."""

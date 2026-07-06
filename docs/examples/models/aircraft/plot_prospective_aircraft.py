@@ -14,7 +14,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-"""Prospective aircraft design accounting for technology maturing."""
+"""
+Prospective aircraft design accounting for technology maturing
+==============================================================
+"""
 
 from jax import vmap
 from matplotlib.lines import Line2D
@@ -33,7 +36,8 @@ from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 
 # %%
-# # Aircraft Technology Evolution
+# Aircraft Technology Evolution
+# -----------------------------
 # Let's start by initializing the time evolution of some key aircraft technology
 # components, according to several literature sources.
 
@@ -213,7 +217,8 @@ print(
 # show()
 
 # %%
-# # Prospective Aircraft Design
+# Prospective Aircraft Design
+# ---------------------------
 # Now for each year of Entry-Into-Service we'll design an airplane using GAM and compare
 # their overall empty weight and mission energy consumption.
 #

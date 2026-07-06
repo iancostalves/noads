@@ -164,7 +164,10 @@ def run_region_calibration(region, plot_calibration=True):
     design_space.add_variable(
         "x_lag",
         lower_bound=0.0,
-        upper_bound=3.0 * x_max,
+        # The inflection income must lie within the observed data range: allowing
+        # it beyond x_max lets high-income regions (e.g. USA) settle in a
+        # degenerate, never-saturating basin.
+        upper_bound=x_max,
         value=np_array(0.5 * x_max),
     )
     design_space.add_variable(
@@ -186,7 +189,7 @@ def run_region_calibration(region, plot_calibration=True):
         max_iter=5000,
         opt_algo_name="L-BFGS-B",
         doe_algo_name="OT_OPT_LHS",
-        n_start=10,
+        n_start=20,
         # multistart_file_path="multistart.hdf5",
     )
     scenario.execute(settings)

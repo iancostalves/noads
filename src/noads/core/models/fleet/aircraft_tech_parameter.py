@@ -23,7 +23,13 @@ from noads.core.models.interpolation import InterpolatedUnivariateSpline
 
 
 class AircraftTechParameter:
-    """Time-dependent aircraft technology parameter based on 2nd order splines."""
+    """A maturing component technology parameter (e.g. battery specific energy).
+
+    The parameter value is interpolated with a second-order spline through its
+    (2020, 2040, 2060) values, chosen per technology scenario (Lower/Mid/Upper), and
+    evaluated at an aircraft's entry-into-service year during design. See the
+    aircraft technology table of the extended paper for the values and sources.
+    """
 
     name: str
     """Technology parameter name."""
