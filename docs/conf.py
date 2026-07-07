@@ -143,6 +143,8 @@ sphinx_gallery_conf = {
     "filename_pattern": r"[\\/]plot_",
     "example_extensions": {".py"},
     "subsection_order": ExplicitOrder([
+        "examples/models/scenarios",
+        "examples/models/controls",
         "examples/models/demand",
         "examples/models/aircraft",
         "examples/models/energy",

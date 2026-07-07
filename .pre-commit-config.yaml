@@ -14,6 +14,9 @@ repos:
       # The scenario-robust pre-computed optima bundle three background
       # scenarios each and are legitimately up to ~800 KB.
       args: [--maxkb=1000]
+      # The trimmed AeroSCOPE per-route dataset feeds the current-aircraft
+      # example (kept only its used columns; still ~10 MB).
+      exclude: ^docs/examples/models/aircraft/AeroSCOPE_dataset\.csv$
     - id: check-json
     - id: pretty-format-json
       args: [

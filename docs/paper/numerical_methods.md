@@ -12,8 +12,6 @@
 
 # Numerical methods
 
-## Numerical Methodology
-
 The optimization of mitigation scenarios requires libraries that allow for: assembly
 and integration of numerous heterogeneous models; scaling with high-dimensional
 variables, due primarily to the disagregation among periods, technologies, and
