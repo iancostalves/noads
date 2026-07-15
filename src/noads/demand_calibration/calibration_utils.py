@@ -22,6 +22,8 @@ from numpy import flip
 from numpy import isnan
 from pandas import read_excel
 
+from noads._data import data_file
+
 
 def error_measure(y, y_data):
     """Error measure to minimize in calibration."""
@@ -81,13 +83,13 @@ def get_rpk_data(y_start):
     """Get data for Revenue Passenger Kilometers calibration."""
     # Socio-economic indicators
     gdp_data = read_excel(
-        "../../../../src/noads/demand_calibration/calibration_data/GDP.xls",
+        data_file("noads.demand_calibration", "calibration_data", "GDP.xls"),
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "../../../../src/noads/demand_calibration/calibration_data/Population.xls",
+        data_file("noads.demand_calibration", "calibration_data", "Population.xls"),
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -95,8 +97,9 @@ def get_rpk_data(y_start):
 
     # Air traffic indicators
     rpk_data = read_excel(
-        "../../../../src/noads/demand_calibration/"
-        "calibration_data/Traffic_1929_to_2021.xlsx",
+        data_file(
+            "noads.demand_calibration", "calibration_data", "Traffic_1929_to_2021.xlsx"
+        ),
         decimal=",",
     )
 
@@ -126,13 +129,13 @@ def get_departures_data(region):
     """Get data for Carrier Departures calibration."""
     # Socio-economic indicators
     gdp_data = read_excel(
-        "../../../../src/noads/demand_calibration/calibration_data/GDP.xls",
+        data_file("noads.demand_calibration", "calibration_data", "GDP.xls"),
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
     ).transpose()
     pop_data = read_excel(
-        "../../../../src/noads/demand_calibration/calibration_data/Population.xls",
+        data_file("noads.demand_calibration", "calibration_data", "Population.xls"),
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
@@ -140,7 +143,11 @@ def get_departures_data(region):
 
     # Air traffic indicators
     dep_data = read_excel(
-        "../../../../src/noads/demand_calibration/calibration_data/AirTraffic-carrier-departures.xls",  # noqa: E501
+        data_file(
+            "noads.demand_calibration",
+            "calibration_data",
+            "AirTraffic-carrier-departures.xls",
+        ),
         decimal=",",
         skiprows=[0, 1, 2],
         index_col=1,
