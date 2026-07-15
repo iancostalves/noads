@@ -17,6 +17,7 @@
 /docs/reference/generated
 /docs/sg_execution_times.rst
 /docs/examples/**/*.png
+/docs/examples/**/*.pdf
 
 /htmlcov
 
