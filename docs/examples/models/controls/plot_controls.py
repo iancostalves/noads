@@ -101,12 +101,12 @@ def ramped_pulse(eis, max_share, ramp_up=5.0, lifetime=25.0, ramp_down=5.0):
 # one, so the current-fleet remainder stays non-negative. Dotted lines with markers are
 # the ramped-pulse control inputs; the filled areas are the delayed shares.
 
-market_lifetime = 25.0
+market_lifetime = 30.0
 tau_fleet = market_lifetime / 4.0
 new_aircraft = {
-    "JetA-GasTurbine v1": {"eis": 2030, "max_share": 0.55, "color": "firebrick"},
-    "JetA-GasTurbine v2": {"eis": 2045, "max_share": 0.45, "color": "darkorange"},
-    "lH2-FuelCell": {"eis": 2055, "max_share": 0.35, "color": "royalblue"},
+    "JetA-GasTurbine v1": {"eis": 2030, "max_share": 0.3, "color": "firebrick"},
+    "JetA-GasTurbine v2": {"eis": 2045, "max_share": 0.35, "color": "darkorange"},
+    "lH2-FuelCell": {"eis": 2055, "max_share": 0.65, "color": "royalblue"},
 }
 
 fig2, ax2 = subplots(figsize=(7.5, 4.5), layout="constrained")
@@ -155,29 +155,6 @@ show()
 # most one at every knot, keeping the remainder valid.
 
 knots = linspace(2025, 2075, 21)
-share_fossil = array([
-    0.90,
-    0.88,
-    0.84,
-    0.78,
-    0.70,
-    0.62,
-    0.54,
-    0.46,
-    0.38,
-    0.31,
-    0.25,
-    0.20,
-    0.16,
-    0.13,
-    0.10,
-    0.08,
-    0.06,
-    0.05,
-    0.04,
-    0.03,
-    0.02,
-])  # noqa: E501
 share_bio = array([
     0.05,
     0.06,
@@ -201,23 +178,46 @@ share_bio = array([
     0.28,
     0.27,
 ])  # noqa: E501
-assert ((share_fossil + share_bio) <= 1.0).all(), "pathway shares exceed 1"
+share_efuel = array([
+    0.05,
+    0.06,
+    0.08,
+    0.11,
+    0.15,
+    0.19,
+    0.23,
+    0.27,
+    0.32,
+    0.37,
+    0.42,
+    0.46,
+    0.50,
+    0.53,
+    0.57,
+    0.60,
+    0.63,
+    0.65,
+    0.67,
+    0.69,
+    0.71,
+])  # noqa: E501
+assert ((share_bio + share_efuel) <= 1.0).all(), "pathway shares exceed 1"
 
-delayed_fossil = first_order_delay(knots, share_fossil, 5.0, years)
 delayed_bio = first_order_delay(knots, share_bio, 5.0, years)
-delayed_efuel = 1.0 - delayed_fossil - delayed_bio
+delayed_efuel = first_order_delay(knots, share_efuel, 5.0, years)
+delayed_fossil = 1.0 - delayed_bio - delayed_efuel
 
 fig3, ax3 = subplots(figsize=(7.5, 4.5), layout="constrained")
-for knot_values, color in [(share_fossil, "dimgray"), (share_bio, "olive")]:
+for knot_values, color in [(share_bio, "olive"), (share_efuel, "goldenrod")]:
     ax3.plot(knots, knot_values, "o", color=color, markersize=3)
     ax3.plot(years, interp(years, knots, knot_values), ":", color=color, linewidth=1)
 ax3.stackplot(
     years,
-    delayed_fossil,
     delayed_bio,
     delayed_efuel,
-    labels=["Fossil (free control)", "Biofuel (free control)", "E-fuel (remainder)"],
-    colors=["dimgray", "olive", "goldenrod"],
+    delayed_fossil,
+    labels=["Biofuel (free control)", "E-fuel (free control)", "Fossil (remainder)"],
+    colors=["olive", "goldenrod", "dimgray"],
     alpha=0.55,
 )
 ax3.set_xlabel("Year")
@@ -235,62 +235,56 @@ show()
 # Demand avoidance — a valid supply-shift ratio
 # ---------------------------------------------
 # In the low-demand formulation each market has a supply-shift ratio control -- the
-# fraction of trend supply that is avoided -- with knot values bounded to ``[0, 0.9]``
-# and delay ``tau = 10 yr``. The delayed control is the realised avoidance; ``1 - SR``
-# is the fraction of trend traffic still served. Two markets are shown to make the
-# per-market nature of the control explicit.
+# fraction of trend supply that is avoided -- with knot values (every 2.5 years, as
+# optimization variables) bounded to ``[0, 0.9]`` and delay ``tau = 10 yr``. The
+# delayed control is the realised avoidance; ``1 - SR`` is the fraction of trend
+# traffic still served. A single market is shown: the supply-shift ratio ramps
+# linearly from 0 to 0.5 between 2030 and 2050, then drops to 0.2 and stays there.
 
-sr_knots = linspace(2025, 2075, 11)
-sr_markets = {
-    "Long-range": array([
-        0.0,
-        0.05,
-        0.12,
-        0.22,
-        0.33,
-        0.45,
-        0.55,
-        0.63,
-        0.70,
-        0.75,
-        0.80,
-    ]),  # noqa: E501
-    "Short-medium": array([
-        0.0,
-        0.02,
-        0.05,
-        0.09,
-        0.14,
-        0.20,
-        0.26,
-        0.31,
-        0.35,
-        0.38,
-        0.40,
-    ]),  # noqa: E501
-}
-assert all((v >= 0.0).all() and (v <= 0.9).all() for v in sr_markets.values()), (
-    "supply-shift ratio out of [0, 0.9]"
-)
+sr_knots = linspace(2025, 2075, 21)
+sr_market = array([
+    0.0,
+    0.0,
+    0.0,
+    0.0625,
+    0.125,
+    0.1875,
+    0.25,
+    0.3125,
+    0.375,
+    0.4375,
+    0.5,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+    0.2,
+])  # noqa: E501
+assert (sr_market >= 0.0).all(), "supply-shift ratio below 0"
+assert (sr_market <= 0.9).all(), "supply-shift ratio above 0.9"
 
 fig4, ax4 = subplots(figsize=(7.5, 4.5), layout="constrained")
-for (name, knot_values), color in zip(sr_markets.items(), ("C4", "C5")):
-    ax4.plot(sr_knots, knot_values, "o", color=color, markersize=3)
-    ax4.plot(years, interp(years, sr_knots, knot_values), ":", color=color, linewidth=1)
-    ax4.plot(
-        years,
-        first_order_delay(sr_knots, knot_values, 10.0, years),
-        color=color,
-        linewidth=2,
-        label=f"{name}: avoided share (delayed)",
-    )
+ax4.plot(sr_knots, sr_market, "o", color="C4", markersize=3)
+ax4.plot(years, interp(years, sr_knots, sr_market), ":", color="C4", linewidth=1)
+ax4.plot(
+    years,
+    first_order_delay(sr_knots, sr_market, 10.0, years),
+    color="C4",
+    linewidth=2,
+    label="Single market: avoided share (delayed)",
+)
 ax4.axhline(0.9, color="red", linewidth=0.8, linestyle="--", label="upper bound 0.9")
 ax4.set_xlabel("Year")
 ax4.set_ylabel("Supply-shift ratio (avoided share)")
 ax4.set_ylim(0, 1)
 ax4.set_xlim(2025, 2075)
 ax4.set_title(
-    "Demand avoidance, supply-shift ratio per market\n"
+    "Demand avoidance, supply-shift ratio (single market)\n"
     "(markers + dotted: control-point inputs; solid: delayed output)"
 )
 ax4.legend(loc="upper left", fontsize="small")
