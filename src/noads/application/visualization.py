@@ -404,11 +404,14 @@ def plot_single_scenario_result(
     output_optimal,
     energy_mix,
     fleet,
-    low_demand,
+    low_demand=False,
     save_figs=False,
     directory_path=".",
 ):
     """Plot results for a single scenario."""
+    if save_figs:
+        # Create the output directory if it does not exist yet (no-op otherwise).
+        Path(directory_path).mkdir(parents=True, exist_ok=True)
     years = output_optimal["year"]
 
     # Production mix and Emission Index

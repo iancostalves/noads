@@ -120,8 +120,9 @@ plot_single_scenario_result(
     output_optimal={**x_opt, **output},
     energy_mix=energy_mix,
     fleet=fleet,
+    low_demand=False,  # True only for the low-demand (supply-cap) formulation
     save_figs=True,
-    directory_path="results/my_scenario",
+    directory_path="results/my_scenario",  # created automatically if missing
 )
 ```
 

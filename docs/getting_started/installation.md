@@ -12,7 +12,7 @@
 
 ## Requirements
 
-- **Python 3.9 to 3.12**
+- **Python 3.10 to 3.12**
 - A working [pip](https://pip.pypa.io/en/stable/getting-started/) installation
 
 NOADS depends on [GEMSEO-JAX](https://gitlab.com/gemseo/dev/gemseo-jax) (multidisciplinary optimization with automatic differentiation),
@@ -23,7 +23,7 @@ These are installed automatically.
 ## Install from PyPI
 
 ```bash
-pip install numerical-optimization-of-aviation-decarbonization-scenarios
+pip install noads
 ```
 
 ## Install from source (development)
@@ -31,8 +31,8 @@ pip install numerical-optimization-of-aviation-decarbonization-scenarios
 Clone the repository and install in editable mode:
 
 ```bash
-git clone https://gitlab.com/gemseo/dev/numerical-optimization-of-aviation-decarbonization-scenarios.git
-cd numerical-optimization-of-aviation-decarbonization-scenarios
+git clone https://github.com/iancostalves/noads.git
+cd noads
 pip install -e ".[test,doc]"
 ```
 

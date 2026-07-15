@@ -13,19 +13,26 @@ classifiers = [
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 dynamic = ["version"]
-requires-python = ">=3.9, <3.13"
+# gemseo-jax requires Python >=3.10.
+requires-python = ">=3.10, <3.13"
 dependencies = [
     "gemseo-jax >=2.0.2, <3",
     # diffrax <0.7 is incompatible with jax >=0.4.36 (jax.core.ConcreteArray
     # was removed); 0.7.x is the validated series.
     "diffrax >=0.7, <0.8",
+    # Directly imported by the models, calibration, and background-scenario code.
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "scipy",
+    # Excel engines: xlrd for the legacy .xls workbooks, openpyxl for the .xlsx one.
     "xlrd >=2.0.1, <2.1",
+    "openpyxl",
 ]
 
 [project.optional-dependencies]
@@ -73,3 +80,14 @@ license-files = [
     "LICENSES/LGPLv3.txt",
     "LICENSES/GPLv3.txt",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# Ship the bundled data files so an installed package can load them (they are
+# resolved package-relative via noads._data.data_file, not from the CWD). The
+# data directories are not packages themselves, so they are declared as data of
+# their parent package via a relative glob.
+"noads.application" = ["ar6_scenarios_data/*.csv"]
+"noads.demand_calibration" = ["calibration_data/*.xls", "calibration_data/*.xlsx"]

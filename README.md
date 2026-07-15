@@ -10,9 +10,10 @@ Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 # Numerical Optimization of Aviation Decarbonization Scenarios (NOADS)
 
+[![PyPI](https://img.shields.io/pypi/v/noads.svg)](https://pypi.org/project/noads/)
 [![Documentation](https://github.com/iancostalves/noads/actions/workflows/docs.yml/badge.svg)](https://iancostalves.github.io/noads/)
 [![License: LGPL v3](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
-[![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 
 ## Overview
 
@@ -41,12 +42,31 @@ technology* (Costa-Alves et al., Applied Energy, 2026,
 The documentation includes the paper as a browsable "extended paper" with the full
 supplementary information.
 
+## Citation
+
+If you use NOADS in your research, please cite the paper:
+
+```bibtex
+@article{costaalves2026,
+    title = {Numerical optimization of aviation decarbonization scenarios: balancing traffic and emissions with maturing energy carriers and aircraft technology},
+    journal = {Applied Energy},
+    volume = {412},
+    pages = {127631},
+    year = {2026},
+    issn = {0306-2619},
+    doi = {https://doi.org/10.1016/j.apenergy.2026.127631},
+    url = {https://www.sciencedirect.com/science/article/pii/S0306261926002837},
+    author = {Ian Costa-Alves and Nicolas Gourdain and François Gallard and Anne Gazaix and Yri Amandine Kambiri and Thierry Druot},
+    keywords = {Multidisciplinary optimization, Low-carbon fuels, Aircraft design, Integrated assessment models, Shared socioeconomic pathways},
+}
+```
+
 ## Installation
 
-Install the latest version from PyPI (Python 3.9-3.12):
+Install the latest version from PyPI (Python 3.10-3.12):
 
 ```bash
-pip install numerical-optimization-of-aviation-decarbonization-scenarios
+pip install noads
 ```
 
 JAX runs on CPU by default, which is sufficient to reproduce all the scenarios.

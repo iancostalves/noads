@@ -34,6 +34,23 @@ documentation as an [online extended paper](paper/index.md):
 > Applied Energy, 412, 127631.
 > [https://doi.org/10.1016/j.apenergy.2026.127631](https://doi.org/10.1016/j.apenergy.2026.127631)
 
+:::{dropdown} BibTeX
+```bibtex
+@article{costaalves2026,
+    title = {Numerical optimization of aviation decarbonization scenarios: balancing traffic and emissions with maturing energy carriers and aircraft technology},
+    journal = {Applied Energy},
+    volume = {412},
+    pages = {127631},
+    year = {2026},
+    issn = {0306-2619},
+    doi = {https://doi.org/10.1016/j.apenergy.2026.127631},
+    url = {https://www.sciencedirect.com/science/article/pii/S0306261926002837},
+    author = {Ian Costa-Alves and Nicolas Gourdain and François Gallard and Anne Gazaix and Yri Amandine Kambiri and Thierry Druot},
+    keywords = {Multidisciplinary optimization, Low-carbon fuels, Aircraft design, Integrated assessment models, Shared socioeconomic pathways},
+}
+```
+:::
+
 :::{admonition} About this documentation
 :class: note
 This documentation site, and the reorganization of the repository around it, were

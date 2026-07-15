@@ -23,6 +23,8 @@ from numpy import ndarray
 from numpy import ravel
 from pandas import read_csv
 
+from noads._data import data_file
+
 scenario_to_model = {
     # "SSP1-34": "MESSAGE-GLOBIOM 1.0",
     "SSP1-19": "WITCH-GLOBIOM 3.1",
@@ -98,23 +100,25 @@ def get_scenario_color(scenario_name: str):
 def get_ar6_input_data(start_year=2010, end_year=2080, plot_data=True):
     """Get relevant aviation input data from AR6 scenarios."""
     population_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data/population.csv",
+        data_file("noads.application", "ar6_scenarios_data", "population.csv"),
         index_col=1,
     )
     gdp_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data/gdp.csv",
+        data_file("noads.application", "ar6_scenarios_data", "gdp.csv"),
         index_col=1,
     )
     electricity_emissions_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data/electricity_emissions.csv",
+        data_file(
+            "noads.application", "ar6_scenarios_data", "electricity_emissions.csv"
+        ),
         index_col=1,
     )
     final_electricity_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data/final_electricity.csv",
+        data_file("noads.application", "ar6_scenarios_data", "final_electricity.csv"),
         index_col=1,
     )
     biomass_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data/biomass_total.csv",
+        data_file("noads.application", "ar6_scenarios_data", "biomass_total.csv"),
         index_col=1,
     )
 
@@ -270,22 +274,25 @@ def get_ar6_input_data(start_year=2010, end_year=2080, plot_data=True):
 def get_ar6_output_data(start_year=2010, end_year=2080, plot_data=True):
     """Get relevant aviation output data from AR6 scenarios."""
     passenger_energy_data = read_csv(
-        "../../../../src/noads/application/"
-        "ar6_scenarios_data/aviation_passenger_energy.csv",
+        data_file(
+            "noads.application", "ar6_scenarios_data", "aviation_passenger_energy.csv"
+        ),
         index_col=1,
     )
     passenger_co2_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data"
-        "/aviation_passenger_co2.csv",
+        data_file(
+            "noads.application", "ar6_scenarios_data", "aviation_passenger_co2.csv"
+        ),
         index_col=1,
     )
     total_energy_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data"
-        "/aviation_total_energy.csv",
+        data_file(
+            "noads.application", "ar6_scenarios_data", "aviation_total_energy.csv"
+        ),
         index_col=1,
     )
     total_co2_data = read_csv(
-        "../../../../src/noads/application/ar6_scenarios_data/aviation_total_co2.csv",
+        data_file("noads.application", "ar6_scenarios_data", "aviation_total_co2.csv"),
         index_col=1,
     )
 
