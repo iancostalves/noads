@@ -8,7 +8,7 @@
  Commons, PO Box 1866, Mountain View, CA 94042, USA.
 -->
 
-# Extended paper
+# Main paper
 
 **Numerical optimization of aviation decarbonization scenarios: balancing traffic and
 emissions with maturing energy carriers and aircraft technology**

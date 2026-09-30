@@ -38,14 +38,17 @@ noads/
 │   ├── application/        # High-level setup: base objects, scenario config, AR6 data, viz
 │   ├── demand_calibration/ # Demand forecasting calibration (RPK, regional departures)
 │   └── gam_jax/            # Generic Airplane Model — aircraft sizing & performance in JAX
+│                           #   generic_airplane_model.py: V2.0 port (paper, frozen)
+│                           #   gam_v3.py: V3.0 port + powertrain scaling + LH2 tank size law
 ├── docs/                   # Documentation (Sphinx + MyST + sphinx-book-theme)
 │   ├── conf.py             # Sphinx configuration (gallery, bibtex, autodoc)
 │   ├── getting_started/    # Onboarding: installation, concepts, quickstart
-│   ├── paper/              # "Extended paper": manuscript + SI converted to MyST
+│   ├── paper/              # "Main paper": manuscript + SI converted to MyST
 │   │   ├── models/         #   Models section (paper Methods + SI detail, verbatim prose)
 │   │   ├── results/        #   Scenario results (+ SI full results gallery)
 │   │   ├── figures/        #   Committed PNG figure assets
 │   │   └── latex_src/      #   Original LaTeX sources + vector figures
+│   ├── update/             # "Update paper": opt-in model updates (aircraft_model="update")
 │   ├── extending/          # How to extend: fleet, aircraft, pathways, resources, UQ
 │   ├── examples/           # sphinx-gallery sources; optimization/results/ holds
 │   │                       #   pre-computed optima (NOADS_RESULTS_DIR)
@@ -74,6 +77,7 @@ noads/
 - **Fleet**: Combines multiple AircraftOperation and AircraftDesign objects competing for market share via sigmoid adoption curves.
 - **EnergyMix / ProductionPathway**: Models energy supply chains with CO2, cost, and resource impacts.
 - **GAM (Generic Airplane Model)**: Physics-based aircraft sizing using empirical regressions for preliminary design.
+- **Aircraft models**: `aircraft_model="paper"` (default, GAM V2.0, must reproduce the paper — guarded by `tests/test_gam_paper_baseline.py`) or `"update"` (GAM V3.0, powertrain scale effects with max power per propulsor, size-dependent LH2 tank GI). Never change the paper model's numbers.
 
 ## Development Commands
 
@@ -117,7 +121,8 @@ tox -e check         # ruff via pre-commit
 | Add an energy pathway | `core/models/energy/production_pathway.py`, `application/scenario_setup.py` |
 | Modify optimization setup | `application/scenario_setup.py`, `application/examples.py` |
 | Change AR6 scenario data | `application/background_scenario_data.py` |
-| Modify aircraft physics | `gam_jax/models/generic_airplane_model.py` |
+| Modify aircraft physics | `gam_jax/models/gam_v3.py` (update model; `generic_airplane_model.py` is the frozen paper model) |
+| Update aircraft technology | `application/base_objects.py` (update params), `application/lh2_tank_calibration.py`, `application/aircraft_tech_data/` |
 | Add a new constraint | `core/scenarios/temporalscenario.py` |
 | Visualization | `application/visualization.py` |
 | Tests | `tests/test_model.py`, `tests/test_scenarios.py`, etc. |
