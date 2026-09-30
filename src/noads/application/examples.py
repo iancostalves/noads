@@ -27,6 +27,7 @@ from gemseo import create_scenario
 from numpy import array
 
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
+from noads.application.scenario_setup import END_YEAR
 from noads.application.scenario_setup import multi_scenario_setup
 from noads.application.scenario_setup import single_scenario_setup
 from noads.application.visualization import plot_multi_scenario_result
@@ -124,7 +125,7 @@ def single_policy_scenario_optimization(
                 # Optionally plot loaded results
                 if plot_optimum:
                     start_year = 2025.0
-                    end_year = 2075.0
+                    end_year = END_YEAR[aircraft_model]
                     _, _, _, energy_mix, fleet = single_scenario_setup(
                         name=scenario_name,
                         background_scenario_name=global_scenario_name,
@@ -158,7 +159,7 @@ def single_policy_scenario_optimization(
 
     # Standard optimization execution (existing code)
     start_year = 2025.0
-    end_year = 2075.0
+    end_year = END_YEAR[aircraft_model]
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         single_scenario_setup(
             name=scenario_name,
@@ -310,7 +311,7 @@ def single_policy_robust_scenario_optimization(
                 # Optionally plot loaded results
                 if plot_optimum:
                     start_year = 2025.0
-                    end_year = 2075.0
+                    end_year = END_YEAR[aircraft_model]
                     _, _, _, energy_mix, fleet = multi_scenario_setup(
                         scenario_name,
                         background_scenario_names=global_scenario_names,
@@ -331,7 +332,7 @@ def single_policy_robust_scenario_optimization(
                         output_optimal={**input_optimal, **output_optimal},
                         energy_mix=energy_mix,
                         fleet=fleet,
-                        year_endplots=2075.0,
+                        year_endplots=END_YEAR[aircraft_model],
                         low_demand=low_demand_formulation,
                         save_figs=save_figs,
                         directory_path=str(results_folder / scenario_name),
@@ -345,7 +346,7 @@ def single_policy_robust_scenario_optimization(
             )
 
     start_year = 2025.0
-    end_year = 2075.0
+    end_year = END_YEAR[aircraft_model]
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         multi_scenario_setup(
             scenario_name,
@@ -435,7 +436,7 @@ def single_policy_robust_scenario_optimization(
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
-            year_endplots=2075.0,
+            year_endplots=END_YEAR[aircraft_model],
             low_demand=low_demand_formulation,
             save_figs=save_figs,
             directory_path=str(results_folder / scenario_name),

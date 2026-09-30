@@ -30,10 +30,13 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.pyplot import subplots
 from numpy import asarray
+from numpy import fmax
+from numpy import fmin
 from numpy import geomspace
 from numpy import isfinite
 from numpy import linspace
 from numpy import nan
+from numpy import vstack
 from numpy import where
 from pandas import read_csv
 
@@ -43,17 +46,11 @@ from noads.application.base_objects import aircraft_tech_params
 from noads.application.base_objects import categories_mission
 from noads.application.base_objects import category_conso
 from noads.application.base_objects import lh2_tank_tech_params_lower_mid_upper
-from noads.application.base_objects import (
-    powertrain_tech_params_lower_mid_upper_2020_2040_2060,
-)
-from noads.application.base_objects import propulsion_architectures
 from noads.application.base_objects import propulsion_mission
-from noads.application.base_objects import update_comparison_architectures
 from noads.application.base_objects import update_comparison_mission
 from noads.application.base_objects import update_power_system
 from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_operation import AircraftOperation
-from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParameter
 from noads.gam_jax.models import gam_v3
 from noads.gam_jax.models.gam_v3 import LH2_TANK_SIZE_LAW
@@ -61,17 +58,21 @@ from noads.gam_jax.models.generic_airplane_model import GAM as GAMV2
 from noads.gam_jax.utils import unit
 
 SCENARIOS = ("Lower", "Mid", "Upper")
-years = linspace(2020, 2060, 41)
+years = linspace(2020, 2080, 61)
 
 # %%
-# Powertrain and LH2 tank technology
-# ----------------------------------
-# The powertrain parameters are given at a reference power of 1 MW per propulsor,
-# the fuel cell specific power excludes its thermal management system (TMS), and
-# the maximum power per propulsor bounds the electric and fuel cell designs. They
-# are compared with the data points of the powertrain calibration dataset. The LH2
-# tank mass factor ``k`` multiplies the tank-to-fuel mass ratio of present-day
-# aluminium tanks, and the fuel system adds ``s`` kg per kg of LH2.
+# Aircraft technology evolution
+# -----------------------------
+# The technology parameters of the update model are given for 2020, 2040, 2060 and
+# 2080. The Mid scenario is interpolated with a monotone cubic spline (PCHIP), and
+# the Lower and Upper scenarios add a monotone gap to it: all scenarios start from
+# the same value in 2020, and the Upper-to-Lower band only widens. The powertrain
+# parameters are given at a reference power of 1 MW per propulsor, the fuel cell
+# specific power excludes its thermal management system (TMS), and the maximum power
+# per propulsor bounds the electric and fuel cell designs. They are compared with
+# the data points of the powertrain calibration dataset. The LH2 tank mass factor
+# ``k`` multiplies the tank-to-fuel mass ratio of present-day aluminium tanks, and
+# the fuel system adds ``s`` kg per kg of LH2.
 
 powertrain_data = read_csv(
     data_file(
@@ -81,7 +82,8 @@ powertrain_data = read_csv(
         "powertrain_tech_data.csv",
     )
 )
-powertrain_panels = {
+tech_panels = {
+    "battery_specific_energy": ("Battery Specific Energy", "Wh/kg", []),
     "emotor_specific_power": (
         "E-motor Specific Power\n(at 1 MW)",
         "kW/kg",
@@ -92,10 +94,20 @@ powertrain_panels = {
         "%",
         [("emotor", "efficiency", 100.0)],
     ),
+    "electronics_specific_power": (
+        "Power electronics Specific Power",
+        "kW/kg",
+        [("inverter", "specific_power", 1.0), ("dcdc", "specific_power", 1.0)],
+    ),
     "fuelcell_specific_power": (
         "Fuel cell Specific Power\n(stack + BoP, without TMS)",
         "kW/kg",
         [("fuelcell", "stack_specific_power", 1.0)],
+    ),
+    "fuelcell_efficiency": (
+        "Fuel cell Efficiency",
+        "%",
+        [("fuelcell", "system_efficiency", 100.0)],
     ),
     "fuelcell_tms_heat_rejection": (
         "Fuel cell TMS\nSpecific Heat Rejection",
@@ -120,10 +132,9 @@ powertrain_panels = {
             ("fuelcell", "max_unit_power_certified", 1e-3),
         ],
     ),
-}
-lh2_tank_panels = {
-    "lh2tank_mass_factor": ("LH2 tank Mass Factor k\n(1: aluminium today)", "-"),
-    "lh2_fuel_system_ratio": ("LH2 Fuel System Mass\nper kg of LH2", "kg/kg"),
+    "struct_weight_factor": ("Structural weight\n(relative to today)", "%", []),
+    "lh2tank_mass_factor": ("LH2 tank Mass Factor k\n(1: aluminium today)", "-", []),
+    "lh2_fuel_system_ratio": ("LH2 Fuel System Mass\nper kg of LH2", "kg/kg", []),
 }
 status_markers = {
     "certified": "*",
@@ -134,27 +145,19 @@ status_markers = {
     "target": "X",
     "projection": "^",
 }
+tech_params = [
+    {param.name: param for param in aircraft_tech_params(index, "update")}
+    for index in range(3)
+]
 
-
-def plot_scenarios(ax, curves):
-    """Upper-to-Lower band, Lower (solid) and Mid (dotted) curves."""
-    ax.fill_between(years, curves[0], curves[2], alpha=0.2, color="k")
-    ax.plot(years, curves[0], "k-", linewidth=2)
-    ax.plot(years, curves[1], "k:", linewidth=2)
-
-
-fig1, axes1 = subplots(2, 4, figsize=(14, 7), layout="constrained")
-for ax, (name, (title, unit_label, data_keys)) in zip(
-    axes1.flat, powertrain_panels.items()
-):
-    values = powertrain_tech_params_lower_mid_upper_2020_2040_2060[name]
-    curves = [
-        AircraftTechParameter(
-            name, tuple(values[i]), log_scale=name == "max_unit_power"
-        ).value_at_entry_into_service(years)
-        for i in range(3)
-    ]
-    plot_scenarios(ax, curves)
+fig1, axes1 = subplots(3, 4, figsize=(14, 10), layout="constrained")
+for ax, (name, (title, unit_label, data_keys)) in zip(axes1.flat, tech_panels.items()):
+    lower, mid, upper = (
+        params[name].value_at_entry_into_service(years) for params in tech_params
+    )
+    ax.fill_between(years, lower, upper, alpha=0.2, color="k")
+    ax.plot(years, lower, "k-", linewidth=2)
+    ax.plot(years, mid, "k:", linewidth=2)
     for component, metric, factor in data_keys:
         rows = powertrain_data[
             powertrain_data.component.eq(component) & powertrain_data.metric.eq(metric)
@@ -173,19 +176,6 @@ for ax, (name, (title, unit_label, data_keys)) in zip(
         ax.set_yscale("log")
     ax.set_title(title, fontsize="medium")
     ax.set_ylabel(unit_label)
-for ax, (name, (title, unit_label)) in zip(
-    axes1.flat[len(powertrain_panels) :], lh2_tank_panels.items()
-):
-    curves = [
-        LogisticTechParameter(
-            name, lh2_tank_tech_params_lower_mid_upper[name][i]
-        ).value_at_entry_into_service(years)
-        for i in range(3)
-    ]
-    plot_scenarios(ax, curves)
-    ax.set_title(title, fontsize="medium")
-    ax.set_ylabel(unit_label)
-    ax.set_ylim(ymin=0.0)
 for ax in axes1[-1]:
     ax.set_xlabel("Entry-Into-Service")
 legend_handles = [
@@ -198,7 +188,9 @@ legend_handles.extend(
     for status, marker in status_markers.items()
 )
 fig1.legend(handles=legend_handles, loc="outside lower center", ncols=5)
-fig1.suptitle("Update model: powertrain and LH2 tank technology", fontsize="large")
+fig1.suptitle(
+    "Aircraft Technology Parameters evolution, update model", fontsize="large"
+)
 fig1.savefig("./aircraft_update_technology.png", dpi=150)
 
 # %%
@@ -219,8 +211,8 @@ data_markers = {
     "target": "X",
     "requirement": "D",
 }
-gi_years = (2025, 2035, 2045, 2060)
-gi_colors = ("#c6dbef", "#6baed6", "#2171b5", "#08306b")
+gi_years = (2025, 2035, 2045, 2060, 2080)
+gi_colors = ("#c6dbef", "#6baed6", "#3182bd", "#08519c", "#08306b")
 masses = geomspace(10.0, 1.0e5, 200)
 a, b, c = LH2_TANK_SIZE_LAW
 
@@ -315,10 +307,10 @@ fig3.savefig("./aircraft_update_engine_size.png", dpi=150)
 # ---------------------------
 # For each year of entry-into-service, an aircraft is designed with the update
 # model for each architecture and market, including turboprops. Fuel cell aircraft
-# use more propulsors on larger markets, and their curves are faded where their
-# power per propulsor exceeds the maximum available at the entry-into-service
-# (constrained in the optimization). Designs that do not close (e.g. immature
-# batteries) are not shown. Thin lines recall the Mid designs of the paper model.
+# use more propulsors on larger markets. Electric and fuel cell designs are only
+# shown where their power per propulsor is available at their entry-into-service
+# (constrained in the optimization), and designs that do not close (e.g. immature
+# batteries) are not shown: the band then spans the feasible scenarios only.
 
 propulsion_colors = {
     "JetA-GasTurbine": "maroon",
@@ -331,12 +323,8 @@ propulsion_colors = {
 missions = {**propulsion_mission, **update_comparison_mission}
 
 
-def design_sweep(category, architecture, tech_idx, aircraft_model):
+def design_sweep(category, architecture, tech_idx):
     """Energy per ASK, OWE and unit power ratio versus entry-into-service."""
-    if aircraft_model == "update":
-        power_system = update_power_system(architecture, category)
-    else:
-        power_system = propulsion_architectures[architecture]
     name = f"{category}_{architecture}"
     aircraft = AircraftDesign(
         name=name,
@@ -346,19 +334,18 @@ def design_sweep(category, architecture, tech_idx, aircraft_model):
             **missions[architecture],
             "category": category,
         },
-        power_system=power_system,
-        aircraft_tech_params=aircraft_tech_params(tech_idx, aircraft_model),
+        power_system=update_power_system(architecture, category),
+        aircraft_tech_params=aircraft_tech_params(tech_idx, "update"),
         reference_aircraft=AircraftOperation(name="ref", propulsion=None),
-        aircraft_model=aircraft_model,
+        aircraft_model="update",
     )
     model = aircraft.design_model()
     model.discipline.jax_out_func = vmap(model.discipline.jax_out_func)
     outputs = model.discipline.execute({f"{name}.entry_into_service": years})
-    ratio = asarray(outputs.get(f"{name}.unit_power_ratio", years * 0.0))
     return (
         asarray(outputs[f"{name}.energy_per_ask"]),
         asarray(outputs[f"{name}.owe"]),
-        ratio,
+        asarray(outputs[f"{name}.unit_power_ratio"]),
     )
 
 
@@ -367,15 +354,34 @@ def masked(values, feasible):
     return where(feasible & isfinite(values), values, nan)
 
 
-fig4, axes4 = subplots(2, 3, layout="constrained", figsize=(13, 8))
+def plot_architecture(ax, curves, color):
+    """Band of the feasible scenarios, Lower (solid) and Mid (dotted) curves."""
+    stacked = vstack(curves)
+    band_low = fmin.reduce(stacked)
+    band_high = fmax.reduce(stacked)
+    ax.fill_between(
+        years,
+        band_low,
+        band_high,
+        where=isfinite(band_low),
+        alpha=0.2,
+        color=color,
+        linewidth=0.0,
+    )
+    ax.plot(years, curves[0], color=color, linestyle="-", linewidth=3)
+    ax.plot(years, curves[1], color=color, linestyle=":", linewidth=3)
+
+
+fig4, axes4 = subplots(2, 3, layout="constrained", figsize=(12, 10))
 fig4.suptitle(
     "Aircraft Energy Efficiency, update model\n[seat km / MJ]", fontsize="x-large"
 )
-fig5, axes5 = subplots(2, 3, layout="constrained", figsize=(13, 8))
+fig5, axes5 = subplots(2, 3, layout="constrained", figsize=(12, 10))
 fig5.suptitle(
-    "Aircraft Empty-Mass Efficiency, update model\n[seat km / kg]", fontsize="x-large"
+    "Aircraft Empty-Mass Efficiency, update model\n[seat km / kg]",
+    fontsize="x-large",
 )
-ymax = 4.0
+ymax = 5.0
 
 for cat, category in enumerate(categories_mission):
     max_range = 1e-3 * categories_mission[category]["range"]
@@ -384,6 +390,22 @@ for cat, category in enumerate(categories_mission):
     ax_m = axes5.flat[cat]
 
     current_energy_per_ask = category_conso[category]
+    ax_e.hlines(
+        y=1.0 / current_energy_per_ask[0],
+        xmin=years[0],
+        xmax=years[-1],
+        colors="dimgray",
+        linestyles="-",
+        linewidth=1.5,
+    )
+    ax_e.hlines(
+        y=1.0 / current_energy_per_ask[1],
+        xmin=years[0],
+        xmax=years[-1],
+        colors="dimgray",
+        linestyles=":",
+        linewidth=1.5,
+    )
     ax_e.fill_between(
         [years[0], years[-1]],
         [1.0 / current_energy_per_ask[0]] * 2,
@@ -391,42 +413,19 @@ for cat, category in enumerate(categories_mission):
         alpha=0.4,
         color="dimgray",
     )
-    ax_e.hlines(1.0 / current_energy_per_ask[0], years[0], years[-1], colors="dimgray")
-    ax_e.hlines(
-        1.0 / current_energy_per_ask[1],
-        years[0],
-        years[-1],
-        colors="dimgray",
-        linestyles=":",
-    )
 
     for architecture, color in propulsion_colors.items():
         electric = (
-            propulsion_architectures.get(
-                architecture, update_comparison_architectures.get(architecture)
-            )["engine_type"]
-            == "emotor"
+            update_power_system(architecture, category)["engine_type"] == "emotor"
         )
-        energy, mass, feasible = [], [], []
+        energy, mass = [], []
         for tech_idx in range(3):
-            energy_per_ask, owe, ratio = design_sweep(
-                category, architecture, tech_idx, "update"
-            )
-            energy.append(1.0 / energy_per_ask)
-            mass.append(seat * max_range / owe)
-            feasible.append(ratio <= 1.0 if electric else isfinite(ratio))
-        for ax, metric in ((ax_e, energy), (ax_m, mass)):
-            lower, mid, upper = map(masked, metric, feasible)
-            ax.fill_between(years, lower, upper, alpha=0.2, color=color)
-            ax.plot(years, lower, color=color, linestyle="-", linewidth=3)
-            ax.plot(years, mid, color=color, linestyle=":", linewidth=3)
-            if electric:
-                # Designs beyond the maximum power per propulsor, faded
-                ax.plot(years, metric[1], color=color, lw=1, ls=":", alpha=0.4)
-        if architecture in propulsion_architectures:
-            energy_per_ask, owe, _ = design_sweep(category, architecture, 1, "paper")
-            ax_e.plot(years, 1.0 / energy_per_ask, color=color, lw=1, alpha=0.8)
-            ax_m.plot(years, seat * max_range / owe, color=color, lw=1, alpha=0.8)
+            energy_per_ask, owe, ratio = design_sweep(category, architecture, tech_idx)
+            feasible = ratio <= 1.0 if electric else isfinite(ratio)
+            energy.append(masked(1.0 / energy_per_ask, feasible))
+            mass.append(masked(seat * max_range / owe, feasible))
+        plot_architecture(ax_e, energy, color)
+        plot_architecture(ax_m, mass, color)
 
     for ax in (ax_e, ax_m):
         ax.set_title(
@@ -438,9 +437,8 @@ for cat, category in enumerate(categories_mission):
 
 handles = [Patch(color=color, label=name) for name, color in propulsion_colors.items()]
 handles.extend([
-    Line2D([0], [0], color="k", ls="-", lw=3, label="Lower (update)"),
-    Line2D([0], [0], color="k", ls=":", lw=3, label="Mid (update)"),
-    Line2D([0], [0], color="k", ls="-", lw=1, label="Mid (paper model)"),
+    Line2D([0], [0], color="k", ls="-", lw=3, label="Lower"),
+    Line2D([0], [0], color="k", ls=":", lw=3, label="Mid"),
 ])
 current = Patch(color="dimgray", alpha=0.4, label="Current Technology")
 for fig_axes, fig_handles in ((axes4, [*handles, current]), (axes5, handles)):

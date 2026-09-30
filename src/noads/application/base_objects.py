@@ -42,6 +42,7 @@ from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_operation import PropulsionSystem
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParameter
+from noads.core.models.fleet.aircraft_tech_parameter import ScenarioTechParameter
 from noads.core.models.fleet.fleet import Fleet
 from noads.core.models.fleet.fleet import FleetAssembly
 
@@ -163,86 +164,119 @@ tech_params_lower_mid_upper_2020_2040_2060 = {
 # Used with ``aircraft_model="update"``: GAM V3.0 port, powertrain scale effects and
 # size-dependent LH2 tanks. See the "Update paper" section of the documentation.
 
-# Powertrain scaling technology parameters. They override the entries of the same
-# name above and add scale laws. Specific powers and efficiencies are given at a
-# reference power of 1 MW per propulsor, and fuelcell_specific_power then excludes
-# heat rejection, which is sized separately from the rated heat load. Calibration
-# data and script: aircraft_tech_data/powertrain/ (powertrain_tech_data.csv,
-# calibrate.py, calibrated_params.json).
-powertrain_tech_params_lower_mid_upper_2020_2040_2060 = {
+# Technology parameters of the update model, for the Lower, Mid and Upper scenarios
+# at 2020, 2040, 2060 and 2080 (ScenarioTechParameter: monotone cubic interpolation,
+# constant after 2080). All scenarios share their 2020 value (the Mid one), and the
+# gaps of Lower and Upper to Mid never shrink, so that the Upper-to-Lower band
+# starts at zero and only widens:
+# - 2040 and 2060 values are those of the paper (above) or of the powertrain
+#   calibration (aircraft_tech_data/powertrain/: powertrain_tech_data.csv,
+#   calibrate.py, calibrated_params.json);
+# - 2080 values extend the calibrated curves where they exist (e-motor specific power
+#   and efficiency), otherwise they add half of the 2040-2060 increase;
+# - where a calibrated gap to Mid shrinks in time, it is held at its largest value.
+# Specific powers and efficiencies are given at a reference power of 1 MW per
+# propulsor, and fuelcell_specific_power then excludes heat rejection, which is sized
+# separately from the rated heat load.
+update_tech_params_lower_mid_upper_2020_2040_2060_2080 = {
+    # Wh/kg
+    "battery_specific_energy": (
+        (200.0, 350.0, 600.0, 725.0),
+        (200.0, 575.0, 1050.0, 1287.5),
+        (200.0, 800.0, 1500.0, 1850.0),
+    ),
     # kW/kg at 1 MW per propulsor. Pastra et al. logistic shifted by a 10/8/6-year delay
     "emotor_specific_power": (
-        array([2.2, 9.2, 11.2]),
-        array([2.7, 14.8, 24.7]),
-        array([3.3, 22.2, 54.8]),
+        (2.7, 9.2, 11.2, 11.4),
+        (2.7, 14.8, 24.7, 26.3),
+        (2.7, 22.2, 54.8, 64.6),
     ),
     # %, motor x inverter x distribution at 1 MW
     "emotor_efficiency": (
-        array([91.78, 93.51, 94.63]),
-        array([91.33, 94.64, 96.27]),
-        array([90.97, 95.95, 97.68]),
+        (91.33, 93.51, 94.63, 95.19),
+        (91.33, 94.64, 96.27, 97.085),
+        (91.33, 95.95, 97.68, 98.545),
+    ),
+    # kW/kg
+    "electronics_specific_power": (
+        (2.0, 15.0, 20.0, 22.5),
+        (2.0, 20.0, 26.0, 29.0),
+        (2.0, 25.0, 32.0, 35.5),
     ),
     # kW/kg, stack + BoP without heat rejection
     "fuelcell_specific_power": (
-        array([1.46, 3.71, 5.05]),
-        array([1.52, 3.78, 6.16]),
-        array([1.63, 3.89, 7.45]),
+        (1.52, 3.71, 5.05, 5.72),
+        (1.52, 3.78, 6.16, 7.35),
+        (1.52, 3.89, 7.45, 9.23),
+    ),
+    # %
+    "fuelcell_efficiency": (
+        (40.0, 45.0, 50.0, 52.5),
+        (40.0, 50.0, 57.5, 61.25),
+        (40.0, 55.0, 65.0, 70.0),
     ),
     # kW heat/kg, ATI FlyZero thermal roadmap delayed
     "fuelcell_tms_heat_rejection": (
-        array([3, 7, 10]),
-        array([4, 10, 17.5]),
-        array([5, 15, 25]),
+        (4.0, 7.0, 10.0, 11.5),
+        (4.0, 10.0, 17.5, 21.25),
+        (4.0, 15.0, 25.0, 30.0),
     ),
-    # -, radiator parasitic power per unit heat
+    # -, radiator parasitic power per unit heat (calibrated 2060: 0.15 and 0.10)
     "fuelcell_tms_power_loss": (
-        array([0.25, 0.2, 0.15]),
-        array([0.225, 0.16, 0.12]),
-        array([0.2, 0.12, 0.1]),
+        (0.225, 0.2, 0.16, 0.14),
+        (0.225, 0.16, 0.12, 0.10),
+        (0.225, 0.12, 0.08, 0.06),
     ),
     # MW per propulsor, interpolated in log space
     "max_unit_power": (
-        array([0.06, 1.5, 5]),
-        array([0.06, 3, 12]),
-        array([0.06, 5, 25]),
+        (0.06, 1.5, 5.0, 9.13),
+        (0.06, 3.0, 12.0, 24.0),
+        (0.06, 5.0, 25.0, 55.9),
     ),
-    # SP ~ P^-beta, constant in time
+    # %, standard empty mass relative to today
+    "struct_weight_factor": (
+        (100.0, 90.0, 85.0, 82.5),
+        (100.0, 78.0, 70.0, 66.0),
+        (100.0, 66.0, 55.0, 49.5),
+    ),
+    # SP ~ P^-beta, from the Mid value in 2020 to the scenario value in 2040
     "emotor_power_exponent": (
-        array([0.25, 0.25, 0.25]),
-        array([0.1, 0.1, 0.1]),
-        array([0, 0, 0]),
+        (0.1, 0.25, 0.25, 0.25),
+        (0.1, 0.1, 0.1, 0.1),
+        (0.1, 0.0, 0.0, 0.0),
     ),
-    # 1 - eta ~ P^-gamma, constant in time
+    # 1 - eta ~ P^-gamma
     "emotor_loss_exponent": (
-        array([0, 0, 0]),
-        array([0.1, 0.1, 0.1]),
-        array([0.25, 0.25, 0.25]),
+        (0.1, 0.0, 0.0, 0.0),
+        (0.1, 0.1, 0.1, 0.1),
+        (0.1, 0.25, 0.25, 0.25),
     ),
-    # core SP ~ P^+exponent, constant in time
+    # core SP ~ P^+exponent
     "fuelcell_power_exponent": (
-        array([0, 0, 0]),
-        array([0, 0, 0]),
-        array([0.15, 0.15, 0.15]),
+        (0.0, 0.0, 0.0, 0.0),
+        (0.0, 0.0, 0.0, 0.0),
+        (0.0, 0.15, 0.15, 0.15),
     ),
 }
 
 LOG_SCALE_TECH_PARAMS = {"max_unit_power"}
 """Technology parameters interpolated in log space."""
 
-# LH2 tank technology, as logistic curves (v_0, v_inf, t_50, tau) of the EIS year:
-# tank mass factor k on the size law of present-day aluminium tanks, and fuel system
-# mass per kg of LH2 s. Fitted by noads.application.lh2_tank_calibration on
+# LH2 tank technology, as logistic curves (v_0 in 2020, v_inf, t_50, tau) of the EIS
+# year: tank mass factor k on the size law of present-day aluminium tanks, and fuel
+# system mass per kg of LH2 s. The scenarios share their timing and differ by their
+# final technology. Fitted by noads.application.lh2_tank_calibration on
 # aircraft_tech_data/lh2_tank_gi/lh2_tank_gi_dataset.csv.
 lh2_tank_tech_params_lower_mid_upper = {
     "lh2tank_mass_factor": (
-        (3.692, 1.0, 2038.6, 5.0),
-        (3.692, 0.524, 2034.2, 5.0),
-        (3.692, 0.509, 2027.0, 5.0),
+        (3.692, 1.0, 2033.7, 5.0),
+        (3.692, 0.725, 2033.7, 5.0),
+        (3.692, 0.526, 2033.7, 5.0),
     ),
     "lh2_fuel_system_ratio": (
-        (0.240, 0.148, 2055.8, 5.0),
-        (0.240, 0.148, 2051.3, 5.0),
-        (0.240, 0.148, 2044.1, 5.0),
+        (0.236, 0.201, 2052.1, 5.0),
+        (0.236, 0.148, 2052.1, 5.0),
+        (0.236, 0.115, 2052.1, 5.0),
     ),
 }
 
@@ -298,26 +332,25 @@ def aircraft_tech_params(technology_index, aircraft_model="paper"):
     Returns:
         The time-evolving technology parameters.
     """
+    if aircraft_model == "paper":
+        return [
+            AircraftTechParameter(name, tuple(values[technology_index]))
+            for name, values in tech_params_lower_mid_upper_2020_2040_2060.items()
+        ]
+    update_params = update_tech_params_lower_mid_upper_2020_2040_2060_2080
     params = [
-        AircraftTechParameter(name, tuple(values[technology_index]))
-        for name, values in tech_params_lower_mid_upper_2020_2040_2060.items()
-        if aircraft_model == "paper" or name != "lh2tank_gravimetric_index"
+        ScenarioTechParameter(
+            name,
+            values,
+            technology_index,
+            log_scale=name in LOG_SCALE_TECH_PARAMS,
+        )
+        for name, values in update_params.items()
     ]
-    if aircraft_model == "update":
-        overrides = powertrain_tech_params_lower_mid_upper_2020_2040_2060
-        params = [param for param in params if param.name not in overrides]
-        params.extend(
-            AircraftTechParameter(
-                name,
-                tuple(values[technology_index]),
-                log_scale=name in LOG_SCALE_TECH_PARAMS,
-            )
-            for name, values in overrides.items()
-        )
-        params.extend(
-            LogisticTechParameter(name, values[technology_index])
-            for name, values in lh2_tank_tech_params_lower_mid_upper.items()
-        )
+    params.extend(
+        LogisticTechParameter(name, values[technology_index])
+        for name, values in lh2_tank_tech_params_lower_mid_upper.items()
+    )
     return params
 
 

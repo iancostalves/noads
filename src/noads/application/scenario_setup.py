@@ -41,11 +41,19 @@ refuel_eu_biofuel = [0.02, 0.04, 0.15, 0.24, 0.27, 0.35, 0.7, 1.0]
 refuel_eu_efuel = [0.01, 0.02, 0.05, 0.10, 0.15, 0.35, 0.7, 1.0]
 
 
+END_YEAR = {"paper": 2075.0, "update": 2100.0}
+"""Default last simulated year per aircraft model."""
+
+LAST_ENTRY_INTO_SERVICE = {"paper": 2060.0, "update": 2080.0}
+"""Latest entry-into-service of new aircraft per aircraft model (except the first
+Jet-A generation), the last year of the technology parameters."""
+
+
 def single_scenario_setup(
     name: str,
     background_scenario_name: str,
     start_year=2025,
-    end_year=2075,
+    end_year=None,
     time_step=1.0,
     interp_step=2.5,
     technology_index=0,
@@ -73,7 +81,8 @@ def single_scenario_setup(
         name: The name of the scenario.
         background_scenario_name: The AR6 background scenario (e.g. ``"SSP2-26"``).
         start_year: The first simulated year.
-        end_year: The last simulated year.
+        end_year: The last simulated year. Defaults to 2075 with the paper aircraft
+            model and to 2100 with the update one.
         time_step: The simulation time step in years.
         interp_step: The spacing in years of the control knots.
         technology_index: The aircraft technology scenario (0: Lower, 1: Mid,
@@ -99,7 +108,14 @@ def single_scenario_setup(
         constraint name to its bound and sign), the energy mix, and the fleet.
     """
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
-    ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
+    if end_year is None:
+        end_year = END_YEAR[aircraft_model]
+    if aircraft_model == "paper":
+        ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
+    else:
+        ar6_data, years_data = get_ar6_input_data(
+            end_year=2100, plot_data=plot_scenario_data
+        )
     energy_mix, fleet = initialize_base_objects(
         drop_in_only, technology_index, aircraft_model
     )
@@ -386,7 +402,9 @@ def single_scenario_setup(
                         2032.0 if "JetA-GasTurbine-v1" in aircraft.name else 2035.0
                     ),
                     upper_bound=(
-                        2047.5 if "JetA-GasTurbine-v1" in aircraft.name else 2060.0
+                        2047.5
+                        if "JetA-GasTurbine-v1" in aircraft.name
+                        else LAST_ENTRY_INTO_SERVICE[aircraft_model]
                     ),
                     # value=2060.0,
                     value=2035.0
@@ -441,7 +459,7 @@ def multi_scenario_setup(
     name: str,
     background_scenario_names: Sequence[str],
     start_year=2025,
-    end_year=2075,
+    end_year=None,
     time_step=2.0,
     interp_step=5.0,
     technology_index=0,
@@ -504,7 +522,10 @@ def multi_scenario_setup(
     ])
     # all except controls
 
-    ar6_data, years_data = get_ar6_input_data(plot_data=False)
+    if aircraft_model == "paper":
+        ar6_data, years_data = get_ar6_input_data(plot_data=False)
+    else:
+        ar6_data, years_data = get_ar6_input_data(end_year=2100, plot_data=False)
 
     multi_scenario = MultiScenario(
         name=name,

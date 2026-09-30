@@ -84,11 +84,14 @@ logistic projections of {cite:t}`u-pastra_2023` delayed by 10, 8 and 6 years (Lo
 Mid, Upper) between demonstration and certified EIS. The data and calibration script
 are bundled in `noads/application/aircraft_tech_data/powertrain/`.
 
-| Scenario | $\beta$ (specific power) | $\gamma$ (losses) | Max power per propulsor 2020 / 2040 / 2060 [MW] |
+| Scenario | $\beta$ (specific power) | $\gamma$ (losses) | Max power per propulsor 2020 / 2040 / 2060 / 2080 [MW] |
 |---|---|---|---|
-| Lower | 0.25 | 0 | 0.06 / 1.5 / 5 |
-| Mid | 0.1 | 0.1 | 0.06 / 3 / 12 |
-| Upper | 0 | 0.25 | 0.06 / 5 / 25 |
+| Lower | 0.25 | 0 | 0.06 / 1.5 / 5 / 9.1 |
+| Mid | 0.1 | 0.1 | 0.06 / 3 / 12 / 24 |
+| Upper | 0 | 0.25 | 0.06 / 5 / 25 / 56 |
+
+The scale exponents are those of 2040 onwards; they all start from the Mid value in
+2020 (see below).
 
 ## LH2 tanks
 
@@ -110,8 +113,13 @@ where the size law $(a, b, c)$ describes present-day aluminium tanks from design
 studies, the mass factor $k$ the maturity of the technology ($k = 1$ for these tanks),
 and $s$ the mass of the fuel system (pipes, pumps, conditioning) per kg of LH2. The
 LH2 of each aircraft is split into 2 tanks (a per-market parameter), sized for the
-maximum fuel. $k$ and $s$ follow logistic curves of the EIS,
-$v(t) = v_\infty + (v_0 - v_\infty) / (1 + e^{(t - t_{50}) / \tau})$.
+maximum fuel. $k$ and $s$ follow logistic curves of the EIS, anchored at their 2020
+value $v_0$:
+
+```{math}
+v(t) = v_\infty + (v_0 - v_\infty) \frac{\sigma(t)}{\sigma(2020)}, \qquad
+\sigma(t) = \frac{1}{1 + e^{(t - t_{50}) / \tau}}.
+```
 
 The model is fitted by {mod}`noads.application.lh2_tank_calibration` on a dataset of
 105 GI values from 32 sources, bundled in
@@ -122,20 +130,26 @@ The model is fitted by {mod}`noads.application.lh2_tank_calibration` on a datase
   by the scatter of design assumptions such as dormancy and vent pressure);
 - $k_0 = 3.7$ is implied by the hardware of 2020-2025 (unverified vendor claims left
   out);
-- the Upper and Mid maturity curves are fitted on this hardware and on the FlyZero
-  tank projections {cite:p}`u-ati_cryogenic`, delayed from their technology year to EIS
-  by 9 years (TRL6 in 2026 for an EIS in 2035) and 17 years (8 more years, after the
-  Airbus ZEROe delay);
-- the Lower scenario only reaches today's aluminium design-study tanks ($k = 1$),
-  with $k = 1.25$ by 2050. The McKinsey system targets
-  {cite:p}`u-mckinsey_hydrogen_2020` are nearly independent of the size, hence not used;
-- $s$ is fitted on the FlyZero tank/system pairs, with the timing of each scenario.
+- the scenarios share the timing of the maturity, so that they start from the same
+  value in 2020 and then only diverge. The timing $t_{50}$ and the FlyZero asymptote
+  are fitted on this hardware and on the FlyZero tank projections
+  {cite:p}`u-ati_cryogenic`, delayed from their technology year to EIS by 17 years
+  (TRL6 in 2026 for an EIS in 2035, plus the 5 to 10 years of the Airbus ZEROe
+  delay);
+- the scenarios differ by the tank technology they converge to: FlyZero composite
+  tanks (Upper), today's aluminium design-study tanks (Lower, $k_\infty = 1$), and
+  their geometric mean (Mid). The McKinsey system targets
+  {cite:p}`u-mckinsey_hydrogen_2020` are nearly independent of the size, hence not
+  used;
+- $s$ follows the same timing, and converges to the spread of the FlyZero 2050
+  concepts: the best one (narrowbody, Upper), the fitted value (Mid), and the worst
+  one (regional, with a fuel system sized for fuel cells, Lower).
 
 | Scenario | $k_0$ | $k_\infty$ | $t_{50}$ | $s_0$ | $s_\infty$ | $t_{50}$ ($s$) |
 |---|---|---|---|---|---|---|
-| Lower | 3.69 | 1.00 | 2038.6 | 0.24 | 0.148 | 2055.8 |
-| Mid | 3.69 | 0.52 | 2034.2 | 0.24 | 0.148 | 2051.3 |
-| Upper | 3.69 | 0.51 | 2027.0 | 0.24 | 0.148 | 2044.1 |
+| Lower | 3.69 | 1.00 | 2033.7 | 0.236 | 0.201 | 2052.1 |
+| Mid | 3.69 | 0.73 | 2033.7 | 0.236 | 0.148 | 2052.1 |
+| Upper | 3.69 | 0.53 | 2033.7 | 0.236 | 0.115 | 2052.1 |
 
 with $\tau = 5$ years.
 
@@ -148,6 +162,30 @@ technology scenarios, compared with the tank-only values of the dataset.
 ```
 
 ## Technology parameters
+
+The technology parameters of the update model are given for the Lower, Mid and Upper
+scenarios at 2020, 2040, 2060 and 2080, and are constant after 2080. Following the
+main paper, the scenarios bracket the uncertainty on the maturing technology, which
+is null for today's technology: all scenarios share their 2020 value, and the
+Upper-to-Lower band only widens with the EIS. To guarantee this:
+
+- the Mid scenario is interpolated with a monotone cubic spline (PCHIP), which never
+  overshoots its values, instead of the quadratic spline through 2020, 2040 and 2060
+  of the main paper;
+- the Lower and Upper scenarios are the Mid curve plus a PCHIP interpolation of their
+  gap to Mid, which starts at zero in 2020 and never shrinks
+  ({class}`~noads.core.models.fleet.aircraft_tech_parameter.ScenarioTechParameter`);
+- the 2040 and 2060 values are those of the main paper or of the powertrain
+  calibration, and the 2080 values extend the calibrated curves (e-motor specific
+  power and efficiency), or add half of the 2040-2060 increase. Where a calibrated
+  gap to Mid shrinks (fuel cell TMS parasitic power in 2060), it is held at its
+  largest value;
+- the scale exponents start from the Mid value in 2020 and reach the scenario
+  values in 2040.
+
+With technology parameters up to 2080, new aircraft can enter into service until
+2080 in the optimization, and the scenarios of the update model run until 2100
+instead of 2075.
 
 ```{figure} figures/aircraft_update_technology.png
 :name: fig-update-technology
@@ -165,11 +203,11 @@ Lower scenario and dotted line for the Mid scenario.
 :width: 100%
 
 Energy efficiency of prospective aircraft designed with the update model, versus
-EIS. Filled between the Upper and Lower scenarios, thick solid line for the Lower and
-dotted line for the Mid scenario; thin lines show the Mid designs of the paper model.
-Electric and fuel cell designs are shown only where their power per propulsor is
-available at their EIS (faded thin dotted lines beyond), and designs that do not
-close are not shown. The grey band shows the 2019 fleet quartiles.
+EIS. Filled between the Upper and Lower scenarios, solid line for the Lower and
+dotted line for the Mid scenario. Electric and fuel cell designs are shown only where
+their power per propulsor is available at their EIS, and designs that do not close
+are not shown: the band then spans the feasible scenarios only. The grey band shows
+the 2019 fleet quartiles.
 ```
 
 ```{figure} figures/aircraft_update_prospective_mass.png
@@ -186,12 +224,13 @@ Compared with the main paper:
   size effect of GAM V3.0, and turboprops become the most efficient thermal
   architecture on these markets;
 - the maximum power per propulsor delays fuel cell aircraft: in the Lower scenario,
-  from about 2035 for the general market to about 2057 for long range;
+  from 2035 for the general market to 2058 for long range (2031 and 2043 in the Mid
+  scenario);
 - with the size law, the tank GI differs strongly between markets: in the Mid
-  scenario, about 0.34 (general) and 0.73 (long range) for an EIS in 2040, 0.52 and
-  0.85 in 2060;
+  scenario, about 0.32 (general) and 0.71 (long range) for an EIS in 2040, 0.44 and
+  0.80 in 2060;
 - battery-electric aircraft only close once batteries are mature enough: in the Mid
-  scenario, from about 2036 on the general market and 2048 on the commuter market.
+  scenario, from 2036 on the general market and 2048 on the commuter market.
 
 ## Reproduce these figures
 

@@ -28,13 +28,15 @@ from noads.application.base_objects import aircraft_tech_params
 from noads.application.base_objects import fuelcell_engine_count
 from noads.application.base_objects import initialize_base_objects
 from noads.application.base_objects import lh2_tank_tech_params_lower_mid_upper
+from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
 from noads.application.base_objects import (
-    powertrain_tech_params_lower_mid_upper_2020_2040_2060,
+    update_tech_params_lower_mid_upper_2020_2040_2060_2080,
 )
 from noads.application.scenario_setup import single_scenario_setup
 from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParameter
+from noads.core.models.fleet.aircraft_tech_parameter import ScenarioTechParameter
 from noads.gam_jax.models.gam_v3 import GAM
 from noads.gam_jax.models.gam_v3 import LH2_TANK_SIZE_LAW
 
@@ -168,18 +170,48 @@ def test_log_scale_tech_parameter():
     assert np.all(np.diff(values) > 0.0)
 
 
-@pytest.mark.parametrize("index", [0, 1, 2])
-def test_calibrated_max_unit_power_is_monotonic(index):
-    values = powertrain_tech_params_lower_mid_upper_2020_2040_2060["max_unit_power"]
-    parameter = AircraftTechParameter("p", tuple(values[index]), log_scale=True)
-    curve = np.asarray(
-        parameter.value_at_entry_into_service(np.linspace(2020.0, 2060.0, 81))
+UPDATE_PARAMS = {
+    param.name: [
+        {p.name: p for p in aircraft_tech_params(index, "update")}[param.name]
+        for index in range(3)
+    ]
+    for param in aircraft_tech_params(1, "update")
+}
+EIS = np.linspace(2020.0, 2100.0, 321)
+
+
+@pytest.mark.parametrize("name", list(UPDATE_PARAMS))
+def test_scenario_band_starts_at_zero_and_widens(name):
+    """Scenarios share their 2020 value, and Upper-to-Lower only widens."""
+    lower, mid, upper = (
+        np.asarray(param.value_at_entry_into_service(EIS))
+        for param in UPDATE_PARAMS[name]
     )
-    assert np.all(np.diff(curve) > 0.0)
+    sign = 1.0 if upper[-1] >= lower[-1] else -1.0
+    gap = sign * (upper - lower)
+    assert gap[0] == pytest.approx(0.0, abs=1e-9)
+    assert np.all(np.diff(gap) >= -1e-9)
+    assert np.all(sign * (mid - lower) >= -1e-9)
+    assert np.all(sign * (upper - mid) >= -1e-9)
 
 
-def test_powertrain_params_match_calibration():
-    """The powertrain triplets are those of the bundled calibration."""
+@pytest.mark.parametrize("name", list(UPDATE_PARAMS))
+def test_scenario_curves_are_monotonic(name):
+    for param in UPDATE_PARAMS[name]:
+        values = np.asarray(param.value_at_entry_into_service(EIS))
+        steps = np.diff(values)
+        assert np.all(steps >= -1e-9) or np.all(steps <= 1e-9)
+
+
+def test_scenario_tech_parameter_rejects_inconsistent_scenarios():
+    with pytest.raises(ValueError, match="2020 value"):
+        ScenarioTechParameter("p", ((1, 2, 3, 4), (2, 3, 4, 5), (2, 4, 5, 6)), 0)
+    with pytest.raises(ValueError, match="must not shrink"):
+        ScenarioTechParameter("p", ((1, 2, 3, 4), (1, 3, 4, 5), (1, 5, 5, 6)), 0)
+
+
+def test_update_params_match_calibration():
+    """2040 and 2060 values are those of the calibrations, unless harmonized."""
     calibrated = json.loads(
         Path(
             data_file(
@@ -198,12 +230,22 @@ def test_powertrain_params_match_calibration():
         "fuelcell_tms_power_loss": "fuelcell_tms_power_loss",
         "max_unit_power": "max_unit_power_MW",
     }
-    params = powertrain_tech_params_lower_mid_upper_2020_2040_2060
+    # gaps to Mid held at their largest value (they shrink in the calibration)
+    harmonized = {("fuelcell_tms_power_loss", 0), ("fuelcell_tms_power_loss", 2)}
+    params = update_tech_params_lower_mid_upper_2020_2040_2060_2080
     for name, calibrated_name in names.items():
         for index, scenario in enumerate(SCENARIOS):
-            np.testing.assert_allclose(
-                params[name][index], calibrated[scenario][calibrated_name]
-            )
+            expected = calibrated[scenario][calibrated_name][1:]
+            actual = params[name][index][1:3]
+            if (name, index) in harmonized:
+                expected = expected[:1]
+                actual = actual[:1]
+            np.testing.assert_allclose(actual, expected)
+    # the other parameters are those of the paper
+    for name, values in tech_params_lower_mid_upper_2020_2040_2060.items():
+        if name in params and name not in names:
+            for index in range(3):
+                np.testing.assert_allclose(params[name][index][1:3], values[index][1:])
 
 
 # ------------------------------------------------------------------------------
@@ -238,7 +280,7 @@ def test_tank_gi_monotonic(index):
         "k", lh2_tank_tech_params_lower_mid_upper["lh2tank_mass_factor"][index]
     )
     masses = np.geomspace(10.0, 5.0e4, 30)
-    years = np.linspace(2020.0, 2075.0, 56)
+    years = np.linspace(2020.0, 2100.0, 81)
     a, b, c = LH2_TANK_SIZE_LAW
     ratio = np.asarray(k.value_at_entry_into_service(years))[:, None] * (
         a + b * masses[None, :] ** (-1.0 / 3.0) + c / masses[None, :]
@@ -261,16 +303,18 @@ def test_legacy_constant_gi_is_reproduced():
     assert float(sized["gi_tank"]) == pytest.approx(0.5)
 
 
-def test_flyzero_narrowbody_2030(fitted):
-    """The Upper model is within 0.05 of the FlyZero narrowbody 2030 tanks."""
+def test_flyzero_narrowbody_2050(fitted):
+    """The Upper model reaches the FlyZero narrowbody 2050 tanks within 0.05.
+
+    Both aft tanks hold the same (estimated) LH2 mass, so the size law is compared
+    with their mean GI.
+    """
     df = calibration.load_dataset()
-    rows = df[df.id.str.startswith("FZ-narrowbody-afttank") & df.tech_year.eq(2030)]
-    delay = calibration.FLYZERO_DELAY["upper"]
-    for row in rows.itertuples():
-        gi = calibration.tank_gravimetric_index(
-            fitted, "upper", row.m, row.tech_year + delay
-        )
-        assert gi == pytest.approx(row.gi, abs=0.05)
+    rows = df[df.id.str.startswith("FZ-narrowbody-afttank") & df.tech_year.eq(2050)]
+    gi = calibration.tank_gravimetric_index(
+        fitted, "upper", rows.m.iloc[0], 2050.0 + calibration.FLYZERO_DELAY
+    )
+    assert gi == pytest.approx(rows.gi.mean(), abs=0.05)
 
 
 def test_tank_count_changes_gi():

@@ -45,15 +45,22 @@ sources):
    the Upper scenario.
 3. The fuel system ratio ``s(t)`` is fitted on the FlyZero tank/system pairs and
    IZEA 2025, with the FlyZero technology years.
-4. ``k_inf`` and ``t_50`` are fitted on the ``k`` implied by the 2020-2025
-   hardware and by the FlyZero tank-only projections. FlyZero values are given at
-   technology-readiness years (TRL6 in 2026 for an EIS in 2035), so they are
-   delayed by 9 years in the Upper scenario, and by 8 more years in the Mid
-   scenario (the Airbus ZEROe delay of 5 to 10 years). The Lower scenario only
-   reaches the present-day aluminium design-study tanks (``k_inf = 1``), with
-   ``k = 1.25`` (between 1 and 1.5) by 2050. The McKinsey system targets are not
-   used: they are nearly independent of the tank size, hence inconsistent with the
-   size law. ``s(t)`` follows the timing of each scenario, FlyZero being the reference.
+4. The timing (``t_50``) of the tank maturity is common to all scenarios, so
+   that they share their value in 2020 and then only diverge. It is fitted,
+   together with the FlyZero asymptote ``k_inf``, on the ``k`` implied by the
+   2020-2025 hardware and by the FlyZero tank-only projections. FlyZero values
+   are given at technology-readiness years (TRL6 in 2026 for an EIS in 2035),
+   and the Airbus ZEROe programme was delayed by 5 to 10 years, so they are
+   delayed by 17 years.
+5. The scenarios differ by the tank technology they converge to: FlyZero
+   composite tanks for Upper, present-day aluminium design-study tanks
+   (``k_inf = 1``) for Lower, and their geometric mean for Mid. The McKinsey
+   system targets are not used: they are nearly independent of the tank size,
+   hence inconsistent with the size law.
+6. The fuel system ratio ``s`` follows the same timing (its FlyZero fit delayed
+   by 17 years), and converges to the spread of the FlyZero 2050 concepts: the
+   best one (narrowbody) for Upper, the fitted value for Mid, and the worst one
+   (regional, whose fuel system is sized for fuel cells) for Lower.
 
 Run this module to print the fitted parameters.
 """
@@ -73,16 +80,19 @@ TIME_SCALE = 5.0
 
 SCENARIOS = ("lower", "mid", "upper")
 
+START_YEAR = 2020.0
+"""Year at which all scenarios share their initial value v_0."""
+
 BASIS_WEIGHT = {"stated": 1.0, "derived": 1.0, "estimated": 0.5}
 CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.7, "low": 0.4}
 INTERVAL_WEIGHT = 0.5
 """Weight factor for values given as a range (fitted at their midpoint)."""
 
-FLYZERO_DELAY = {"upper": 9.0, "mid": 17.0}
+FLYZERO_DELAY = 17.0
 """Delay (years) between FlyZero technology year and entry-into-service."""
 
-LOWER_ANCHOR = (2050.0, 1.25)
-"""(year, k) reached by the Lower scenario, converging to k_inf = 1."""
+LOWER_MASS_FACTOR = 1.0
+"""Final tank mass factor of the Lower scenario: present-day aluminium tanks."""
 
 MIN_HARDWARE_MASS = 10.0
 """Minimum LH2 mass per tank (kg) of the hardware values used for k_0."""
@@ -128,9 +138,16 @@ def size_ratio(size_law, m):
 
 
 def logistic(values, t):
-    """Logistic curve (v_0, v_inf, t_50, tau) at year t."""
+    """Logistic curve (v_0, v_inf, t_50, tau) anchored at v_0 in START_YEAR.
+
+    Same form as
+    :class:`~noads.core.models.fleet.aircraft_tech_parameter.LogisticTechParameter`.
+    """
     v_0, v_inf, t_50, tau = values
-    return v_inf + (v_0 - v_inf) / (1.0 + np.exp((t - t_50) / tau))
+    t = np.maximum(t, START_YEAR)
+    sigmoid = 1.0 / (1.0 + np.exp((t - t_50) / tau))
+    sigmoid_start = 1.0 / (1.0 + np.exp((START_YEAR - t_50) / tau))
+    return v_inf + (v_0 - v_inf) * sigmoid / sigmoid_start
 
 
 def _row_weight(row) -> float:
@@ -230,45 +247,49 @@ def _flyzero_anchors(df, size_law, delay):
     return years, implied_mass_factor(size_law, rows.gi.to_numpy(), rows.m.to_numpy())
 
 
+def _flyzero_2050_fuel_system_ratios(df):
+    """Fuel system mass per kg of LH2 of the FlyZero concepts in 2050."""
+    ratios = []
+    for (concept, year), tank_ratio in _flyzero_tank_ratio(df).items():
+        if year == 2050:
+            system = df[df.id.eq(f"FZ-{concept}-total-{int(year)}")].gi.iloc[0]
+            ratios.append(1.0 / system - 1.0 - tank_ratio)
+    return ratios
+
+
 def calibrate() -> LH2TankCalibration:
     """Fit the LH2 tank GI model on the dataset."""
     df = load_dataset()
     size_law, rmse = fit_size_law(df)
-    s_0, s_inf, s_t50 = fit_fuel_system_ratio(df)
     k_0 = initial_mass_factor(df, size_law)
     hardware_years, hardware_k = _hardware_anchors(df, size_law)
-    mass_factor = {}
-    for scenario, delay in FLYZERO_DELAY.items():
-        years, k = _flyzero_anchors(df, size_law, delay)
-        years = np.concatenate([years, hardware_years])
-        k = np.concatenate([k, hardware_k])
+    years, k = _flyzero_anchors(df, size_law, FLYZERO_DELAY)
+    years = np.concatenate([years, hardware_years])
+    k = np.concatenate([k, hardware_k])
 
-        def residuals(p, years=years, k=k):
-            return np.log(logistic((k_0, p[0], p[1], TIME_SCALE), years) / k)
+    def residuals(p):
+        return np.log(logistic((k_0, p[0], p[1], TIME_SCALE), years) / k)
 
-        result = least_squares(
-            residuals, x0=[0.8, 2035.0], bounds=([0.05, 2000.0], [k_0, 2070.0])
-        )
-        mass_factor[scenario] = (k_0, *(float(x) for x in result.x), TIME_SCALE)
-    year, k_year = LOWER_ANCHOR
-    t_50 = year - TIME_SCALE * np.log((k_0 - 1.0) / (k_year - 1.0) - 1.0)
-    mass_factor["lower"] = (k_0, 1.0, float(t_50), TIME_SCALE)
-    # The fuel system matures with the timing of the tanks of each scenario. s(t)
-    # is fitted on FlyZero technology years, delayed like the tanks of the Upper
-    # scenario.
+    result = least_squares(
+        residuals, x0=[0.8, 2035.0], bounds=([0.05, 2000.0], [k_0, 2070.0])
+    )
+    k_upper, t_50 = (float(x) for x in result.x)
+    k_final = {
+        "lower": LOWER_MASS_FACTOR,
+        "mid": float(np.sqrt(LOWER_MASS_FACTOR * k_upper)),
+        "upper": k_upper,
+    }
+    mass_factor = {
+        scenario: (k_0, k_final[scenario], t_50, TIME_SCALE) for scenario in SCENARIOS
+    }
+
+    s_0, s_mid, s_t50 = fit_fuel_system_ratio(df)
+    flyzero_2050 = _flyzero_2050_fuel_system_ratios(df)
+    s_final = {"lower": max(flyzero_2050), "mid": s_mid, "upper": min(flyzero_2050)}
     fuel_system_ratio = {
-        scenario: (
-            s_0,
-            s_inf,
-            s_t50
-            + FLYZERO_DELAY["upper"]
-            + mass_factor[scenario][2]
-            - mass_factor["upper"][2],
-            TIME_SCALE,
-        )
+        scenario: (s_0, s_final[scenario], s_t50 + FLYZERO_DELAY, TIME_SCALE)
         for scenario in SCENARIOS
     }
-    mass_factor = {scenario: mass_factor[scenario] for scenario in SCENARIOS}
     return LH2TankCalibration(size_law, rmse, mass_factor, fuel_system_ratio)
 
 
