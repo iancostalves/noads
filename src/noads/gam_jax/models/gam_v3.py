@@ -35,8 +35,12 @@ from jax import config
 from jax.numpy import array
 from jax.numpy import exp
 from jax.numpy import interp
+from jax.numpy import maximum
 from jax.numpy import minimum
+from jax.numpy import nan
 from jax.numpy import sqrt
+from jax.numpy import where
+from optimistix import RESULTS
 from optimistix import Newton
 from optimistix import root_find
 
@@ -57,6 +61,16 @@ FUEL_DENSITY = {
     "battery": 2800.0,
 }
 """Reference fuel densities (kg/m3), GAM V3.0."""
+
+LH2_TANK_SIZE_LAW = (0.1229, 4.9688, 0.0)
+"""Tank-to-fuel mass ratio a + b m^(-1/3) + c/m of present-day aluminium LH2 tanks.
+
+With m the LH2 mass per tank (kg). Fitted by
+:mod:`noads.application.lh2_tank_calibration`.
+"""
+
+LH2_TANK_COUNT = 2
+"""Default number of LH2 tanks."""
 
 FUEL_HEAT = {
     "kerosene": 43.1e6,
@@ -109,10 +123,25 @@ class GAM:
         struct_weight_factor=100.0,
         fuelcell_efficiency=50.0,
         electronics_specific_power=10.0,
+        emotor_efficiency=90.0,
+        emotor_power_exponent=0.0,
+        emotor_loss_exponent=0.0,
+        reference_unit_power=1000.0,
+        fuelcell_tms_heat_rejection=None,
+        fuelcell_tms_power_loss=0.0,
+        fuelcell_rated_efficiency_ratio=85.0,
+        fuelcell_power_exponent=0.0,
+        fuelcell_efficiency_exponent=0.0,
+        max_unit_power=1.0e3,
+        lh2tank_mass_factor=None,
+        lh2_fuel_system_ratio=0.0,
+        lh2tank_size_law=LH2_TANK_SIZE_LAW,
     ):
         """Initialize GAM with the technology parameters.
 
-        The defaults are the upstream GAM V3.0 values.
+        The defaults are the upstream GAM V3.0 values. The powertrain scaling
+        arguments default to constant specific powers and efficiencies, with a fuel
+        cell specific power including its thermal management (upstream behaviour).
 
         Args:
             battery_specific_energy: Battery specific energy (Wh/kg).
@@ -123,6 +152,35 @@ class GAM:
             struct_weight_factor: Factor on the standard MWE regression (%).
             fuelcell_efficiency: Fuel cell system efficiency (%).
             electronics_specific_power: Power electronics specific power (kW/kg).
+            emotor_efficiency: Electric chain efficiency (motor, inverter,
+                distribution) at the reference unit power (%).
+            emotor_power_exponent: Exponent beta in
+                SP(P) = SP_ref (P / P_ref)^(-beta) for the e-motor.
+            emotor_loss_exponent: Exponent gamma in
+                1 - eta(P) = (1 - eta_ref) (P / P_ref)^(-gamma).
+            reference_unit_power: Reference power per propulsor P_ref (kW) at
+                which specific powers and efficiencies are given.
+            fuelcell_tms_heat_rejection: TMS specific heat rejection (kW of heat
+                per kg). If None, fuelcell_specific_power is the full system.
+                Otherwise fuelcell_specific_power excludes heat rejection and the
+                TMS mass is sized by the rated heat load.
+            fuelcell_tms_power_loss: TMS parasitic power per unit heat rejected (-).
+            fuelcell_rated_efficiency_ratio: Fuel cell efficiency at rated power
+                relative to mission efficiency (%), for heat load sizing.
+            fuelcell_power_exponent: Exponent on fuel cell core specific power
+                versus fuel cell power per propulsor (positive means economy of
+                scale).
+            fuelcell_efficiency_exponent: Exponent on fuel cell efficiency versus
+                power per propulsor.
+            max_unit_power: Maximum power per propulsor available at the
+                entry-into-service (MW). Only reported through unit_power_ratio.
+            lh2tank_mass_factor: Technology multiplier k on the LH2 tank size law
+                (1 for present-day aluminium design studies). If None, the tank
+                mass follows the constant ``lh2tank_gravimetric_index``.
+            lh2_fuel_system_ratio: LH2 fuel system mass (pipes, pumps,
+                conditioning) per kg of LH2, used with the size law.
+            lh2tank_size_law: Coefficients (a, b, c) of the baseline tank-to-fuel
+                mass ratio a + b m^(-1/3) + c / m, m in kg of LH2 per tank.
         """
         # Categories
         self.general = "general"
@@ -251,7 +309,7 @@ class GAM:
         # Efficiencies
         self.prop_eff = 0.80  # Propeller efficiency
         self.fan_eff = 0.82  # Propeller-like fan efficiency
-        self.emotor_eff = 0.90  # Electric motor efficiency (MAGNIX)
+        self.emotor_eff = 1e-2 * emotor_efficiency  # Electric chain (MAGNIX: 0.90)
         self.fuel_cell_eff = (
             1e-2 * fuelcell_efficiency
         )  # System level (Horizon Fuel Cell)
@@ -284,6 +342,20 @@ class GAM:
             self.fan: unit.W_kW(15),
         }
 
+        # Powertrain scaling with the power per propulsor
+        self.emotor_power_exponent = emotor_power_exponent
+        self.emotor_loss_exponent = emotor_loss_exponent
+        self.reference_unit_power = unit.W_kW(reference_unit_power)
+        self.use_fuel_cell_tms = fuelcell_tms_heat_rejection is not None
+        self.fuel_cell_tms_heat_rejection = (
+            unit.W_kW(fuelcell_tms_heat_rejection) if self.use_fuel_cell_tms else None
+        )
+        self.fuel_cell_tms_power_loss = fuelcell_tms_power_loss
+        self.fuel_cell_rated_ratio = 1e-2 * fuelcell_rated_efficiency_ratio
+        self.fuel_cell_power_exponent = fuelcell_power_exponent
+        self.fuel_cell_efficiency_exponent = fuelcell_efficiency_exponent
+        self.max_unit_power = 1e6 * max_unit_power
+
         # Energy storage
         self.battery_enrg_density = unit.J_Wh(battery_specific_energy)
 
@@ -296,6 +368,10 @@ class GAM:
         self.lch4_density = fuel_density(self.lch4)
         # kg_LH2 / (kg_LH2 + kg_Tank)
         self.lh2_tank_gravimetric_index = 1e-2 * lh2tank_gravimetric_index
+        # Size- and technology-dependent LH2 tanks, used if a mass factor is given
+        self.lh2_tank_mass_factor = lh2tank_mass_factor
+        self.lh2_fuel_system_ratio = lh2_fuel_system_ratio
+        self.lh2_tank_size_law = lh2tank_size_law
 
         # Standard airframe MWE regression, standard_af_mwe = a * mtow**2 + b*mtow + c
         self.standard_af_mwe_factors = [-3.06255540e-07, 4.18303322e-01, -35]
@@ -379,13 +455,14 @@ class GAM:
         else:
             msg = "thruster type is unknown"
             raise ValueError(msg)
+        chain_eff = self.electric_chain_efficiency(max_power)
         if energy_type == self.battery:
-            return thruster_eff * self.emotor_eff * self.propu_eff_factor
+            return thruster_eff * chain_eff * self.propu_eff_factor
         if energy_type in [self.gh2, self.lh2]:
             return (
                 thruster_eff
-                * self.emotor_eff
-                * self.fuel_cell_eff
+                * chain_eff
+                * self.fuel_cell_mission_efficiency(max_power)
                 * self.propu_eff_factor
             )
         msg = "energy type is unknown"
@@ -442,9 +519,75 @@ class GAM:
     # ------------------------------------------------------------------------------
     # Mass model components
     # ------------------------------------------------------------------------------
+    def _unit_scale(self, unit_power):
+        """Power per propulsor relative to the reference unit power."""
+        return unit_power / self.reference_unit_power
+
+    def electric_chain_efficiency(self, unit_power):
+        """Motor, inverter and distribution efficiency for a given unit power (W)."""
+        loss = (1.0 - self.emotor_eff) * self._unit_scale(unit_power) ** (
+            -self.emotor_loss_exponent
+        )
+        return 1.0 - minimum(loss, 0.5)
+
+    def emotor_power_density(self, unit_power):
+        """E-motor specific power (W/kg) for a given unit power (W)."""
+        return self.power_density[self.emotor] * self._unit_scale(unit_power) ** (
+            -self.emotor_power_exponent
+        )
+
+    def fuel_cell_efficiency(self, unit_power):
+        """Fuel cell system efficiency before TMS losses, for a unit power (W)."""
+        return minimum(
+            self.fuel_cell_eff
+            * self._unit_scale(unit_power) ** self.fuel_cell_efficiency_exponent,
+            0.95,
+        )
+
+    def fuel_cell_mission_efficiency(self, unit_power):
+        """Fuel cell efficiency net of the TMS parasitic power, eta - L (1 - eta)."""
+        eta = self.fuel_cell_efficiency(unit_power)
+        if self.use_fuel_cell_tms:
+            return eta - self.fuel_cell_tms_power_loss * (1.0 - eta)
+        return eta
+
+    def fuel_cell_sizing(self, power_system, total_power):
+        """Fuel cell gross power, heat load and mass (W, W, kg).
+
+        The electric power demand is the shaft power divided by the electric chain
+        efficiency. With a TMS model, the gross fuel cell power also covers the
+        TMS parasitic power, the heat load is evaluated at rated efficiency, and the
+        TMS mass is the heat load divided by the specific heat rejection.
+        """
+        n_units = power_system["engine_count"]
+        unit_power = total_power / n_units
+        electric_power = total_power / self.electric_chain_efficiency(unit_power)
+        if self.use_fuel_cell_tms:
+            eta_rated = (
+                self.fuel_cell_efficiency(unit_power) * self.fuel_cell_rated_ratio
+            )
+            heat_to_power = 1.0 / eta_rated - 1.0
+            gross_power = electric_power / (
+                1.0 - self.fuel_cell_tms_power_loss * heat_to_power
+            )
+            heat_load = gross_power * heat_to_power
+        else:
+            gross_power = electric_power
+            heat_load = gross_power * (
+                1.0 / self.fuel_cell_efficiency(unit_power) - 1.0
+            )
+        core_density = (
+            self.power_density[self.fuel_cell]
+            * self._unit_scale(gross_power / n_units) ** self.fuel_cell_power_exponent
+        )
+        mass = gross_power / core_density
+        if self.use_fuel_cell_tms:
+            mass += heat_load / self.fuel_cell_tms_heat_rejection
+        return gross_power, heat_load, mass
+
     def fuel_cell_system_mass(self, power_system, total_power):
         """Mass of the fuel cell system powering the electric motors."""
-        return (total_power / self.emotor_eff) / self.power_density[self.fuel_cell]
+        return self.fuel_cell_sizing(power_system, total_power)[2]
 
     def propulsion_mass(self, power_system, total_power):
         """Mass of the propulsion system and of the fuel cell system, if any."""
@@ -484,14 +627,32 @@ class GAM:
 
     def emotor_mass(self, power_system, total_power):
         """Mass of the electric motors."""
-        return total_power / self.power_density[self.emotor]
+        unit_power = total_power / power_system["engine_count"]
+        return total_power / self.emotor_power_density(unit_power)
+
+    def lh2_mass_ratios(self, power_system, lh2_mass):
+        """Tank and fuel system mass per kg of LH2, for a total LH2 mass (kg).
+
+        With the size law, the tank-to-fuel mass ratio is
+        ``k (a + b m^(-1/3) + c / m)`` with m the LH2 mass per tank. Otherwise it
+        follows the constant gravimetric index, without fuel system mass.
+        """
+        if self.lh2_tank_mass_factor is None:
+            return 1.0 / self.lh2_tank_gravimetric_index - 1.0, 0.0
+        a, b, c = self.lh2_tank_size_law
+        n_tanks = power_system.get("tank_count", LH2_TANK_COUNT)
+        m = maximum(lh2_mass / n_tanks, 1.0)
+        tank_ratio = self.lh2_tank_mass_factor * (a + b * m ** (-1.0 / 3.0) + c / m)
+        return tank_ratio, self.lh2_fuel_system_ratio
 
     def lh2_storage(self, power_system, max_fuel):
-        """LH2 tank mass and realized gravimetric indices (tank-only and system)."""
-        ratio = 1.0 / self.lh2_tank_gravimetric_index - 1.0
-        return max_fuel * ratio, {
-            "gi_tank": self.lh2_tank_gravimetric_index,
-            "gi_system": self.lh2_tank_gravimetric_index,
+        """LH2 tank and fuel system mass, and the realized gravimetric indices."""
+        tank_ratio, system_ratio = self.lh2_mass_ratios(power_system, max_fuel)
+        n_tanks = power_system.get("tank_count", LH2_TANK_COUNT)
+        return max_fuel * (tank_ratio + system_ratio), {
+            "gi_tank": 1.0 / (1.0 + tank_ratio),
+            "gi_system": 1.0 / (1.0 + tank_ratio + system_ratio),
+            "lh2_mass_per_tank": max_fuel / n_tanks,
         }
 
     def energy_storage_mass(self, power_system, max_fuel, max_enrg):
@@ -512,10 +673,13 @@ class GAM:
             energy_storage_mass, storage_data = self.lh2_storage(power_system, max_fuel)
         elif energy_type == self.lch4:
             density = fuel_density(self.lch4)
-            # Extrapolation from liquid H2 tanks
-            lh2_ratio = 1.0 / self.lh2_tank_gravimetric_index - 1.0
-            energy_storage_mass += (
-                max_fuel * (self.lh2_density / self.lch4_density) * lh2_ratio
+            # Extrapolation from liquid H2 tanks of the same volume
+            density_ratio = self.lh2_density / self.lch4_density
+            tank_ratio, system_ratio = self.lh2_mass_ratios(
+                power_system, max_fuel * density_ratio
+            )
+            energy_storage_mass += max_fuel * (
+                density_ratio * tank_ratio + system_ratio
             )
         elif energy_type == self.lnh3:
             density = fuel_density(self.lnh3)
@@ -848,8 +1012,13 @@ class GAM:
             solver=Newton(rtol=1e-6, atol=1e-6),
             y0=mtow_ini,
             max_steps=500,
+            throw=False,
         )
-        mtow = sol.value
+        # A design that does not close (no MTOW balancing the mission and the
+        # structure, e.g. immature batteries) gets a NaN MTOW instead of an error,
+        # so that design sweeps can report it as infeasible.
+        closed = (sol.result == RESULTS.successful) & (sol.value > 0.0)
+        mtow = where(closed, sol.value, nan)
         total_power, dict_p, dict_s = sizing(mtow)
         max_power = total_power / power_system["engine_count"]
 
@@ -875,6 +1044,15 @@ class GAM:
             power_system, mission, altitude_data, reserve_data, dict_p, dict_s,
         )  # fmt: skip
         design.update(dict_s["storage_data"])
+        design["unit_power_ratio"] = max_power / self.max_unit_power
+        if power_system["engine_type"] == self.emotor:
+            design["electric_chain_efficiency"] = self.electric_chain_efficiency(
+                max_power
+            )
+            if power_system["energy_type"] in [self.gh2, self.lh2]:
+                gross, heat, _ = self.fuel_cell_sizing(power_system, total_power)
+                design["fuel_cell_gross_power"] = gross
+                design["fuel_cell_heat_load"] = heat
         return design
 
     def design_dict(

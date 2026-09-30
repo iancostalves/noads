@@ -36,10 +36,12 @@ from noads.core.models.energy.energy import ProducedEnergyCarrier
 from noads.core.models.energy.energy_mix import EnergyMix
 from noads.core.models.energy.production_pathway import ProductionPathway
 from noads.core.models.energy.streams import Impact
+from noads.core.models.fleet.aircraft_design import AIRCRAFT_MODELS
 from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_operation import PropulsionSystem
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParameter
 from noads.core.models.fleet.fleet import Fleet
 from noads.core.models.fleet.fleet import FleetAssembly
 
@@ -157,8 +159,184 @@ tech_params_lower_mid_upper_2020_2040_2060 = {
     ),
 }
 
+# UPDATE AIRCRAFT MODEL ________________________________________________________________
+# Used with ``aircraft_model="update"``: GAM V3.0 port, powertrain scale effects and
+# size-dependent LH2 tanks. See the "Update paper" section of the documentation.
 
-def initialize_base_objects(drop_in_only=False, technology_index=0):
+# Powertrain scaling technology parameters. They override the entries of the same
+# name above and add scale laws. Specific powers and efficiencies are given at a
+# reference power of 1 MW per propulsor, and fuelcell_specific_power then excludes
+# heat rejection, which is sized separately from the rated heat load. Calibration
+# data and script: aircraft_tech_data/powertrain/ (powertrain_tech_data.csv,
+# calibrate.py, calibrated_params.json).
+powertrain_tech_params_lower_mid_upper_2020_2040_2060 = {
+    # kW/kg at 1 MW per propulsor. Pastra et al. logistic shifted by a 10/8/6-year delay
+    "emotor_specific_power": (
+        array([2.2, 9.2, 11.2]),
+        array([2.7, 14.8, 24.7]),
+        array([3.3, 22.2, 54.8]),
+    ),
+    # %, motor x inverter x distribution at 1 MW
+    "emotor_efficiency": (
+        array([91.78, 93.51, 94.63]),
+        array([91.33, 94.64, 96.27]),
+        array([90.97, 95.95, 97.68]),
+    ),
+    # kW/kg, stack + BoP without heat rejection
+    "fuelcell_specific_power": (
+        array([1.46, 3.71, 5.05]),
+        array([1.52, 3.78, 6.16]),
+        array([1.63, 3.89, 7.45]),
+    ),
+    # kW heat/kg, ATI FlyZero thermal roadmap delayed
+    "fuelcell_tms_heat_rejection": (
+        array([3, 7, 10]),
+        array([4, 10, 17.5]),
+        array([5, 15, 25]),
+    ),
+    # -, radiator parasitic power per unit heat
+    "fuelcell_tms_power_loss": (
+        array([0.25, 0.2, 0.15]),
+        array([0.225, 0.16, 0.12]),
+        array([0.2, 0.12, 0.1]),
+    ),
+    # MW per propulsor, interpolated in log space
+    "max_unit_power": (
+        array([0.06, 1.5, 5]),
+        array([0.06, 3, 12]),
+        array([0.06, 5, 25]),
+    ),
+    # SP ~ P^-beta, constant in time
+    "emotor_power_exponent": (
+        array([0.25, 0.25, 0.25]),
+        array([0.1, 0.1, 0.1]),
+        array([0, 0, 0]),
+    ),
+    # 1 - eta ~ P^-gamma, constant in time
+    "emotor_loss_exponent": (
+        array([0, 0, 0]),
+        array([0.1, 0.1, 0.1]),
+        array([0.25, 0.25, 0.25]),
+    ),
+    # core SP ~ P^+exponent, constant in time
+    "fuelcell_power_exponent": (
+        array([0, 0, 0]),
+        array([0, 0, 0]),
+        array([0.15, 0.15, 0.15]),
+    ),
+}
+
+LOG_SCALE_TECH_PARAMS = {"max_unit_power"}
+"""Technology parameters interpolated in log space."""
+
+# LH2 tank technology, as logistic curves (v_0, v_inf, t_50, tau) of the EIS year:
+# tank mass factor k on the size law of present-day aluminium tanks, and fuel system
+# mass per kg of LH2 s. Fitted by noads.application.lh2_tank_calibration on
+# aircraft_tech_data/lh2_tank_gi/lh2_tank_gi_dataset.csv.
+lh2_tank_tech_params_lower_mid_upper = {
+    "lh2tank_mass_factor": (
+        (3.692, 1.0, 2038.6, 5.0),
+        (3.692, 0.524, 2034.2, 5.0),
+        (3.692, 0.509, 2027.0, 5.0),
+    ),
+    "lh2_fuel_system_ratio": (
+        (0.240, 0.148, 2055.8, 5.0),
+        (0.240, 0.148, 2051.3, 5.0),
+        (0.240, 0.148, 2044.1, 5.0),
+    ),
+}
+
+# Number of LH2 tanks per aircraft, per market (tank size effect)
+lh2_tank_count = {
+    "general": 2,
+    "commuter": 2,
+    "regional": 2,
+    "short_medium": 2,
+    "long_range": 2,
+}
+
+# Propulsors per fuel cell aircraft: the smallest count that makes the power per
+# propulsor available by about 2040 to 2045 in the Mid scenario.
+fuelcell_engine_count = {
+    "general": 2,
+    "commuter": 2,
+    "regional": 4,
+    "short_medium": 8,
+    "long_range": 12,
+}
+
+# Turboprop architectures, compared with the fleet architectures in the update
+# prospective aircraft figures (GAM V3.0 turboshaft efficiency grows with size).
+# They are not part of the optimized fleets.
+update_comparison_architectures = {
+    "JetA-Turboprop": {
+        "engine_count": 2,
+        "engine_type": "turboprop",
+        "thruster_type": "propeller",
+        "energy_type": "kerosene",
+    },
+    "lH2-Turboprop": {
+        "engine_count": 2,
+        "engine_type": "turboprop",
+        "thruster_type": "propeller",
+        "energy_type": "liquid_h2",
+    },
+}
+update_comparison_mission = {
+    "JetA-Turboprop": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
+    "lH2-Turboprop": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
+}
+
+
+def aircraft_tech_params(technology_index, aircraft_model="paper"):
+    """Aircraft technology parameters of a technology scenario.
+
+    Args:
+        technology_index: The technology scenario (0: Lower, 1: Mid, 2: Upper).
+        aircraft_model: ``"paper"`` or ``"update"``.
+
+    Returns:
+        The time-evolving technology parameters.
+    """
+    params = [
+        AircraftTechParameter(name, tuple(values[technology_index]))
+        for name, values in tech_params_lower_mid_upper_2020_2040_2060.items()
+        if aircraft_model == "paper" or name != "lh2tank_gravimetric_index"
+    ]
+    if aircraft_model == "update":
+        overrides = powertrain_tech_params_lower_mid_upper_2020_2040_2060
+        params = [param for param in params if param.name not in overrides]
+        params.extend(
+            AircraftTechParameter(
+                name,
+                tuple(values[technology_index]),
+                log_scale=name in LOG_SCALE_TECH_PARAMS,
+            )
+            for name, values in overrides.items()
+        )
+        params.extend(
+            LogisticTechParameter(name, values[technology_index])
+            for name, values in lh2_tank_tech_params_lower_mid_upper.items()
+        )
+    return params
+
+
+def update_power_system(architecture, category):
+    """Power system of an architecture for a market with the update aircraft model."""
+    power_system = dict(
+        propulsion_architectures.get(architecture)
+        or update_comparison_architectures[architecture]
+    )
+    if architecture == "lH2-FuelCell":
+        power_system["engine_count"] = fuelcell_engine_count[category]
+    if power_system["energy_type"] == "liquid_h2":
+        power_system["tank_count"] = lh2_tank_count[category]
+    return power_system
+
+
+def initialize_base_objects(
+    drop_in_only=False, technology_index=0, aircraft_model="paper"
+):
     """Build the energy mix and global fleet of the paper's scenarios.
 
     Args:
@@ -168,16 +346,24 @@ def initialize_base_objects(drop_in_only=False, technology_index=0):
         technology_index: The aircraft technology scenario (0: Lower, 1: Mid,
             2: Upper), selecting the component technology parameters, the
             current-fleet consumption quartile, and the fleet lifetimes.
+        aircraft_model: The aircraft design model: ``"paper"`` (GAM V2.0, as in
+            the paper) or ``"update"`` (GAM V3.0 with powertrain scale effects,
+            fuel cell propulsor counts, maximum power per propulsor, and
+            size-dependent LH2 tanks).
 
     Returns:
         The energy mix and the fleet assembly.
 
     Raises:
         RuntimeError: If the technology index is not 0, 1 or 2.
+        ValueError: If the aircraft model is unknown.
     """
     if technology_index < 0 or technology_index > 2:
         msg = "Please enter 0, 1 or 2 as technology index (low, mid, up)"
         raise RuntimeError(msg)
+    if aircraft_model not in AIRCRAFT_MODELS:
+        msg = f"aircraft_model must be one of {AIRCRAFT_MODELS}"
+        raise ValueError(msg)
 
     co2 = Impact(name="CO2", unit="gCO2", budget=900e15)
 
@@ -354,17 +540,7 @@ def initialize_base_objects(drop_in_only=False, technology_index=0):
     energy_mix = EnergyMix(energies, inputs_to_constrain=[electricity, biomass])
 
     # Aircraft technology evolution parameters
-    aircraft_tech_params = []
-    for (
-        param_name,
-        lower_mid_upper,
-    ) in tech_params_lower_mid_upper_2020_2040_2060.items():
-        param_values = lower_mid_upper[technology_index]
-        aircraft_tech_params.append(
-            AircraftTechParameter(
-                param_name, (param_values[0], param_values[1], param_values[2])
-            )
-        )
+    tech_params = aircraft_tech_params(technology_index, aircraft_model)
 
     fleets = []
     for _cat_i, (cat_name, _cat_mission) in enumerate(categories_mission.items()):
@@ -387,6 +563,10 @@ def initialize_base_objects(drop_in_only=False, technology_index=0):
                 **propulsion_mission[prop_name],
                 "category": cat_name,
             }
+            if aircraft_model == "update":
+                power_system = update_power_system(prop_name, cat_name)
+            else:
+                power_system = propulsion_architectures[prop_name]
             if "Electric" in prop_name:
                 if cat_name == "general" or (
                     cat_name == "commuter" and technology_index > 0
@@ -398,8 +578,9 @@ def initialize_base_objects(drop_in_only=False, technology_index=0):
                             name=f"{prop_name}_{cat_name}",
                             propulsion=prop_systems[prop_name],
                             mission=mission,
-                            power_system=propulsion_architectures[prop_name],
-                            aircraft_tech_params=aircraft_tech_params,
+                            power_system=power_system,
+                            aircraft_tech_params=tech_params,
+                            aircraft_model=aircraft_model,
                             reference_aircraft=aircraft_reference_2019,
                         )
                     )
@@ -409,16 +590,18 @@ def initialize_base_objects(drop_in_only=False, technology_index=0):
                         name=f"{prop_name}-v1_{cat_name}",
                         propulsion=prop_systems[prop_name],
                         mission=mission,
-                        power_system=propulsion_architectures[prop_name],
-                        aircraft_tech_params=aircraft_tech_params,
+                        power_system=power_system,
+                        aircraft_tech_params=tech_params,
+                        aircraft_model=aircraft_model,
                         reference_aircraft=aircraft_reference_2019,
                     ),
                     AircraftDesign(
                         name=f"{prop_name}-v2_{cat_name}",
                         propulsion=prop_systems[prop_name],
                         mission=mission,
-                        power_system=propulsion_architectures[prop_name],
-                        aircraft_tech_params=aircraft_tech_params,
+                        power_system=power_system,
+                        aircraft_tech_params=tech_params,
+                        aircraft_model=aircraft_model,
                         reference_aircraft=aircraft_reference_2019,
                     ),
                 ))
@@ -428,8 +611,9 @@ def initialize_base_objects(drop_in_only=False, technology_index=0):
                         name=f"{prop_name}_{cat_name}",
                         propulsion=prop_systems[prop_name],
                         mission=mission,
-                        power_system=propulsion_architectures[prop_name],
-                        aircraft_tech_params=aircraft_tech_params,
+                        power_system=power_system,
+                        aircraft_tech_params=tech_params,
+                        aircraft_model=aircraft_model,
                         reference_aircraft=aircraft_reference_2019,
                     )
                 )

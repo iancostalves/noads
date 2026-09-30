@@ -35,14 +35,16 @@ from noads.application.visualization import plot_single_scenario_result
 LOGGER = getLogger(__name__)
 
 
-def _results_dir() -> Path:
+def _results_dir(aircraft_model="paper") -> Path:
     """Return the directory storing optimization results.
 
     Set the ``NOADS_RESULTS_DIR`` environment variable to share pre-computed
     results across working directories; defaults to ``results`` in the current
-    working directory.
+    working directory. Results of the update aircraft model are stored in its
+    ``update`` subfolder, so that they never overwrite the paper results.
     """
-    return Path(environ.get("NOADS_RESULTS_DIR", "results"))
+    directory = Path(environ.get("NOADS_RESULTS_DIR", "results"))
+    return directory / "update" if aircraft_model == "update" else directory
 
 
 def single_policy_scenario_optimization(
@@ -59,6 +61,7 @@ def single_policy_scenario_optimization(
     save_history_view=False,
     save_figs=False,
     plot_computational_graphs=False,
+    aircraft_model="paper",
 ):
     """Optimal decarbonization scenario based on a single objective.
 
@@ -76,6 +79,8 @@ def single_policy_scenario_optimization(
         save_history_view: Save optimization history visualization.
         save_figs: Save generated figures to files.
         plot_computational_graphs: Plot computational dependency graphs.
+        aircraft_model: Aircraft design model, ``"paper"`` or ``"update"``. The
+            results of the update model are stored in an ``update`` subfolder.
 
     Returns:
         Dictionary containing optimal output values.
@@ -101,7 +106,7 @@ def single_policy_scenario_optimization(
 
     configure_logger()
 
-    results_folder = _results_dir()
+    results_folder = _results_dir(aircraft_model)
 
     # If loading existing results, read from file and return
     if load_optimum:
@@ -132,6 +137,7 @@ def single_policy_scenario_optimization(
                         drop_in_only=drop_in_only,
                         fossil_kerosene_only=fossil_kerosene_only,
                         preferential_energy=preferential_energy,
+                        aircraft_model=aircraft_model,
                     )
                     plot_single_scenario_result(
                         scenario_name=scenario_name,
@@ -166,6 +172,7 @@ def single_policy_scenario_optimization(
             drop_in_only=drop_in_only,
             fossil_kerosene_only=fossil_kerosene_only,
             preferential_energy=preferential_energy,
+            aircraft_model=aircraft_model,
         )
     )
 
@@ -260,8 +267,12 @@ def single_policy_robust_scenario_optimization(
     save_optimum=False,
     save_history_view=False,
     save_figs=False,
+    aircraft_model="paper",
 ):
-    """Optimal decarbonization scenario robust to several background scenarios."""
+    """Optimal decarbonization scenario robust to several background scenarios.
+
+    See :func:`single_policy_scenario_optimization` for ``aircraft_model``.
+    """
     if fossil_kerosene_only:
         scenario_name += "-Fossil"
     elif drop_in_only:
@@ -281,7 +292,7 @@ def single_policy_robust_scenario_optimization(
 
     configure_logger()
 
-    results_folder = _results_dir()
+    results_folder = _results_dir(aircraft_model)
 
     # If loading existing results, read from file and return
     if load_optimum:
@@ -312,6 +323,7 @@ def single_policy_robust_scenario_optimization(
                         demand_aversion=low_demand_formulation,
                         drop_in_only=drop_in_only,
                         preferential_energy=preferential_energy,
+                        aircraft_model=aircraft_model,
                     )
                     plot_multi_scenario_result(
                         scenario_names=global_scenario_names,
@@ -348,6 +360,7 @@ def single_policy_robust_scenario_optimization(
             fossil_kerosene_only=fossil_kerosene_only,
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
+            aircraft_model=aircraft_model,
         )
     )
 

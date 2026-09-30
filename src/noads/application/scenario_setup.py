@@ -56,6 +56,7 @@ def single_scenario_setup(
     preferential_energy=False,
     plot_scenario_data=False,
     compile_jit=True,
+    aircraft_model="paper",
 ):
     """Set up a single-objective decarbonization scenario.
 
@@ -87,6 +88,11 @@ def single_scenario_setup(
             conservative (5.0 %) fair share of biomass and electricity.
         plot_scenario_data: Whether to plot the AR6 background data.
         compile_jit: Whether to JIT-compile the assembled discipline.
+        aircraft_model: The aircraft design model, ``"paper"`` (GAM V2.0) or
+            ``"update"`` (GAM V3.0 with powertrain scale effects and
+            size-dependent LH2 tanks). The update model also constrains the power
+            per propulsor of electric and fuel cell designs to the maximum
+            available at their entry-into-service.
 
     Returns:
         The temporal scenario, the design space, the constraints (mapping each
@@ -94,7 +100,9 @@ def single_scenario_setup(
     """
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
     ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
-    energy_mix, fleet = initialize_base_objects(drop_in_only, technology_index)
+    energy_mix, fleet = initialize_base_objects(
+        drop_in_only, technology_index, aircraft_model
+    )
 
     temporal_constraints = [
         f"{stream.name}.constraint" for stream in energy_mix.constrained_inputs
@@ -419,6 +427,12 @@ def single_scenario_setup(
             optimization_constraints.update({
                 f"{aircraft.name}.relative_efficiency_gain": (1.0, True),
             })
+        if aircraft_model == "update" and (
+            "Electric" in aircraft.name or "FuelCell" in aircraft.name
+        ):
+            optimization_constraints.update({
+                f"{aircraft.name}.unit_power_ratio": (1.0, False),
+            })
 
     return temporal_scenario, design_space, optimization_constraints, energy_mix, fleet
 
@@ -438,6 +452,7 @@ def multi_scenario_setup(
     drop_in_only=False,
     preferential_energy=False,
     plot_scenario_data=False,
+    aircraft_model="paper",
 ):
     """Set up a decarbonization scenario robust to several background scenarios.
 
@@ -462,6 +477,7 @@ def multi_scenario_setup(
         drop_in_only=drop_in_only,
         preferential_energy=preferential_energy,
         plot_scenario_data=plot_scenario_data,
+        aircraft_model=aircraft_model,
     )
     final_rates = temporal_scenario.final_rates
     meaned = [

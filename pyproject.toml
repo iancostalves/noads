@@ -89,5 +89,9 @@ where = ["src"]
 # resolved package-relative via noads._data.data_file, not from the CWD). The
 # data directories are not packages themselves, so they are declared as data of
 # their parent package via a relative glob.
-"noads.application" = ["ar6_scenarios_data/*.csv"]
+"noads.application" = [
+    "ar6_scenarios_data/*.csv",
+    # Aircraft technology calibration data and scripts (update aircraft model).
+    "aircraft_tech_data/*/*",
+]
 "noads.demand_calibration" = ["calibration_data/*.xls", "calibration_data/*.xlsx"]
