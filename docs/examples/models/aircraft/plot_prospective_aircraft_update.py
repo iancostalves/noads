@@ -585,6 +585,14 @@ def design_sweep(category, architecture, tech_idx):
                 result["max_power"]
             )
             outputs["max_unit_power"] = gam.max_unit_power
+        if electric and not hydrogen:
+            # efficiency at the reference power per propulsor, which does not
+            # require the design to close
+            outputs["open_propulsion_efficiency"] = gam.get_emotor_eff(
+                power_system["energy_type"],
+                power_system["thruster_type"],
+                gam.reference_unit_power,
+            )
         if electric and hydrogen:
             outputs["fuel_cell_efficiency"] = gam.fuel_cell_mission_efficiency(
                 result["max_power"]
@@ -631,8 +639,13 @@ def plot_architecture(ax, curves, color):
     ax.plot(years, curves[1], color=color, linestyle=":", linewidth=3)
 
 
-def market_figure(title, metric, architectures=tuple(propulsion_colors), ymax=None):
-    """One panel per market, one band per architecture, versus EIS."""
+def market_figure(
+    title, metric, architectures=tuple(propulsion_colors), ymax=None, unmasked=()
+):
+    """One panel per market, one band per architecture, versus EIS.
+
+    The architectures of ``unmasked`` are shown even where their design does not close.
+    """
     fig, axes = subplots(2, 3, layout="constrained", figsize=(12, 10))
     fig.suptitle(title, fontsize="x-large")
     for ax, category in zip(axes.flat, categories_mission):
@@ -642,7 +655,8 @@ def market_figure(title, metric, architectures=tuple(propulsion_colors), ymax=No
             curves = []
             for tech_idx in range(3):
                 outputs = designs[category, architecture, tech_idx]
-                curves.append(masked(metric(outputs, category), outputs["feasible"]))
+                feasible = True if architecture in unmasked else outputs["feasible"]
+                curves.append(masked(metric(outputs, category), feasible))
             plot_architecture(ax, curves, propulsion_colors[architecture])
         ax.set_title(
             f"{category.replace('_', ' ')}\n({seat} seat, {max_range} km)",
@@ -719,20 +733,40 @@ fig5.savefig("./aircraft_update_prospective_mass.png", dpi=150)
 # efficiency is the ratio of the thrust power to the power drawn from the energy
 # carrier at cruise: thermal, propulsive and propeller or fan efficiencies for
 # thermal engines, and fuel cell, electric chain and propeller or fan efficiencies
-# for electric aircraft.
+# for electric aircraft. Battery-electric aircraft are shown at the reference power
+# per propulsor (1 MW), also where their design does not close.
 
 fig6, axes6 = market_figure(
     "Embarked Energy (design mission with reserves), update model\n[MJ / seat km]",
     lambda outputs, category: 1e-3 * outputs["total_energy"] / seat_km(category),
     ymax=4.0,
 )
-market_legend(axes6)
+# Current aircraft: energy per seat-km of the 2019 fleet, scaled by the ratio of the
+# embarked energy to the mission energy (reserves) of a present-day kerosene design.
+for ax, category in zip(axes6.flat, categories_mission):
+    jet = designs[category, "JetA-GasTurbine", 1]
+    reserves = float(
+        jet["total_energy"][0] / (jet["enrg_consumption"][0] * seat_km(category))
+    )
+    low, mid, high = (reserves * value for value in category_conso[category])
+    ax.hlines(low, years[0], years[-1], colors="dimgray", lw=1.5)
+    ax.hlines(mid, years[0], years[-1], colors="dimgray", linestyles=":", lw=1.5)
+    ax.fill_between(
+        [years[0], years[-1]], [low] * 2, [high] * 2, alpha=0.4, color="dimgray", lw=0
+    )
+market_legend(
+    axes6, extra=[Patch(color="dimgray", alpha=0.4, label="Current Technology")]
+)
 fig6.savefig("./aircraft_update_embarked_energy.png", dpi=150)
 
 fig7, axes7 = market_figure(
     "Overall Propulsion Efficiency at cruise, update model\n[%]",
-    lambda outputs, category: 100.0 * outputs["propulsion_system_efficiency"],
-    ymax=70.0,
+    lambda outputs, category: 100.0
+    * outputs.get(
+        "open_propulsion_efficiency", outputs["propulsion_system_efficiency"]
+    ),
+    ymax=100.0,
+    unmasked=("Battery-Electric",),
 )
 market_legend(axes7)
 fig7.savefig("./aircraft_update_propulsion_efficiency.png", dpi=150)

@@ -276,7 +276,8 @@ Compared with the main paper:
 
 Energy embarked per seat and kilometre (energy of the design mission, including
 reserves, over seats times design range) of prospective aircraft, with the same
-conventions.
+conventions. The grey band shows the 2019 fleet, its energy per seat-km scaled by the
+reserves of a present-day kerosene design.
 ```
 
 ```{figure} figures/aircraft_update_propulsion_efficiency.png
@@ -284,7 +285,8 @@ conventions.
 :width: 100%
 
 Overall efficiency of the propulsion system (from the stored energy to the
-propulsive power) of prospective aircraft, with the same conventions.
+propulsive power) of prospective aircraft, with the same conventions. Battery-electric
+aircraft are shown at 1 MW per propulsor, also where their design does not close.
 ```
 
 ```{figure} figures/aircraft_update_tank_gi_per_market.png
