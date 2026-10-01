@@ -864,6 +864,86 @@ def plot_single_scenario_result(
             p_fig.write_html(f"{directory_path}/sankey_{scenario_name}_{year}.html")
 
 
+def plot_fleet_mix_variants(
+    variant_outputs,
+    fleet,
+    title=None,
+    save_fig=False,
+    directory_filename=".",
+):
+    """Plot the fleet mix of several variants of a scenario.
+
+    One row per variant and one column per market, with the available seat
+    kilometers stacked by aircraft (and by avoided demand, if any).
+
+    Args:
+        variant_outputs: Optimal outputs of the variants, by variant name.
+        fleet: The fleet of the scenarios.
+        title: The figure title.
+        save_fig: Whether to save the figure to ``directory_filename``.
+        directory_filename: The path of the figure file, if saved.
+
+    Returns:
+        The figure.
+    """
+    fig, axes = subplots(
+        len(variant_outputs),
+        len(fleet.fleets),
+        figsize=(4.0 * len(fleet.fleets), 3.4 * len(variant_outputs)),
+        layout="constrained",
+        sharex=True,
+        squeeze=False,
+    )
+    handles = {}
+    for row, (variant, output_optimal) in enumerate(variant_outputs.items()):
+        years = output_optimal["year"]
+        for col, fleet_i in enumerate(fleet.fleets):
+            asks = [
+                output_optimal[f"{aircraft.name}.ask"] * 1e-12
+                for aircraft in fleet_i.operating_aircraft
+            ]
+            labels = [
+                aircraft.name.replace(f"_{fleet_i.name}", "").replace("_", " ")
+                for aircraft in fleet_i.operating_aircraft
+            ]
+            colors = [
+                color
+                for aircraft in fleet_i.operating_aircraft
+                for prop_name, color in propulsion_colors.items()
+                if prop_name in aircraft.name
+            ]
+            hatches = ["_"] * len(asks)
+            if f"{fleet_i.name}.ask_avoided" in output_optimal:
+                asks.append(output_optimal[f"{fleet_i.name}.ask_avoided"] * 1e-12)
+                labels.append("Avoided demand")
+                colors.append("tan")
+                hatches.append("xx")
+            polys = axes[row, col].stackplot(
+                years, asks, labels=labels, colors=colors, hatch=hatches
+            )
+            handles.update(dict(zip(labels, polys)))
+            if row == 0:
+                axes[row, col].set_title(fleet_i.name.replace("_", " "))
+            axes[row, col].set_ylim(ymin=0.0)
+        axes[row, 0].set_ylabel(f"{variant}\nASK [trillion pax km]")
+    for col in range(len(fleet.fleets)):
+        top = max(axes[row, col].get_ylim()[1] for row in range(axes.shape[0]))
+        for row in range(axes.shape[0]):
+            axes[row, col].set_ylim(0.0, top)
+    axes[-1, len(fleet.fleets) // 2].set_xlabel("Year")
+    fig.legend(
+        handles.values(),
+        handles.keys(),
+        loc="outside lower center",
+        ncols=len(handles),
+    )
+    if title:
+        fig.suptitle(title, fontsize="x-large")
+    if save_fig:
+        fig.savefig(directory_filename, dpi=150)
+    return fig
+
+
 def plot_scenario_comparison(
     scenario_outputs,
     year_endplots,
