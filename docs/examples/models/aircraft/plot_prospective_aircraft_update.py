@@ -739,7 +739,7 @@ fig5.savefig("./aircraft_update_prospective_mass.png", dpi=150)
 fig6, axes6 = market_figure(
     "Embarked Energy (design mission with reserves), update model\n[MJ / seat km]",
     lambda outputs, category: 1e-3 * outputs["total_energy"] / seat_km(category),
-    ymax=4.0,
+    ymax=6.0,
 )
 # Current aircraft: energy per seat-km of the 2019 fleet, scaled by the ratio of the
 # embarked energy to the mission energy (reserves) of a present-day kerosene design.
