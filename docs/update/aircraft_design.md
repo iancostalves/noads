@@ -215,9 +215,10 @@ Upper-to-Lower band only widens with the EIS. To guarantee this:
 - the scale exponents start from the Mid value in 2020 and reach the scenario
   values in 2040.
 
-With technology parameters up to 2080, new aircraft can enter into service until
-2080 in the optimization, and the scenarios of the update model run until 2100
-instead of 2075.
+The technology parameters are defined until 2080. The optimizations of the update
+model keep the timeline of the main paper by default (new aircraft entering into
+service until 2060, scenarios until 2075) so that results are comparable, and can be
+extended to 2080 and 2100 with the `end_year` argument.
 
 ```{figure} figures/aircraft_update_technology.png
 :name: fig-update-technology

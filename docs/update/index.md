@@ -51,8 +51,10 @@ scenario, design_space, constraints, energy_mix, fleet = single_scenario_setup(
 )
 ```
 
-With the update model, the scenarios run until 2100 instead of 2075 (the
-`end_year` default), and new aircraft can enter into service until 2080.
+The update model keeps the timeline of the main paper by default (scenarios until 2075,
+new aircraft entering into service until 2060), so that results are comparable. Its
+technology parameters are defined until 2080, and `end_year` can be extended up to
+2100.
 
 The optimization results of the update model are stored in an `update` subfolder of
 the results directory, so that they never overwrite the pre-computed results of the

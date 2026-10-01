@@ -77,7 +77,7 @@ noads/
 - **Fleet**: Combines multiple AircraftOperation and AircraftDesign objects competing for market share via sigmoid adoption curves.
 - **EnergyMix / ProductionPathway**: Models energy supply chains with CO2, cost, and resource impacts.
 - **GAM (Generic Airplane Model)**: Physics-based aircraft sizing using empirical regressions for preliminary design.
-- **Aircraft models**: `aircraft_model="paper"` (default, GAM V2.0, must reproduce the paper — guarded by `tests/test_gam_paper_baseline.py`) or `"update"` (GAM V3.0, powertrain scale effects with max power per propulsor, size-dependent LH2 tank GI, 4-point scenario tech parameters 2020–2080 via `ScenarioTechParameter`, scenarios to 2100). Never change the paper model's numbers.
+- **Aircraft models**: `aircraft_model="paper"` (default, GAM V2.0, must reproduce the paper — guarded by `tests/test_gam_paper_baseline.py`) or `"update"` (GAM V3.0, powertrain scale effects with max power per propulsor, size-dependent LH2 tank GI, 4-point scenario tech parameters 2020–2080 via `ScenarioTechParameter`, default timeline as the paper, extendable to 2100). Never change the paper model's numbers.
 
 ## Development Commands
 

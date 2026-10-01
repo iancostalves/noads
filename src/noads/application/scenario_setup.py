@@ -41,12 +41,21 @@ refuel_eu_biofuel = [0.02, 0.04, 0.15, 0.24, 0.27, 0.35, 0.7, 1.0]
 refuel_eu_efuel = [0.01, 0.02, 0.05, 0.10, 0.15, 0.35, 0.7, 1.0]
 
 
-END_YEAR = {"paper": 2075.0, "update": 2100.0}
-"""Default last simulated year per aircraft model."""
+END_YEAR = {"paper": 2075.0, "update": 2075.0}
+"""Default last simulated year per aircraft model. The update model keeps the timeline
+of the paper so that the results are comparable; its technology parameters are
+defined until 2080, so ``end_year`` can be extended up to 2100."""
 
-LAST_ENTRY_INTO_SERVICE = {"paper": 2060.0, "update": 2080.0}
+LAST_ENTRY_INTO_SERVICE = {"paper": 2060.0, "update": 2060.0}
 """Latest entry-into-service of new aircraft per aircraft model (except the first
-Jet-A generation), the last year of the technology parameters."""
+Jet-A generation). Technology parameters of the update model go up to 2080."""
+
+
+def _ar6_input_data(end_year, plot_data=False):
+    """AR6 input data, loaded until 2100 only when the simulation needs it."""
+    if end_year > 2080.0:
+        return get_ar6_input_data(end_year=2100, plot_data=plot_data)
+    return get_ar6_input_data(plot_data=plot_data)
 
 
 def single_scenario_setup(
@@ -110,12 +119,7 @@ def single_scenario_setup(
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
     if end_year is None:
         end_year = END_YEAR[aircraft_model]
-    if aircraft_model == "paper":
-        ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
-    else:
-        ar6_data, years_data = get_ar6_input_data(
-            end_year=2100, plot_data=plot_scenario_data
-        )
+    ar6_data, years_data = _ar6_input_data(end_year, plot_scenario_data)
     energy_mix, fleet = initialize_base_objects(
         drop_in_only, technology_index, aircraft_model
     )
@@ -522,10 +526,7 @@ def multi_scenario_setup(
     ])
     # all except controls
 
-    if aircraft_model == "paper":
-        ar6_data, years_data = get_ar6_input_data(plot_data=False)
-    else:
-        ar6_data, years_data = get_ar6_input_data(end_year=2100, plot_data=False)
+    ar6_data, years_data = _ar6_input_data(end_year)
 
     multi_scenario = MultiScenario(
         name=name,
