@@ -211,7 +211,7 @@ def test_scenario_tech_parameter_rejects_inconsistent_scenarios():
 
 
 def test_update_params_match_calibration():
-    """2040 and 2060 values are those of the calibrations, unless harmonized."""
+    """2040 and 2060 values are those of the calibrations, unless revised."""
     calibrated = json.loads(
         Path(
             data_file(
@@ -225,25 +225,23 @@ def test_update_params_match_calibration():
     names = {
         "emotor_specific_power": "emotor_specific_power",
         "emotor_efficiency": "electric_chain_efficiency",
-        "fuelcell_specific_power": "fuelcell_core_specific_power",
-        "fuelcell_tms_heat_rejection": "fuelcell_tms_heat_rejection",
-        "fuelcell_tms_power_loss": "fuelcell_tms_power_loss",
         "max_unit_power": "max_unit_power_MW",
     }
-    # gaps to Mid held at their largest value (they shrink in the calibration)
-    harmonized = {("fuelcell_tms_power_loss", 0), ("fuelcell_tms_power_loss", 2)}
+    # the fuel cell and TMS values are revised from the 2026 literature review
+    revised = {
+        "fuelcell_specific_power",
+        "fuelcell_efficiency",
+        "fuelcell_tms_heat_rejection",
+        "fuelcell_tms_power_loss",
+    }
     params = update_tech_params_lower_mid_upper_2020_2040_2060_2080
     for name, calibrated_name in names.items():
         for index, scenario in enumerate(SCENARIOS):
             expected = calibrated[scenario][calibrated_name][1:]
-            actual = params[name][index][1:3]
-            if (name, index) in harmonized:
-                expected = expected[:1]
-                actual = actual[:1]
-            np.testing.assert_allclose(actual, expected)
+            np.testing.assert_allclose(params[name][index][1:3], expected)
     # the other parameters are those of the paper
     for name, values in tech_params_lower_mid_upper_2020_2040_2060.items():
-        if name in params and name not in names:
+        if name in params and name not in names and name not in revised:
             for index in range(3):
                 np.testing.assert_allclose(params[name][index][1:3], values[index][1:])
 

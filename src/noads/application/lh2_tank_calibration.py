@@ -34,33 +34,29 @@ conditioning) adds ``s(t)`` kg per kg of LH2. Both follow logistic curves in tim
 
 The fit follows the procedure of the LH2 tank GI handoff note, on the dataset
 ``aircraft_tech_data/lh2_tank_gi/lh2_tank_gi_dataset.csv`` (105 values from 32
-sources):
+sources), complemented by ``lh2_tank_gi_dataset_2026.csv`` (7 values from 5 sources
+of the 2026 literature review):
 
 1. The size law ``(a, b, c)`` is fitted on tank-only design studies with
    aluminium (or unspecified) walls, published up to 2025.
-2. ``k_0`` (before maturation) is the geometric mean of the ``k`` implied by
-   hardware values and claims of 2020-2025, for tanks above 10 kg of LH2 (smaller
-   UAV tanks are outside the range of the size law). The unverified GTL vendor
-   claims (k ~ 0.4) are left out: they are only consistent with the ``k_inf`` of
-   the Upper scenario.
-3. The fuel system ratio ``s(t)`` is fitted on the FlyZero tank/system pairs and
-   IZEA 2025, with the FlyZero technology years.
-4. The timing (``t_50``) of the tank maturity is common to all scenarios, so
-   that they share their value in 2020 and then only diverge. It is fitted,
-   together with the FlyZero asymptote ``k_inf``, on the ``k`` implied by the
-   2020-2025 hardware and by the FlyZero tank-only projections. FlyZero values
-   are given at technology-readiness years (TRL6 in 2026 for an EIS in 2035),
-   and the Airbus ZEROe programme was delayed by 5 to 10 years, so they are
-   delayed by 17 years.
-5. The scenarios differ by the tank technology they converge to: FlyZero
-   composite tanks for Upper, present-day aluminium design-study tanks
-   (``k_inf = 1``) for Lower, and their geometric mean for Mid. The McKinsey
-   system targets are not used: they are nearly independent of the tank size,
-   hence inconsistent with the size law.
-6. The fuel system ratio ``s`` follows the same timing (its FlyZero fit delayed
-   by 17 years), and converges to the spread of the FlyZero 2050 concepts: the
-   best one (narrowbody) for Upper, the fitted value for Mid, and the worst one
-   (regional, whose fuel system is sized for fuel cells) for Lower.
+2. ``k_0`` (2020) is implied by the stated state of the art of LH2 aircraft tanks
+   (OVERLEAF: a GI of only 20 % at 500 kg of LH2). No aviation tank above about
+   100 kg of LH2 has flown with a published GI.
+3. The scenarios share the timing of the maturity, so that they start from the
+   same value in 2020 and then only diverge: half of the maturity gain is reached
+   in 2038, the TRL6 year of the composite tanks of the FlyZero roadmap (2030)
+   delayed by the 5 to 10 years of the Airbus ZEROe programme.
+4. The scenarios differ by the tank technology they converge to. Upper reaches the
+   ceiling of large integrated tanks in the literature (GI of 0.78 at 10 t of
+   LH2, within 0.75 to 0.80), Lower aluminium design-study tanks with dormancy and
+   integration penalties (``k_inf = 1.5``), and Mid their geometric mean. The
+   McKinsey system targets are not used: they are nearly independent of the tank
+   size, hence inconsistent with the size law.
+5. The fuel system ratio ``s`` starts from the mean of the FlyZero concepts at
+   their 2026 TRL6 year, and converges to the spread of the FlyZero 2050 concepts:
+   the best one (narrowbody) for Upper, their mean for Mid, and the worst one
+   (regional, whose fuel system is sized for fuel cells) for Lower. Its timing is
+   fitted on FlyZero and IZEA 2025, delayed by 17 years.
 
 Run this module to print the fitted parameters.
 """
@@ -91,8 +87,25 @@ INTERVAL_WEIGHT = 0.5
 FLYZERO_DELAY = 17.0
 """Delay (years) between FlyZero technology year and entry-into-service."""
 
-LOWER_MASS_FACTOR = 1.0
-"""Final tank mass factor of the Lower scenario: present-day aluminium tanks."""
+FLYZERO_COMPOSITE_YEAR = 2030.0
+"""TRL6 year of the composite LH2 tanks of the FlyZero roadmap."""
+
+ZEROE_DELAY = 8.0
+"""Delay (years) of hydrogen aircraft programmes (Airbus ZEROe, 5 to 10 years)."""
+
+DATASET_FILES = ("lh2_tank_gi_dataset.csv", "lh2_tank_gi_dataset_2026.csv")
+"""GI dataset files: the initial review and its 2026 complement."""
+
+STATE_OF_THE_ART = "OVERLEAF-SoA"
+"""Dataset row giving the state of the art of 2020: 20 % GI at 500 kg of LH2."""
+
+UPPER_CEILING = (10000.0, 0.78)
+"""(LH2 mass per tank, GI) reached by the Upper scenario: ceiling of very large
+integrated tanks in the literature (0.75 to 0.80 at about 10 t)."""
+
+LOWER_MASS_FACTOR = 1.5
+"""Final tank mass factor of the Lower scenario: aluminium design-study tanks with
+dormancy and integration penalties."""
 
 MIN_HARDWARE_MASS = 10.0
 """Minimum LH2 mass per tank (kg) of the hardware values used for k_0."""
@@ -117,13 +130,16 @@ class LH2TankCalibration:
 
 def load_dataset() -> pd.DataFrame:
     """Load the LH2 tank GI dataset with numeric columns."""
-    df = pd.read_csv(
-        data_file(
-            "noads.application",
-            "aircraft_tech_data",
-            "lh2_tank_gi",
-            "lh2_tank_gi_dataset.csv",
-        )
+    df = pd.concat(
+        [
+            pd.read_csv(
+                data_file(
+                    "noads.application", "aircraft_tech_data", "lh2_tank_gi", name
+                )
+            )
+            for name in DATASET_FILES
+        ],
+        ignore_index=True,
     )
     for column in ("gi", "gi_low", "gi_high", "m_h2_kg_per_tank", "tech_year"):
         df[column] = pd.to_numeric(df[column], errors="coerce")
@@ -247,11 +263,11 @@ def _flyzero_anchors(df, size_law, delay):
     return years, implied_mass_factor(size_law, rows.gi.to_numpy(), rows.m.to_numpy())
 
 
-def _flyzero_2050_fuel_system_ratios(df):
-    """Fuel system mass per kg of LH2 of the FlyZero concepts in 2050."""
+def _flyzero_fuel_system_ratios(df, year):
+    """Fuel system mass per kg of LH2 of the FlyZero concepts in a given year."""
     ratios = []
-    for (concept, year), tank_ratio in _flyzero_tank_ratio(df).items():
-        if year == 2050:
+    for (concept, tech_year), tank_ratio in _flyzero_tank_ratio(df).items():
+        if tech_year == year:
             system = df[df.id.eq(f"FZ-{concept}-total-{int(year)}")].gi.iloc[0]
             ratios.append(1.0 / system - 1.0 - tank_ratio)
     return ratios
@@ -261,31 +277,27 @@ def calibrate() -> LH2TankCalibration:
     """Fit the LH2 tank GI model on the dataset."""
     df = load_dataset()
     size_law, rmse = fit_size_law(df)
-    k_0 = initial_mass_factor(df, size_law)
-    hardware_years, hardware_k = _hardware_anchors(df, size_law)
-    years, k = _flyzero_anchors(df, size_law, FLYZERO_DELAY)
-    years = np.concatenate([years, hardware_years])
-    k = np.concatenate([k, hardware_k])
-
-    def residuals(p):
-        return np.log(logistic((k_0, p[0], p[1], TIME_SCALE), years) / k)
-
-    result = least_squares(
-        residuals, x0=[0.8, 2035.0], bounds=([0.05, 2000.0], [k_0, 2070.0])
-    )
-    k_upper, t_50 = (float(x) for x in result.x)
+    state_of_the_art = df.set_index("id").loc[STATE_OF_THE_ART]
+    k_0 = float(implied_mass_factor(size_law, state_of_the_art.gi, state_of_the_art.m))
+    k_upper = float(implied_mass_factor(size_law, UPPER_CEILING[1], UPPER_CEILING[0]))
     k_final = {
         "lower": LOWER_MASS_FACTOR,
         "mid": float(np.sqrt(LOWER_MASS_FACTOR * k_upper)),
         "upper": k_upper,
     }
+    t_50 = FLYZERO_COMPOSITE_YEAR + ZEROE_DELAY
     mass_factor = {
         scenario: (k_0, k_final[scenario], t_50, TIME_SCALE) for scenario in SCENARIOS
     }
 
-    s_0, s_mid, s_t50 = fit_fuel_system_ratio(df)
-    flyzero_2050 = _flyzero_2050_fuel_system_ratios(df)
-    s_final = {"lower": max(flyzero_2050), "mid": s_mid, "upper": min(flyzero_2050)}
+    _s_0, _s_inf, s_t50 = fit_fuel_system_ratio(df)
+    s_0 = float(np.mean(_flyzero_fuel_system_ratios(df, 2026)))
+    flyzero_2050 = _flyzero_fuel_system_ratios(df, 2050)
+    s_final = {
+        "lower": max(flyzero_2050),
+        "mid": float(np.mean(flyzero_2050)),
+        "upper": min(flyzero_2050),
+    }
     fuel_system_ratio = {
         scenario: (s_0, s_final[scenario], s_t50 + FLYZERO_DELAY, TIME_SCALE)
         for scenario in SCENARIOS

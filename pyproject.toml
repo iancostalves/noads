@@ -92,6 +92,7 @@ where = ["src"]
 "noads.application" = [
     "ar6_scenarios_data/*.csv",
     # Aircraft technology calibration data and scripts (update aircraft model).
+    "aircraft_tech_data/*.csv",
     "aircraft_tech_data/*/*",
 ]
 "noads.demand_calibration" = ["calibration_data/*.xls", "calibration_data/*.xlsx"]

@@ -171,7 +171,9 @@ tech_params_lower_mid_upper_2020_2040_2060 = {
 # starts at zero and only widens:
 # - 2040 and 2060 values are those of the paper (above) or of the powertrain
 #   calibration (aircraft_tech_data/powertrain/: powertrain_tech_data.csv,
-#   calibrate.py, calibrated_params.json);
+#   calibrate.py, calibrated_params.json), except the fuel cell and TMS values,
+#   revised downwards from the 2026 literature review
+#   (aircraft_tech_data/literature_data.csv);
 # - 2080 values extend the calibrated curves where they exist (e-motor specific power
 #   and efficiency), otherwise they add half of the 2040-2060 increase;
 # - where a calibrated gap to Mid shrinks in time, it is held at its largest value.
@@ -203,29 +205,34 @@ update_tech_params_lower_mid_upper_2020_2040_2060_2080 = {
         (2.0, 20.0, 26.0, 29.0),
         (2.0, 25.0, 32.0, 35.5),
     ),
-    # kW/kg, stack + BoP without heat rejection
+    # kW/kg, stack + BoP without heat rejection. 2020: flown aviation systems at
+    # 0.2-0.6 kW/kg, automotive systems 0.6-0.86 kW/kg; 2030 targets about 2 kW/kg
+    # (Clean Hydrogen Partnership); no system target above about 2-3 kW/kg found
     "fuelcell_specific_power": (
-        (1.52, 3.71, 5.05, 5.72),
-        (1.52, 3.78, 6.16, 7.35),
-        (1.52, 3.89, 7.45, 9.23),
+        (0.75, 1.5, 2.0, 2.25),
+        (0.75, 2.0, 2.75, 3.25),
+        (0.75, 2.5, 3.5, 4.5),
     ),
-    # %
+    # %, system at cruise. 2020: about 39-40 % at cruise (compressor losses at
+    # altitude); DOE peak targets (65-72 %) are low-load values, not cruise
     "fuelcell_efficiency": (
-        (40.0, 45.0, 50.0, 52.5),
-        (40.0, 50.0, 57.5, 61.25),
-        (40.0, 55.0, 65.0, 70.0),
+        (40.0, 44.0, 46.0, 48.0),
+        (40.0, 46.0, 50.0, 52.0),
+        (40.0, 48.0, 53.0, 56.0),
     ),
-    # kW heat/kg, ATI FlyZero thermal roadmap delayed
+    # kW heat/kg, full TMS sized at hot-day take-off: 1.5-3 today, about 5 for
+    # FlyZero, 5-15 with HT-PEM or two-phase cooling, about 20 as long-term ceiling
     "fuelcell_tms_heat_rejection": (
-        (4.0, 7.0, 10.0, 11.5),
-        (4.0, 10.0, 17.5, 21.25),
-        (4.0, 15.0, 25.0, 30.0),
+        (2.0, 3.5, 5.0, 6.0),
+        (2.0, 5.0, 8.0, 10.0),
+        (2.0, 7.0, 12.0, 15.0),
     ),
-    # -, radiator parasitic power per unit heat (calibrated 2060: 0.15 and 0.10)
+    # -, TMS parasitic power per unit heat: about 0.2-0.27 today (no-fan heat
+    # exchanger adds 27 % to cruise power), 0.10-0.13 for optimized cruise designs
     "fuelcell_tms_power_loss": (
-        (0.225, 0.2, 0.16, 0.14),
-        (0.225, 0.16, 0.12, 0.10),
-        (0.225, 0.12, 0.08, 0.06),
+        (0.225, 0.2, 0.18, 0.16),
+        (0.225, 0.17, 0.14, 0.12),
+        (0.225, 0.14, 0.10, 0.08),
     ),
     # MW per propulsor, interpolated in log space
     "max_unit_power": (
@@ -269,14 +276,14 @@ LOG_SCALE_TECH_PARAMS = {"max_unit_power"}
 # aircraft_tech_data/lh2_tank_gi/lh2_tank_gi_dataset.csv.
 lh2_tank_tech_params_lower_mid_upper = {
     "lh2tank_mass_factor": (
-        (3.692, 1.0, 2033.7, 5.0),
-        (3.692, 0.725, 2033.7, 5.0),
-        (3.692, 0.526, 2033.7, 5.0),
+        (5.341, 1.5, 2038.0, 5.0),
+        (5.341, 1.094, 2038.0, 5.0),
+        (5.341, 0.798, 2038.0, 5.0),
     ),
     "lh2_fuel_system_ratio": (
-        (0.236, 0.201, 2052.1, 5.0),
-        (0.236, 0.148, 2052.1, 5.0),
-        (0.236, 0.115, 2052.1, 5.0),
+        (0.271, 0.201, 2052.1, 5.0),
+        (0.271, 0.153, 2052.1, 5.0),
+        (0.271, 0.115, 2052.1, 5.0),
     ),
 }
 
@@ -289,14 +296,15 @@ lh2_tank_count = {
     "long_range": 2,
 }
 
-# Propulsors per fuel cell aircraft: the smallest count that makes the power per
-# propulsor available by about 2040 to 2045 in the Mid scenario.
+# Propulsors per fuel cell aircraft, as in credible concepts: 2 up to about 80 seats
+# (ZeroAvia ZA600 and ZA2000, ICCT ATR 72 retrofit), 4 for about 100 seats and more
+# (Airbus ZEROe 2025: 4 x 2 MW). 8 or more only appear in NASA research concepts.
 fuelcell_engine_count = {
     "general": 2,
     "commuter": 2,
-    "regional": 4,
-    "short_medium": 8,
-    "long_range": 12,
+    "regional": 2,
+    "short_medium": 4,
+    "long_range": 4,
 }
 
 # Turboprop architectures, compared with the fleet architectures in the update
