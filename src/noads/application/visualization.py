@@ -898,19 +898,22 @@ def plot_fleet_mix_variants(
     for row, (variant, output_optimal) in enumerate(variant_outputs.items()):
         years = output_optimal["year"]
         for col, fleet_i in enumerate(fleet.fleets):
-            asks = [
-                output_optimal[f"{aircraft.name}.ask"] * 1e-12
+            # aircraft absent from the results (designs that never close) are skipped
+            aircraft_i = [
+                aircraft
                 for aircraft in fleet_i.operating_aircraft
+                if f"{aircraft.name}.ask" in output_optimal
             ]
+            asks = [output_optimal[f"{a.name}.ask"] * 1e-12 for a in aircraft_i]
             labels = [
-                aircraft.name.replace(f"_{fleet_i.name}", "").replace("_", " ")
-                for aircraft in fleet_i.operating_aircraft
+                a.name.replace(f"_{fleet_i.name}", "").replace("_", " ")
+                for a in aircraft_i
             ]
             colors = [
                 color
-                for aircraft in fleet_i.operating_aircraft
+                for a in aircraft_i
                 for prop_name, color in propulsion_colors.items()
-                if prop_name in aircraft.name
+                if prop_name in a.name
             ]
             hatches = ["_"] * len(asks)
             if f"{fleet_i.name}.ask_avoided" in output_optimal:

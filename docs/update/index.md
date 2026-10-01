@@ -60,6 +60,30 @@ The optimization results of the update model are stored in an `update` subfolder
 the results directory, so that they never overwrite the pre-computed results of the
 main paper.
 
+## Fleet mix of the breakthrough variants
+
+Optimization results of the update model, with the timeline of the main paper, under
+SSP2-2.6: the fleet mix of the three variants of the breakthrough case (trend,
+availability and low-demand), for each technology scenario.
+
+```{figure} figures/fleet_mix_update_lower.png
+:width: 100%
+
+Fleet mix, Lower technology.
+```
+
+```{figure} figures/fleet_mix_update_mid.png
+:width: 100%
+
+Fleet mix, Mid technology.
+```
+
+```{figure} figures/fleet_mix_update_upper.png
+:width: 100%
+
+Fleet mix, Upper technology.
+```
+
 ```{toctree}
 :hidden:
 
