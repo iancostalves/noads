@@ -156,7 +156,7 @@ class AircraftDesign(AircraftOperation):
         """Additional design outputs of the update aircraft model."""
         if self.aircraft_model != "update":
             return []
-        outputs = ["max_power", "unit_power_ratio"]
+        outputs = ["max_power", "unit_power_ratio", "closure_gap"]
         if self.power_system["energy_type"] == "liquid_h2":
             outputs.extend(["gi_tank", "gi_system"])
         return outputs

@@ -556,6 +556,7 @@ DESIGN_OUTPUTS = (
     "propulsion_system_efficiency",
     "max_power",
     "unit_power_ratio",
+    "closed",
     "energy_storage_mass",
     "fuel_cell_system_mass",
 )
@@ -601,7 +602,7 @@ def design_sweep(category, architecture, tech_idx):
         return outputs
 
     outputs = {name: asarray(v) for name, v in jit(vmap(design))(years).items()}
-    feasible = isfinite(outputs["mtow"])
+    feasible = outputs["closed"] > 0.5
     if electric:
         feasible &= outputs["unit_power_ratio"] <= 1.0
     outputs["feasible"] = feasible
@@ -860,7 +861,7 @@ fig9, axes9 = subplots(2, 4, layout="constrained", figsize=(16, 8.5))
 for ax, (title, unit_label, metric) in zip(axes9.flat, fuel_cell_panels):
     for category, color in market_colors.items():
         outputs = designs[category, "lH2-FuelCell", 1]
-        values = where(isfinite(outputs["mtow"]), metric(outputs), nan)
+        values = metric(outputs)
         ax.plot(years, values, color=color, lw=1, ls="--")
         ax.plot(years, masked(values, outputs["feasible"]), color=color, lw=3)
     if "Power per Propulsor" in title:

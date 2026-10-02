@@ -32,15 +32,16 @@ differentiable with respect to the technology parameters.
 from __future__ import annotations
 
 from jax import config
+from jax.numpy import abs as jabs
 from jax.numpy import array
 from jax.numpy import exp
 from jax.numpy import interp
 from jax.numpy import maximum
 from jax.numpy import minimum
-from jax.numpy import nan
 from jax.numpy import sqrt
-from jax.numpy import where
+from lineax import AutoLinearSolver
 from optimistix import RESULTS
+from optimistix import ImplicitAdjoint
 from optimistix import Newton
 from optimistix import root_find
 
@@ -48,6 +49,15 @@ from noads.gam_jax.utils import physical_data as phd
 from noads.gam_jax.utils import unit
 
 config.update("jax_enable_x64", True)
+
+MIN_UNIT_POWER = 1e3
+"""Smallest power per propulsor (W) of the powertrain scale laws."""
+
+MIN_MTOW_FRACTION = 0.01
+"""Smallest admissible MTOW, relative to the initial guess of the MTOW solver."""
+
+CLOSURE_TOLERANCE = 1e-4
+"""Relative mass balance residual below which a design is considered closed."""
 
 FUEL_DENSITY = {
     "kerosene": 803.0,
@@ -520,8 +530,13 @@ class GAM:
     # Mass model components
     # ------------------------------------------------------------------------------
     def _unit_scale(self, unit_power):
-        """Power per propulsor relative to the reference unit power."""
-        return unit_power / self.reference_unit_power
+        """Power per propulsor relative to the reference unit power.
+
+        The power is floored so that the scale laws, which are power laws, stay
+        finite and differentiable for the non-positive powers that the power
+        regression gives to very small trial masses of the MTOW solver.
+        """
+        return maximum(unit_power, MIN_UNIT_POWER) / self.reference_unit_power
 
     def electric_chain_efficiency(self, unit_power):
         """Motor, inverter and distribution efficiency for a given unit power (W)."""
@@ -1013,12 +1028,20 @@ class GAM:
             y0=mtow_ini,
             max_steps=500,
             throw=False,
+            adjoint=ImplicitAdjoint(linear_solver=AutoLinearSolver(well_posed=None)),
         )
-        # A design that does not close (no MTOW balancing the mission and the
-        # structure, e.g. immature batteries) gets a NaN MTOW instead of an error,
-        # so that design sweeps can report it as infeasible.
-        closed = (sol.result == RESULTS.successful) & (sol.value > 0.0)
-        mtow = where(closed, sol.value, nan)
+        # The MTOW is the root of the mass balance, differentiated implicitly. A
+        # design that does not close (no positive MTOW balancing the mission and the
+        # structure, e.g. immature batteries) is sized at the closest admissible
+        # MTOW, with finite values and derivatives, and is reported by its closure
+        # gap, a differentiable output that the optimizer constrains.
+        mtow_root = sol.value
+        mtow = maximum(mtow_root, MIN_MTOW_FRACTION * mtow_ini)
+        closure_gap = (
+            jabs(mass_mission_balance(mtow, None)) / mtow
+            + maximum(MIN_MTOW_FRACTION * mtow_ini - mtow_root, 0.0) / mtow_ini
+        )
+        closed = (sol.result == RESULTS.successful) & (closure_gap < CLOSURE_TOLERANCE)
         total_power, dict_p, dict_s = sizing(mtow)
         max_power = total_power / power_system["engine_count"]
 
@@ -1045,6 +1068,8 @@ class GAM:
         )  # fmt: skip
         design.update(dict_s["storage_data"])
         design["unit_power_ratio"] = max_power / self.max_unit_power
+        design["closure_gap"] = closure_gap
+        design["closed"] = closed.astype(float)
         if power_system["engine_type"] == self.emotor:
             design["electric_chain_efficiency"] = self.electric_chain_efficiency(
                 max_power

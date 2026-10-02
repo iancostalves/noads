@@ -32,6 +32,7 @@ from noads.core.models.interpolation import interpolate_data
 from noads.core.models.traffic import AirTraffic
 from noads.core.scenarios.multiscenario import MultiScenario
 from noads.core.scenarios.temporalscenario import TemporalScenario
+from noads.gam_jax.models.gam_v3 import CLOSURE_TOLERANCE
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -454,7 +455,15 @@ def single_scenario_setup(
         ):
             optimization_constraints.update({
                 f"{aircraft.name}.unit_power_ratio": (1.0, False),
+                # the design must close: a differentiable gap, null if it does
+                f"{aircraft.name}.closure_gap": (CLOSURE_TOLERANCE, False),
             })
+            if "FuelCell" in aircraft.name:
+                # as electric aircraft, fuel cell aircraft must be at least as
+                # energy efficient as the current fleet
+                optimization_constraints.update({
+                    f"{aircraft.name}.relative_efficiency_gain": (1.0, True),
+                })
 
     return temporal_scenario, design_space, optimization_constraints, energy_mix, fleet
 

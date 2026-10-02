@@ -187,11 +187,13 @@ update_tech_params_lower_mid_upper_2020_2040_2060_2080 = {
         (200.0, 575.0, 1050.0, 1287.5),
         (200.0, 800.0, 1500.0, 1850.0),
     ),
-    # kW/kg at 1 MW per propulsor. Pastra et al. logistic shifted by a 10/8/6-year delay
+    # kW/kg at 1 MW per propulsor. Pastra et al. logistic shifted by a 10/8/6-year
+    # delay for Lower and Mid; Upper capped at 35 kW/kg, as 15-25 kW/kg is the highest
+    # credible long-term value found and 50 kW/kg a curve fit
     "emotor_specific_power": (
         (2.7, 9.2, 11.2, 11.4),
         (2.7, 14.8, 24.7, 26.3),
-        (2.7, 22.2, 54.8, 64.6),
+        (2.7, 20.0, 30.0, 35.0),
     ),
     # %, motor x inverter x distribution at 1 MW
     "emotor_efficiency": (
@@ -211,14 +213,14 @@ update_tech_params_lower_mid_upper_2020_2040_2060_2080 = {
     "fuelcell_specific_power": (
         (0.75, 1.5, 2.0, 2.25),
         (0.75, 2.0, 2.75, 3.25),
-        (0.75, 2.5, 3.5, 4.5),
+        (0.75, 2.5, 3.25, 4.0),
     ),
     # %, system at cruise. 2020: about 39-40 % at cruise (compressor losses at
     # altitude); DOE peak targets (65-72 %) are low-load values, not cruise
     "fuelcell_efficiency": (
         (40.0, 44.0, 46.0, 48.0),
-        (40.0, 46.0, 50.0, 52.0),
-        (40.0, 48.0, 53.0, 56.0),
+        (40.0, 46.0, 49.0, 51.0),
+        (40.0, 48.0, 51.0, 54.0),
     ),
     # kW heat/kg, full TMS sized at hot-day take-off: 1.5-3 today, about 5 for
     # FlyZero, 5-15 with HT-PEM or two-phase cooling, about 20 as long-term ceiling
@@ -234,17 +236,20 @@ update_tech_params_lower_mid_upper_2020_2040_2060_2080 = {
         (0.225, 0.17, 0.14, 0.12),
         (0.225, 0.14, 0.10, 0.08),
     ),
-    # MW per propulsor, interpolated in log space
+    # MW per propulsor, interpolated in log space. Demonstrated 0.7-1 MW; projections
+    # stop at 2 MW (ZEROe) and 2-5 MW (ZA2000, NASA 5 MW concept): Mid is capped at
+    # 5 MW, and Upper goes beyond it as an exploratory bound
     "max_unit_power": (
-        (0.06, 1.5, 5.0, 9.13),
-        (0.06, 3.0, 12.0, 24.0),
-        (0.06, 5.0, 25.0, 55.9),
+        (0.06, 1.5, 2.3, 2.8),
+        (0.06, 2.5, 4.0, 5.0),
+        (0.06, 4.0, 6.5, 9.0),
     ),
-    # %, standard empty mass relative to today
+    # %, standard empty mass relative to today. About 10-20 % further savings are
+    # supported by sources (787/A350 banked 20 % of the structure already), not 34-50 %
     "struct_weight_factor": (
-        (100.0, 90.0, 85.0, 82.5),
-        (100.0, 78.0, 70.0, 66.0),
-        (100.0, 66.0, 55.0, 49.5),
+        (100.0, 94.0, 91.0, 90.0),
+        (100.0, 90.0, 86.0, 85.0),
+        (100.0, 86.0, 81.0, 78.0),
     ),
     # SP ~ P^-beta, from the Mid value in 2020 to the scenario value in 2040
     "emotor_power_exponent": (

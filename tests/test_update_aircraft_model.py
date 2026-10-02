@@ -37,6 +37,7 @@ from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParameter
 from noads.core.models.fleet.aircraft_tech_parameter import ScenarioTechParameter
+from noads.gam_jax.models.gam_v3 import CLOSURE_TOLERANCE
 from noads.gam_jax.models.gam_v3 import GAM
 from noads.gam_jax.models.gam_v3 import LH2_TANK_SIZE_LAW
 
@@ -223,12 +224,14 @@ def test_update_params_match_calibration():
         ).read_text()
     )
     names = {
-        "emotor_specific_power": "emotor_specific_power",
         "emotor_efficiency": "electric_chain_efficiency",
-        "max_unit_power": "max_unit_power_MW",
     }
-    # the fuel cell and TMS values are revised from the 2026 literature review
+    # the fuel cell, TMS, Upper e-motor, maximum unit power and structure values are
+    # revised from the 2026 literature review
     revised = {
+        "emotor_specific_power",
+        "max_unit_power",
+        "struct_weight_factor",
         "fuelcell_specific_power",
         "fuelcell_efficiency",
         "fuelcell_tms_heat_rejection",
@@ -387,8 +390,9 @@ def test_design_outputs_and_eis_gradient(name):
     )
 
 
-def test_non_closing_design_is_nan():
-    """An immature battery aircraft does not close: NaN instead of an error."""
+def test_non_closing_design_is_finite_and_constrained():
+    """An immature battery aircraft does not close: finite values and gradients,
+    and a closure gap for the optimizer to constrain."""
     tech = {
         param.name: param.value_at_entry_into_service(2030.0)
         for param in aircraft_tech_params(0, "update")
@@ -402,7 +406,26 @@ def test_non_closing_design_is_nan():
         },
         {"npax": 19, "range": 500e3, "speed": 170.0, "category": "general"},
     )
-    assert np.isnan(float(design["mtow"]))
+    assert np.isfinite(float(design["mtow"]))
+    assert float(design["closure_gap"]) > CLOSURE_TOLERANCE
+    assert float(design["closed"]) == 0.0
+
+    def energy(eis):
+        tech_eis = {
+            param.name: param.value_at_entry_into_service(eis)
+            for param in aircraft_tech_params(0, "update")
+        }
+        return GAM(**tech_eis).design_airplane(
+            {
+                "engine_count": 2,
+                "engine_type": "emotor",
+                "thruster_type": "propeller",
+                "energy_type": "battery",
+            },
+            {"npax": 19, "range": 500e3, "speed": 170.0, "category": "general"},
+        )["closure_gap"]
+
+    assert np.isfinite(float(jax.grad(energy)(2030.0)))
 
 
 def test_scenario_setup_unit_power_constraints():
