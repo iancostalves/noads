@@ -28,6 +28,9 @@ from numpy import ones as np_ones
 from noads.application.background_scenario_data import get_ar6_input_data
 from noads.application.base_objects import category_lifetime
 from noads.application.base_objects import initialize_base_objects
+from noads.application.base_objects import (
+    update_pathway_efficiencies_lower_mid_upper_2025_2035_2050,
+)
 from noads.core.models.interpolation import interpolate_data
 from noads.core.models.traffic import AirTraffic
 from noads.core.scenarios.multiscenario import MultiScenario
@@ -234,6 +237,14 @@ def single_scenario_setup(
         interpolated_2025_2035_2050.update({
             "H2_liquefaction.ELECTRICITY.efficiency": (4.54, 4.54 * 1.2, 4.54 * 1.4),
         })
+    if aircraft_model == "update":
+        # technology-dependent pathway efficiencies (Mid is the paper)
+        for (
+            key,
+            bands,
+        ) in update_pathway_efficiencies_lower_mid_upper_2025_2035_2050.items():
+            if key in interpolated_2025_2035_2050:
+                interpolated_2025_2035_2050[key] = bands[technology_index]
         # if include_methane:
         #     constants.update({
         #         "NATURAL_GAS.CO2_index": 67.6,

@@ -56,6 +56,7 @@ from noads.application.base_objects import propulsion_mission
 from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
 from noads.application.base_objects import update_comparison_mission
 from noads.application.base_objects import update_power_system
+from noads.application.primary_energy import primary_energy_factors
 from noads.core.models.fleet.aircraft_design import UPDATE_GAM_OPTIONS
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from noads.gam_jax.models import gam_v3
@@ -775,6 +776,122 @@ fig7, axes7 = market_figure(
 )
 market_legend(axes7)
 fig7.savefig("./aircraft_update_propulsion_efficiency.png", dpi=150)
+
+# %%
+# Primary energy per seat-km
+# --------------------------
+# The energy per seat-km of each architecture (final energy, design mission) is
+# multiplied by the primary energy per final energy of its carrier at the EIS year,
+# for the same technology scenario (:mod:`noads.application.primary_energy`). The
+# architectures are compared per primary resource: oil for the Jet-A aircraft, biomass
+# for the Jet-A aircraft on each biofuel pathway, and electricity for the Jet-A
+# aircraft on e-fuel, the battery-electric and the two LH2 aircraft. Bands span the
+# Lower to Upper scenarios (solid line for Lower and dotted line for Mid); turboprops,
+# which are not in the optimized fleets, are shown by their Mid curve only
+# (dash-dotted).
+
+primary_factors = [primary_energy_factors(index, years) for index in range(3)]
+
+
+def primary_curves(category, architecture, carrier):
+    """Primary energy per seat-km (MJ) of an architecture on a carrier, per scenario."""
+    return [
+        masked(
+            1e-3
+            * designs[category, architecture, index]["enrg_consumption"]
+            * primary_factors[index][carrier],
+            designs[category, architecture, index]["feasible"],
+        )
+        for index in range(3)
+    ]
+
+
+def primary_figure(title, specs, ymax, reference=None):
+    """One panel per market; each spec is (label, architecture, carrier, color)."""
+    fig, axes = subplots(2, 3, layout="constrained", figsize=(12, 10))
+    fig.suptitle(title, fontsize="x-large")
+    for ax, category in zip(axes.flat, categories_mission):
+        seat = categories_mission[category]["npax"]
+        max_range = 1e-3 * categories_mission[category]["range"]
+        if reference is not None:
+            low, mid, high = (
+                current * primary_factors[1]["Fossil kerosene"][0]
+                for current in category_conso[category]
+            )
+            ax.fill_between(
+                [years[0], years[-1]], [low] * 2, [high] * 2,
+                color="dimgray", alpha=0.4, lw=0,
+            )  # fmt: skip
+            ax.hlines(mid, years[0], years[-1], colors="dimgray", ls=":", lw=1.5)
+        for _label, architecture, carrier, color in specs:
+            curves = primary_curves(category, architecture, carrier)
+            if "Turboprop" in architecture:
+                ax.plot(years, curves[1], color=color, ls="-.", lw=1.5)
+            else:
+                plot_architecture(ax, curves, color)
+        ax.set_title(
+            f"{category.replace('_', ' ')}\n({seat} seat, {max_range} km)",
+            fontsize="large",
+        )
+        ax.set_ylim(0.0, ymax)
+    axes[-1, -1].clear()
+    axes[-1, -1].set_axis_off()
+    axes[-1, 0].set_xlabel("Entry-Into-Service")
+    axes[0, 0].set_ylabel("Primary energy per seat-km [MJ]")
+    handles = [
+        Patch(color=color, label=label)
+        for label, architecture, _, color in specs
+        if "Turboprop" not in architecture
+    ]
+    handles.extend([
+        Line2D([0], [0], color="k", ls="-", lw=3, label="Lower"),
+        Line2D([0], [0], color="k", ls=":", lw=3, label="Mid"),
+        Line2D([0], [0], color="k", ls="-.", lw=1.5, label="Turboprop (Mid)"),
+    ])
+    if reference is not None:
+        handles.append(Patch(color="dimgray", alpha=0.4, label=reference))
+    axes[-1, -1].legend(handles=handles, loc="center")
+    return fig, axes
+
+
+fig_oil, _ = primary_figure(
+    "Primary energy: oil, update model\n[MJ oil / seat km]",
+    [
+        ("Jet-A", "JetA-GasTurbine", "Fossil kerosene", "maroon"),
+        ("Jet-A turboprop", "JetA-Turboprop", "Fossil kerosene", "maroon"),
+    ],
+    ymax=4.0,
+    reference="Current fleet",
+)
+fig_oil.savefig("./aircraft_update_primary_oil.png", dpi=150)
+
+fig_biomass, _ = primary_figure(
+    "Primary energy: biomass, update model\n[MJ biomass / seat km]",
+    [
+        (f"Jet-A {pathway}", architecture, pathway, color)
+        for pathway, color in (
+            ("HEFA", "olivedrab"),
+            ("ATJ", "yellowgreen"),
+            ("FT", "darkgreen"),
+        )
+        for architecture in ("JetA-GasTurbine", "JetA-Turboprop")
+    ],
+    ymax=16.0,
+)
+fig_biomass.savefig("./aircraft_update_primary_biomass.png", dpi=150)
+
+fig_electricity, _ = primary_figure(
+    "Primary energy: electricity, update model\n[MJ electricity / seat km]",
+    [
+        ("Jet-A e-fuel", "JetA-GasTurbine", "E-fuel", "darkorange"),
+        ("Jet-A turboprop e-fuel", "JetA-Turboprop", "E-fuel", "darkorange"),
+        ("Battery-Electric", "Battery-Electric", "Battery", "limegreen"),
+        ("lH2-GasTurbine", "lH2-GasTurbine", "LH2", "orangered"),
+        ("lH2-FuelCell", "lH2-FuelCell", "LH2", "royalblue"),
+    ],
+    ymax=8.0,
+)
+fig_electricity.savefig("./aircraft_update_primary_electricity.png", dpi=150)
 
 # %%
 # LH2 tank gravimetric index per market

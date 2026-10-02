@@ -31,6 +31,9 @@ from noads.application.base_objects import initialize_base_objects
 from noads.application.base_objects import lh2_tank_tech_params_lower_mid_upper
 from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
 from noads.application.base_objects import (
+    update_pathway_efficiencies_lower_mid_upper_2025_2035_2050,
+)
+from noads.application.base_objects import (
     update_tech_params_lower_mid_upper_2020_2040_2060_2080,
 )
 from noads.application.scenario_setup import single_scenario_setup
@@ -482,3 +485,20 @@ def test_climb_at_powertrain_efficiency():
     )
     assert float(consistent["mission_enrg"]) > float(upstream["mission_enrg"])
     assert float(consistent["mtow"]) > float(upstream["mtow"])
+
+
+def test_update_pathway_efficiency_bands():
+    """Mid is the paper, the scenarios share their 2025 value, and the gaps to Mid
+    never shrink, Lower below and Upper above."""
+    for name, (
+        lower,
+        mid,
+        upper,
+    ) in update_pathway_efficiencies_lower_mid_upper_2025_2035_2050.items():
+        assert lower[0] == mid[0] == upper[0], name
+        gaps_lower = np.subtract(mid, lower)
+        gaps_upper = np.subtract(upper, mid)
+        assert np.all(np.diff(gaps_lower) >= 0.0), name
+        assert np.all(np.diff(gaps_upper) >= 0.0), name
+        assert np.all(gaps_lower >= 0.0), name
+        assert np.all(gaps_upper >= 0.0), name
