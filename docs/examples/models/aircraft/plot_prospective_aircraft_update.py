@@ -56,6 +56,7 @@ from noads.application.base_objects import propulsion_mission
 from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
 from noads.application.base_objects import update_comparison_mission
 from noads.application.base_objects import update_power_system
+from noads.core.models.fleet.aircraft_design import UPDATE_GAM_OPTIONS
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 from noads.gam_jax.models import gam_v3
 from noads.gam_jax.models.gam_v3 import LH2_TANK_SIZE_LAW
@@ -575,7 +576,10 @@ def design_sweep(category, architecture, tech_idx):
     hydrogen = power_system["energy_type"] == "liquid_h2"
 
     def design(eis):
-        gam = gam_v3.GAM(**{p.name: p.value_at_entry_into_service(eis) for p in params})
+        gam = gam_v3.GAM(
+            **{p.name: p.value_at_entry_into_service(eis) for p in params},
+            **UPDATE_GAM_OPTIONS,
+        )
         result = gam.design_airplane(dict(power_system), dict(mission))
         outputs = {name: result[name] for name in DESIGN_OUTPUTS}
         if hydrogen:

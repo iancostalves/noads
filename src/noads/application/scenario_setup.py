@@ -75,6 +75,7 @@ def single_scenario_setup(
     plot_scenario_data=False,
     compile_jit=True,
     aircraft_model="paper",
+    last_entry_into_service=None,
 ):
     """Set up a single-objective decarbonization scenario.
 
@@ -91,8 +92,8 @@ def single_scenario_setup(
         name: The name of the scenario.
         background_scenario_name: The AR6 background scenario (e.g. ``"SSP2-26"``).
         start_year: The first simulated year.
-        end_year: The last simulated year. Defaults to 2075 with the paper aircraft
-            model and to 2100 with the update one.
+        end_year: The last simulated year. Defaults to 2075 with both aircraft
+            models (:data:`END_YEAR`).
         time_step: The simulation time step in years.
         interp_step: The spacing in years of the control knots.
         technology_index: The aircraft technology scenario (0: Lower, 1: Mid,
@@ -112,6 +113,10 @@ def single_scenario_setup(
             size-dependent LH2 tanks). The update model also constrains the power
             per propulsor of electric and fuel cell designs to the maximum
             available at their entry-into-service.
+        last_entry_into_service: The last entry-into-service of new aircraft
+            (except the first Jet-A generation). Defaults to 2060 with both aircraft
+            models (:data:`LAST_ENTRY_INTO_SERVICE`); up to 2080 with the update
+            model, whose technology parameters are defined until then.
 
     Returns:
         The temporal scenario, the design space, the constraints (mapping each
@@ -120,9 +125,11 @@ def single_scenario_setup(
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
     if end_year is None:
         end_year = END_YEAR[aircraft_model]
+    if last_entry_into_service is None:
+        last_entry_into_service = LAST_ENTRY_INTO_SERVICE[aircraft_model]
     ar6_data, years_data = _ar6_input_data(end_year, plot_scenario_data)
     energy_mix, fleet = initialize_base_objects(
-        drop_in_only, technology_index, aircraft_model
+        drop_in_only, technology_index, aircraft_model, last_entry_into_service
     )
 
     temporal_constraints = [
@@ -409,7 +416,7 @@ def single_scenario_setup(
                     upper_bound=(
                         2047.5
                         if "JetA-GasTurbine-v1" in aircraft.name
-                        else LAST_ENTRY_INTO_SERVICE[aircraft_model]
+                        else last_entry_into_service
                     ),
                     # value=2060.0,
                     value=2035.0
@@ -484,6 +491,7 @@ def multi_scenario_setup(
     preferential_energy=False,
     plot_scenario_data=False,
     aircraft_model="paper",
+    last_entry_into_service=None,
 ):
     """Set up a decarbonization scenario robust to several background scenarios.
 
@@ -494,6 +502,8 @@ def multi_scenario_setup(
     mix variables are scenario-specific, and ensemble-mean outputs (``mean.``
     prefix) are exposed for the robust objective.
     """
+    if end_year is None:
+        end_year = END_YEAR[aircraft_model]
     temporal_scenario, _, constraints, energy_mix, fleet = single_scenario_setup(
         name=name,
         background_scenario_name=background_scenario_names[0],
@@ -509,6 +519,7 @@ def multi_scenario_setup(
         preferential_energy=preferential_energy,
         plot_scenario_data=plot_scenario_data,
         aircraft_model=aircraft_model,
+        last_entry_into_service=last_entry_into_service,
     )
     final_rates = temporal_scenario.final_rates
     meaned = [

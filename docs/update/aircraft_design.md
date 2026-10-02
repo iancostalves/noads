@@ -127,6 +127,32 @@ The literature values are bundled in
 2026, with their source, scope and status). Most of them come from abstracts and
 summaries rather than full texts, and should be checked before being quoted.
 
+### Fuel cell efficiency
+
+The overall efficiency of fuel cell aircraft (hydrogen to thrust power at cruise) is
+the product of the fuel cell system efficiency, net of the TMS parasitic power
+($\eta - L(1 - \eta)$), the electric chain efficiency and the propeller or fan
+efficiency. In the Mid scenario it is 28 % for an EIS in 2040 (fuel cell 46 %, net
+37 %, electric chain 0.95 to 0.97, propeller 0.80) and 32 % in 2060 (49 %, net 42 %),
+within the 30 to 40 % of system-level studies. It applies to cruise, diversion and
+holding, and does not depend on the power per propulsor.
+
+The upstream GAM V3.0 draws the take-off and climb energy (mechanical) from the fuel
+as a thermal engine would (about 44 % efficiency), whatever the powertrain, and
+counts only the mechanical energy in the mission energy. The update model draws it
+at the cruise efficiency of each powertrain
+({data}`~noads.core.models.fleet.aircraft_design.UPDATE_GAM_OPTIONS`), which raises
+the energy per ASK by 1 % (long range) to 23 % (general turbofans), and by 13 % for
+general fuel cell aircraft.
+
+Fuel cell aircraft remain much more efficient than turbofans on the small markets
+because the turbofans of GAM V3.0 lose efficiency with size: 13 % (general) to 21 %
+(commuter) overall, against 29 % (regional) to 39 % (long range). Turboprops are the
+relevant thermal reference there ({numref}`fig-update-propulsion-efficiency`). Two
+optimistic simplifications remain for all LH2 aircraft: the lift-to-drag ratio does
+not account for the larger fuselage holding the tanks, and the TMS drag is only
+included through its parasitic power.
+
 ### Design closure
 
 The MTOW of an aircraft is the root of its mass balance, found with Newton's method

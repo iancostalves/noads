@@ -146,6 +146,7 @@ class GAM:
         lh2tank_mass_factor=None,
         lh2_fuel_system_ratio=0.0,
         lh2tank_size_law=LH2_TANK_SIZE_LAW,
+        climb_at_powertrain_efficiency=False,
     ):
         """Initialize GAM with the technology parameters.
 
@@ -154,6 +155,11 @@ class GAM:
         cell specific power including its thermal management (upstream behaviour).
 
         Args:
+            climb_at_powertrain_efficiency: Whether the take-off and climb energy
+                (mechanical) is drawn from the energy source at the cruise
+                efficiency of the powertrain. Otherwise (upstream GAM V3.0), the
+                fuel is that of a thermal engine (``fuel_energy_ratio``) whatever
+                the powertrain, and the energy counts the mechanical energy only.
             battery_specific_energy: Battery specific energy (Wh/kg).
             emotor_specific_power: Electric motor specific power (kW/kg).
             lh2tank_gravimetric_index: LH2 tank gravimetric index (%).
@@ -365,6 +371,7 @@ class GAM:
         self.fuel_cell_power_exponent = fuelcell_power_exponent
         self.fuel_cell_efficiency_exponent = fuelcell_efficiency_exponent
         self.max_unit_power = 1e6 * max_unit_power
+        self.climb_at_powertrain_efficiency = climb_at_powertrain_efficiency
 
         # Energy storage
         self.battery_enrg_density = unit.J_Wh(battery_specific_energy)
@@ -826,7 +833,15 @@ class GAM:
         mission_enrg = self.take_off_energy(total_power) + self.climb_energy(
             tow, cruise_altp
         )
-        if not is_battery:
+        if self.climb_at_powertrain_efficiency:
+            _pamb, tamb, _g = phd.atmosphere_g(cruise_altp, self.disa)
+            tas, _mach = self.get_tas(tamb, cruise_speed, speed_type)
+            mission_enrg = mission_enrg / self.get_engine_eff(
+                power_system, tas, max_power
+            )
+            if not is_battery:
+                mission_fuel += mission_enrg / fuel_heat(power_system["energy_type"])
+        elif not is_battery:
             mission_fuel += mission_enrg * (
                 self.fuel_energy_ratio / fuel_heat(power_system["energy_type"])
             )

@@ -35,6 +35,10 @@ if TYPE_CHECKING:
     from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
 
 
+UPDATE_GAM_OPTIONS = {"climb_at_powertrain_efficiency": True}
+"""Modelling options of the GAM V3.0 port used by the update aircraft model."""
+
+
 class AircraftDesign(AircraftOperation):
     """A prospective aircraft, designed on the fly with the Generic Airplane Model.
 
@@ -131,7 +135,8 @@ class AircraftDesign(AircraftOperation):
             for tech_param_name, value in tech_params.items()
         }
         gam_class = gam_v3.GAM if self.aircraft_model == "update" else GAM
-        model = gam_class(**tech_params)
+        options = UPDATE_GAM_OPTIONS if self.aircraft_model == "update" else {}
+        model = gam_class(**tech_params, **options)
         final_design = model.design_airplane(dict(self.power_system), self.mission)
 
         output_data.update({

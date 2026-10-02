@@ -37,6 +37,7 @@ from noads.core.models.energy.energy_mix import EnergyMix
 from noads.core.models.energy.production_pathway import ProductionPathway
 from noads.core.models.energy.streams import Impact
 from noads.core.models.fleet.aircraft_design import AIRCRAFT_MODELS
+from noads.core.models.fleet.aircraft_design import UPDATE_GAM_OPTIONS
 from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_operation import AircraftOperation
 from noads.core.models.fleet.aircraft_operation import PropulsionSystem
@@ -45,6 +46,7 @@ from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParamete
 from noads.core.models.fleet.aircraft_tech_parameter import ScenarioTechParameter
 from noads.core.models.fleet.fleet import Fleet
 from noads.core.models.fleet.fleet import FleetAssembly
+from noads.gam_jax.models import gam_v3
 
 category_conso = {
     "general": (2.7355931281666916, 1.9140569910448313, 1.4709811219423268),
@@ -380,8 +382,55 @@ def update_power_system(architecture, category):
     return power_system
 
 
+UNIT_POWER_RATIO_MARGIN = 0.98
+"""Largest unit power ratio at the last EIS for a design to enter the update fleet."""
+
+
+def update_design_feasible(
+    prop_name, cat_name, technology_index, last_entry_into_service
+):
+    """Whether an aircraft of the update model can be designed by the last EIS.
+
+    Technology only improves with the entry-into-service, so the design at the last
+    EIS is the best case: it must close, have its power per propulsor available, and
+    be at least as energy efficient as the current fleet of its market, as required
+    by the optimization constraints.
+
+    Args:
+        prop_name: The propulsion architecture.
+        cat_name: The market.
+        technology_index: The technology scenario (0: Lower, 1: Mid, 2: Upper).
+        last_entry_into_service: The last entry-into-service year.
+
+    Returns:
+        Whether the design is feasible at the last entry-into-service.
+    """
+    mission = {
+        **categories_mission[cat_name],
+        **propulsion_mission[prop_name],
+        "category": cat_name,
+    }
+    gam = gam_v3.GAM(
+        **{
+            param.name: param.value_at_entry_into_service(last_entry_into_service)
+            for param in aircraft_tech_params(technology_index, "update")
+        },
+        **UPDATE_GAM_OPTIONS,
+    )
+    design = gam.design_airplane(update_power_system(prop_name, cat_name), mission)
+    energy_per_ask = 1.0e-3 * float(design["enrg_consumption"])
+    return (
+        float(design["closed"]) > 0.5
+        and float(design["unit_power_ratio"]) <= UNIT_POWER_RATIO_MARGIN
+        and energy_per_ask <= category_conso[cat_name][technology_index]
+    )
+
+
 def initialize_base_objects(
-    drop_in_only=False, technology_index=0, aircraft_model="paper"
+    drop_in_only=False,
+    technology_index=0,
+    aircraft_model="paper",
+    last_entry_into_service=2060.0,
 ):
     """Build the energy mix and global fleet of the paper's scenarios.
 
@@ -396,6 +445,10 @@ def initialize_base_objects(
             the paper) or ``"update"`` (GAM V3.0 with powertrain scale effects,
             fuel cell propulsor counts, maximum power per propulsor, and
             size-dependent LH2 tanks).
+        last_entry_into_service: The last entry-into-service of new aircraft. With
+            the update model, the electric and fuel cell aircraft of a market are
+            included only if they are feasible by then
+            (:func:`update_design_feasible`).
 
     Returns:
         The energy mix and the fleet assembly.
@@ -613,24 +666,23 @@ def initialize_base_objects(
                 power_system = update_power_system(prop_name, cat_name)
             else:
                 power_system = propulsion_architectures[prop_name]
-            if "Electric" in prop_name:
-                if cat_name == "general" or (
+            if aircraft_model == "update" and (
+                "Electric" in prop_name or "FuelCell" in prop_name
+            ):
+                included = update_design_feasible(
+                    prop_name, cat_name, technology_index, last_entry_into_service
+                )
+            elif "Electric" in prop_name:
+                # Electric aircraft always included for general market, commuter
+                # market only if not lower technology
+                included = cat_name == "general" or (
                     cat_name == "commuter" and technology_index > 0
-                ):
-                    # Electric aircraft always included for general market, commuter
-                    # market only if not lower technology
-                    aircraft.append(
-                        AircraftDesign(
-                            name=f"{prop_name}_{cat_name}",
-                            propulsion=prop_systems[prop_name],
-                            mission=mission,
-                            power_system=power_system,
-                            aircraft_tech_params=tech_params,
-                            aircraft_model=aircraft_model,
-                            reference_aircraft=aircraft_reference_2019,
-                        )
-                    )
-            elif "JetA-GasTurbine" in prop_name:
+                )
+            else:
+                included = True
+            if not included:
+                continue
+            if "JetA-GasTurbine" in prop_name:
                 aircraft.extend((
                     AircraftDesign(
                         name=f"{prop_name}-v1_{cat_name}",

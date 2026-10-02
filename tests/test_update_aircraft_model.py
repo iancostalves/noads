@@ -25,6 +25,7 @@ import pytest
 from noads._data import data_file
 from noads.application import lh2_tank_calibration as calibration
 from noads.application.base_objects import aircraft_tech_params
+from noads.application.base_objects import categories_mission
 from noads.application.base_objects import fuelcell_engine_count
 from noads.application.base_objects import initialize_base_objects
 from noads.application.base_objects import lh2_tank_tech_params_lower_mid_upper
@@ -342,7 +343,10 @@ def test_paper_tech_params_unchanged():
 
 
 def test_base_objects_with_update_model():
-    _, fleet = initialize_base_objects(technology_index=1, aircraft_model="update")
+    # Upper technology until 2080: fuel cell aircraft are feasible in all markets
+    _, fleet = initialize_base_objects(
+        technology_index=2, aircraft_model="update", last_entry_into_service=2080.0
+    )
     designs = {
         aircraft.name: aircraft
         for aircraft in fleet.operating_aircraft
@@ -442,3 +446,39 @@ def test_scenario_setup_unit_power_constraints():
             assert constraints[name] == (1.0, False)
         else:
             assert name not in constraints
+
+
+def _electric_and_fuel_cell(fleet):
+    return {
+        aircraft.name
+        for fleet_i in fleet.fleets
+        for aircraft in fleet_i.operating_aircraft
+        if "Electric" in aircraft.name or "FuelCell" in aircraft.name
+    }
+
+
+def test_update_fleet_drops_infeasible_designs():
+    """Electric and fuel cell designs enter a market only if feasible by the last
+    EIS, while the paper fleets are unchanged."""
+    _, lower = initialize_base_objects(False, 0, "update", 2060.0)
+    _, mid = initialize_base_objects(False, 1, "update", 2060.0)
+    _, extended = initialize_base_objects(False, 2, "update", 2080.0)
+    assert "lH2-FuelCell_long_range" not in _electric_and_fuel_cell(lower)
+    assert "lH2-FuelCell_general" in _electric_and_fuel_cell(mid)
+    assert "lH2-FuelCell_long_range" in _electric_and_fuel_cell(extended)
+    _, paper = initialize_base_objects(False, 0, "paper")
+    assert _electric_and_fuel_cell(paper) == {
+        "Battery-Electric_general",
+        *(f"lH2-FuelCell_{category}" for category in categories_mission),
+    }
+
+
+def test_climb_at_powertrain_efficiency():
+    """Take-off and climb drawn at the powertrain efficiency cost more energy than
+    the mechanical energy counted by upstream GAM V3.0, which stays the default."""
+    upstream = GAM(**TECH).design_airplane(dict(FC_SYSTEM), dict(REGIONAL))
+    consistent = GAM(**TECH, climb_at_powertrain_efficiency=True).design_airplane(
+        dict(FC_SYSTEM), dict(REGIONAL)
+    )
+    assert float(consistent["mission_enrg"]) > float(upstream["mission_enrg"])
+    assert float(consistent["mtow"]) > float(upstream["mtow"])
