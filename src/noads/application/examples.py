@@ -28,6 +28,7 @@ from numpy import array
 
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
 from noads.application.scenario_setup import END_YEAR
+from noads.application.scenario_setup import LAST_ENTRY_INTO_SERVICE
 from noads.application.scenario_setup import multi_scenario_setup
 from noads.application.scenario_setup import single_scenario_setup
 from noads.application.visualization import plot_multi_scenario_result
@@ -36,7 +37,21 @@ from noads.application.visualization import plot_single_scenario_result
 LOGGER = getLogger(__name__)
 
 
-def _results_dir(aircraft_model="paper") -> Path:
+EXTENDED_TIMELINE = (2100.0, 2080.0)
+"""End year and last entry-into-service of the extended timeline (update model)."""
+
+
+def _timeline(aircraft_model, timeline):
+    """End year and last entry-into-service of a timeline."""
+    if timeline == "paper":
+        return END_YEAR[aircraft_model], LAST_ENTRY_INTO_SERVICE[aircraft_model]
+    if timeline == "extended" and aircraft_model == "update":
+        return EXTENDED_TIMELINE
+    msg = f"Unknown timeline {timeline!r} for the {aircraft_model!r} aircraft model."
+    raise ValueError(msg)
+
+
+def _results_dir(aircraft_model="paper", timeline="paper") -> Path:
     """Return the directory storing optimization results.
 
     Set the ``NOADS_RESULTS_DIR`` environment variable to share pre-computed
@@ -45,7 +60,9 @@ def _results_dir(aircraft_model="paper") -> Path:
     ``update`` subfolder, so that they never overwrite the paper results.
     """
     directory = Path(environ.get("NOADS_RESULTS_DIR", "results"))
-    return directory / "update" if aircraft_model == "update" else directory
+    if aircraft_model != "update":
+        return directory
+    return directory / ("update-2100" if timeline == "extended" else "update")
 
 
 def single_policy_scenario_optimization(
@@ -63,6 +80,7 @@ def single_policy_scenario_optimization(
     save_figs=False,
     plot_computational_graphs=False,
     aircraft_model="paper",
+    timeline="paper",
 ):
     """Optimal decarbonization scenario based on a single objective.
 
@@ -82,6 +100,9 @@ def single_policy_scenario_optimization(
         plot_computational_graphs: Plot computational dependency graphs.
         aircraft_model: Aircraft design model, ``"paper"`` or ``"update"``. The
             results of the update model are stored in an ``update`` subfolder.
+        timeline: ``"paper"`` (2025-2075, new aircraft until 2060) or, with the
+            update model, ``"extended"`` (until 2100, new aircraft until 2080),
+            whose results are stored in an ``update-2100`` subfolder.
 
     Returns:
         Dictionary containing optimal output values.
@@ -107,7 +128,8 @@ def single_policy_scenario_optimization(
 
     configure_logger()
 
-    results_folder = _results_dir(aircraft_model)
+    results_folder = _results_dir(aircraft_model, timeline)
+    end_year, last_entry_into_service = _timeline(aircraft_model, timeline)
 
     # If loading existing results, read from file and return
     if load_optimum:
@@ -125,7 +147,6 @@ def single_policy_scenario_optimization(
                 # Optionally plot loaded results
                 if plot_optimum:
                     start_year = 2025.0
-                    end_year = END_YEAR[aircraft_model]
                     _, _, _, energy_mix, fleet = single_scenario_setup(
                         name=scenario_name,
                         background_scenario_name=global_scenario_name,
@@ -139,6 +160,7 @@ def single_policy_scenario_optimization(
                         fossil_kerosene_only=fossil_kerosene_only,
                         preferential_energy=preferential_energy,
                         aircraft_model=aircraft_model,
+                        last_entry_into_service=last_entry_into_service,
                     )
                     plot_single_scenario_result(
                         scenario_name=scenario_name,
@@ -159,7 +181,6 @@ def single_policy_scenario_optimization(
 
     # Standard optimization execution (existing code)
     start_year = 2025.0
-    end_year = END_YEAR[aircraft_model]
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         single_scenario_setup(
             name=scenario_name,
@@ -174,6 +195,7 @@ def single_policy_scenario_optimization(
             fossil_kerosene_only=fossil_kerosene_only,
             preferential_energy=preferential_energy,
             aircraft_model=aircraft_model,
+            last_entry_into_service=last_entry_into_service,
         )
     )
 
@@ -269,10 +291,12 @@ def single_policy_robust_scenario_optimization(
     save_history_view=False,
     save_figs=False,
     aircraft_model="paper",
+    timeline="paper",
 ):
     """Optimal decarbonization scenario robust to several background scenarios.
 
-    See :func:`single_policy_scenario_optimization` for ``aircraft_model``.
+    See :func:`single_policy_scenario_optimization` for ``aircraft_model`` and
+    ``timeline``.
     """
     if fossil_kerosene_only:
         scenario_name += "-Fossil"
@@ -293,7 +317,8 @@ def single_policy_robust_scenario_optimization(
 
     configure_logger()
 
-    results_folder = _results_dir(aircraft_model)
+    results_folder = _results_dir(aircraft_model, timeline)
+    end_year, last_entry_into_service = _timeline(aircraft_model, timeline)
 
     # If loading existing results, read from file and return
     if load_optimum:
@@ -311,7 +336,6 @@ def single_policy_robust_scenario_optimization(
                 # Optionally plot loaded results
                 if plot_optimum:
                     start_year = 2025.0
-                    end_year = END_YEAR[aircraft_model]
                     _, _, _, energy_mix, fleet = multi_scenario_setup(
                         scenario_name,
                         background_scenario_names=global_scenario_names,
@@ -325,6 +349,7 @@ def single_policy_robust_scenario_optimization(
                         drop_in_only=drop_in_only,
                         preferential_energy=preferential_energy,
                         aircraft_model=aircraft_model,
+                        last_entry_into_service=last_entry_into_service,
                     )
                     plot_multi_scenario_result(
                         scenario_names=global_scenario_names,
@@ -332,7 +357,7 @@ def single_policy_robust_scenario_optimization(
                         output_optimal={**input_optimal, **output_optimal},
                         energy_mix=energy_mix,
                         fleet=fleet,
-                        year_endplots=END_YEAR[aircraft_model],
+                        year_endplots=end_year,
                         low_demand=low_demand_formulation,
                         save_figs=save_figs,
                         directory_path=str(results_folder / scenario_name),
@@ -346,7 +371,6 @@ def single_policy_robust_scenario_optimization(
             )
 
     start_year = 2025.0
-    end_year = END_YEAR[aircraft_model]
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         multi_scenario_setup(
             scenario_name,
@@ -362,6 +386,7 @@ def single_policy_robust_scenario_optimization(
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
             aircraft_model=aircraft_model,
+            last_entry_into_service=last_entry_into_service,
         )
     )
 
@@ -436,7 +461,7 @@ def single_policy_robust_scenario_optimization(
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
-            year_endplots=END_YEAR[aircraft_model],
+            year_endplots=end_year,
             low_demand=low_demand_formulation,
             save_figs=save_figs,
             directory_path=str(results_folder / scenario_name),

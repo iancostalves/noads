@@ -20,9 +20,11 @@ Same scenarios, timeline (2025-2075, new aircraft until 2060) and solver setting
 the main paper results, with ``aircraft_model="update"``. Results go to the
 ``update`` subfolder of this directory.
 
-Usage: ``python precompute_update.py list`` prints the scenario names, and
-``python precompute_update.py <name>`` computes one scenario (skipped if it already
-exists), so that scenarios can be run in parallel processes.
+Usage: ``python precompute_update.py [--extended] list`` prints the scenario names
+(breakthrough variants first), and ``python precompute_update.py [--extended] <name>``
+computes one scenario (skipped if it already exists), so that scenarios can be run in
+parallel processes. With ``--extended``, the timeline is extended (until 2100, new
+aircraft until 2080) and the results go to the ``update-2100`` subfolder.
 """
 
 import logging
@@ -74,9 +76,10 @@ ROBUST = {
 }
 
 
-def run(name):
+def run(name, timeline="paper"):
     """Compute one scenario of the update model, unless already computed."""
-    if (RESULTS_DIR / "update" / name / "opt_result.json").is_file():
+    folder = "update-2100" if timeline == "extended" else "update"
+    if (RESULTS_DIR / folder / name / "opt_result.json").is_file():
         LOGGER.info("SKIP %s (already computed)", name)
         return
     LOGGER.info("RUN  %s", name)
@@ -96,6 +99,7 @@ def run(name):
             save_figs=False,
             save_history_view=False,
             aircraft_model="update",
+            timeline=timeline,
         )
     else:
         background, index, drop_in, fossil, low_demand, preferential = SINGLE[name]
@@ -113,14 +117,28 @@ def run(name):
             save_figs=False,
             save_history_view=False,
             aircraft_model="update",
+            timeline=timeline,
         )
     LOGGER.info("DONE %s", name)
 
 
+BREAKTHROUGH = [
+    f"SSP2-26{variant}-{tech}"
+    for variant in ("", "-Availability", "-LowDemand")
+    for tech in TECH_SUFFIXES.values()
+]
+
+
 if __name__ == "__main__":
-    names = [*SINGLE, *ROBUST]
-    if sys.argv[1:] == ["list"]:
+    arguments = sys.argv[1:]
+    timeline = "extended" if "--extended" in arguments else "paper"
+    arguments = [argument for argument in arguments if argument != "--extended"]
+    names = [
+        *BREAKTHROUGH,
+        *(name for name in [*SINGLE, *ROBUST] if name not in BREAKTHROUGH),
+    ]
+    if arguments == ["list"]:
         sys.stdout.write("\n".join(names) + "\n")
     else:
-        for argument in sys.argv[1:]:
-            run(argument)
+        for argument in arguments:
+            run(argument, timeline)
