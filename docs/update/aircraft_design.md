@@ -74,7 +74,10 @@ Electric motors and fuel cells of the power required by large aircraft do not ex
 yet. The maximum power per propulsor available at the EIS is therefore a technology
 parameter, interpolated in log space, and the ratio of the power per propulsor to
 this maximum is a design output, constrained to be at most 1 in the optimization
-(`<aircraft>.unit_power_ratio`). Fuel cell aircraft use the number of propulsors of
+(`<aircraft>.unit_power_ratio`). Electric and fuel cell aircraft are also required to
+be at least as energy efficient as the current fleet
+(`<aircraft>.relative_efficiency_gain`, as in the main paper for electric aircraft),
+and their design must close (`<aircraft>.closure_gap`, see below). Fuel cell aircraft use the number of propulsors of
 credible concepts: 2 up to the regional market (as the ZeroAvia ZA600 and ZA2000
 powertrains, or ATR 72 retrofit studies), and 4 for short-medium and long range (as
 the 2025 Airbus ZEROe concept, 4 propulsors of 2 MW for about 100 seats). Larger
@@ -90,12 +93,19 @@ are bundled in `noads/application/aircraft_tech_data/powertrain/`.
 
 | Scenario | $\beta$ (specific power) | $\gamma$ (losses) | Max power per propulsor 2020 / 2040 / 2060 / 2080 [MW] |
 |---|---|---|---|
-| Lower | 0.25 | 0 | 0.06 / 1.5 / 5 / 9.1 |
-| Mid | 0.1 | 0.1 | 0.06 / 3 / 12 / 24 |
-| Upper | 0 | 0.25 | 0.06 / 5 / 25 / 56 |
+| Lower | 0.25 | 0 | 0.06 / 1.5 / 2.3 / 2.8 |
+| Mid | 0.1 | 0.1 | 0.06 / 2.5 / 4 / 5 |
+| Upper | 0 | 0.25 | 0.06 / 4 / 6.5 / 9 |
 
 The scale exponents are those of 2040 onwards; they all start from the Mid value in
 2020 (see below).
+
+The maximum power per propulsor is a technology parameter of the EIS year, so the
+cap rises with time, from the 0.7 to 1 MW demonstrated today. It is revised
+downwards from the powertrain calibration to the sources: projections stop at 2 MW
+(Airbus ZEROe) and 2 to 5 MW (ZeroAvia ZA2000, NASA 5 MW axial flux concept), hence
+Mid reaches 2.5 MW in 2040 and 5 MW in 2080, while Upper goes beyond as an
+exploratory bound (9 MW in 2080). No source supports 12 to 56 MW per propulsor.
 
 The fuel cell system parameters of the powertrain calibration rest on component
 targets, which proved optimistic against the literature: flown aviation fuel cell
@@ -107,8 +117,8 @@ about 0.2 to 0.27 W per W of heat. They are revised downwards accordingly:
 
 | Parameter | 2020 | Lower 2040 / 2060 / 2080 | Mid 2040 / 2060 / 2080 | Upper 2040 / 2060 / 2080 |
 |---|---|---|---|---|
-| Fuel cell specific power, without TMS [kW/kg] | 0.75 | 1.5 / 2.0 / 2.25 | 2.0 / 2.75 / 3.25 | 2.5 / 3.5 / 4.5 |
-| Fuel cell system efficiency at cruise [%] | 40 | 44 / 46 / 48 | 46 / 50 / 52 | 48 / 53 / 56 |
+| Fuel cell specific power, without TMS [kW/kg] | 0.75 | 1.5 / 2.0 / 2.25 | 2.0 / 2.75 / 3.25 | 2.5 / 3.25 / 4.0 |
+| Fuel cell system efficiency at cruise [%] | 40 | 44 / 46 / 48 | 46 / 49 / 51 | 48 / 51 / 54 |
 | TMS specific heat rejection [kW/kg] | 2 | 3.5 / 5 / 6 | 5 / 8 / 10 | 7 / 12 / 15 |
 | TMS parasitic power per unit heat [-] | 0.225 | 0.20 / 0.18 / 0.16 | 0.17 / 0.14 / 0.12 | 0.14 / 0.10 / 0.08 |
 
@@ -116,6 +126,18 @@ The literature values are bundled in
 `noads/application/aircraft_tech_data/literature_data.csv` (197 values from 2020 to
 2026, with their source, scope and status). Most of them come from abstracts and
 summaries rather than full texts, and should be checked before being quoted.
+
+### Design closure
+
+The MTOW of an aircraft is the root of its mass balance, found with Newton's method
+(Optimistix) and differentiated implicitly. Immature technologies (batteries, fuel
+cells) give designs that do not close, with no positive MTOW balancing the mission
+and the structure. The GAM does not return NaN for them, which would stop the
+optimizer: it keeps finite values and derivatives (the powers of the scale laws and
+the MTOW are floored), and returns a differentiable `closure_gap` (relative mass
+balance residual, plus the violation of the MTOW floor) that is null for designs that
+close. The optimizer constrains it with `closure_gap <= 1e-4`, together with the unit
+power ratio, so that it chooses an EIS at which the design exists.
 
 ## LH2 tanks
 
@@ -208,7 +230,10 @@ Upper-to-Lower band only widens with the EIS. To guarantee this:
   gap to Mid, which starts at zero in 2020 and never shrinks
   ({class}`~noads.core.models.fleet.aircraft_tech_parameter.ScenarioTechParameter`);
 - the 2040 and 2060 values are those of the main paper or of the powertrain
-  calibration (except the revised fuel cell and TMS values above), and the 2080 values extend the calibrated curves (e-motor specific
+  calibration (except the revised values above: fuel cell and TMS, maximum power per
+propulsor, Upper e-motor specific power capped at 35 kW/kg, and the Mid and Upper
+structure factors, now 85 % and 78 % of today's empty mass in 2080, as the 787 and
+A350 already banked about 20 % of the structure), and the 2080 values extend the calibrated curves (e-motor specific
   power and efficiency), or add half of the 2040-2060 increase. Where a calibrated
   gap to Mid shrinks (fuel cell TMS parasitic power in 2060), it is held at its
   largest value;
