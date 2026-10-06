@@ -15,24 +15,27 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-"""Primary energy per final energy of the energy carriers of the update model.
+"""Primary energy per final energy of the energy carriers.
 
 The primary energies are those of the paper: oil, biomass and (grid) electricity.
 Each factor chains the pathway efficiencies of
 :func:`~noads.application.scenario_setup.single_scenario_setup` (MJ produced per MJ of
-input), with the technology-dependent bands of the update model for electrolysis,
-power-to-liquid and liquefaction, assuming that all hydrogen is electrolytic.
+input), which depend on time only, assuming that all hydrogen is electrolytic.
 """
 
 from numpy import asarray
 from numpy import interp
 
-from noads.application.base_objects import (
-    update_pathway_efficiencies_lower_mid_upper_2025_2035_2050,
-)
-
 PATHWAY_YEARS = (2025.0, 2035.0, 2050.0)
 """Years of the time-dependent pathway efficiencies (constant outside)."""
+
+TIME_EFFICIENCIES = {
+    "Electrolysis.ELECTRICITY.efficiency": (0.71, 0.71 * 1.03, 0.71 * 1.06),
+    "Power_to_liquid.ELECTRICITY.efficiency": (1.53, 1.53 * 1.08, 1.53 * 1.16),
+    "Power_to_liquid.GAS-H2.efficiency": (0.53, 0.53 * 1.06, 0.53 * 1.12),
+    "H2_liquefaction.ELECTRICITY.efficiency": (4.54, 4.54 * 1.2, 4.54 * 1.4),
+}
+"""Time-dependent pathway efficiencies, as in the scenario setup."""
 
 CONSTANT_EFFICIENCIES = {
     "Refinery.OIL.efficiency": 0.865,
@@ -56,19 +59,17 @@ CARRIERS = {
 """Energy carriers (or biofuel pathways) and their primary energy."""
 
 
-def pathway_efficiency(name, technology_index, years):
+def pathway_efficiency(name, years):
     """Efficiency of a pathway input (MJ produced per MJ of input) versus year."""
     if name in CONSTANT_EFFICIENCIES:
         return CONSTANT_EFFICIENCIES[name] + 0.0 * asarray(years, dtype=float)
-    values = update_pathway_efficiencies_lower_mid_upper_2025_2035_2050[name]
-    return interp(years, PATHWAY_YEARS, values[technology_index])
+    return interp(years, PATHWAY_YEARS, TIME_EFFICIENCIES[name])
 
 
-def primary_energy_factors(technology_index, years):
+def primary_energy_factors(years):
     """Primary energy per final energy (MJ/MJ) of each carrier versus year.
 
     Args:
-        technology_index: The technology scenario (0: Lower, 1: Mid, 2: Upper).
         years: The years.
 
     Returns:
@@ -76,7 +77,7 @@ def primary_energy_factors(technology_index, years):
     """
 
     def inverse(name):
-        return 1.0 / pathway_efficiency(name, technology_index, years)
+        return 1.0 / pathway_efficiency(name, years)
 
     electrolysis = inverse("Electrolysis.ELECTRICITY.efficiency")
     return {

@@ -392,42 +392,6 @@ def update_power_system(architecture, category):
     return power_system
 
 
-# Energy pathway efficiencies of the update model (MJ produced per MJ of input) in
-# 2025, 2035 and 2050 (held constant afterwards), for the Lower, Mid and Upper
-# technology scenarios. Mid is the paper (Wallington et al. 2024); all scenarios share
-# the 2025 value and their gap to Mid never shrinks. Sources in
-# aircraft_tech_data/pathway_literature_data.csv:
-# - electrolysis: 53-55 kWh/kg H2 for 2025 commercial systems (0.61-0.63 LHV), IRENA
-#   2050 target below 42 kWh/kg (cell, 0.79), SOEC 0.85-0.90 with heat. Lower stalls
-#   near today's best systems, Upper reaches 0.80;
-# - liquefaction: 10-15 kWh/kg LH2 for existing plants, 6.4 kWh/kg for the IDEALHY
-#   large-scale design, 2.7 kWh/kg theoretical minimum. Lower stops at 6.7 kWh/kg,
-#   Upper reaches 4.9 kWh/kg;
-# - power-to-liquid: Fischer-Tropsch synthesis about 73 % from syngas, overall
-#   power-to-liquid efficiency 35-50 %, higher with co-electrolysis (SOEC).
-update_pathway_efficiencies_lower_mid_upper_2025_2035_2050 = {
-    "Electrolysis.ELECTRICITY.efficiency": (
-        (0.71, 0.715, 0.72),
-        (0.71, 0.71 * 1.03, 0.71 * 1.06),
-        (0.71, 0.76, 0.80),
-    ),
-    "H2_liquefaction.ELECTRICITY.efficiency": (
-        (4.54, 4.75, 5.0),
-        (4.54, 4.54 * 1.2, 4.54 * 1.4),
-        (4.54, 5.75, 6.76),
-    ),
-    "Power_to_liquid.GAS-H2.efficiency": (
-        (0.53, 0.54, 0.55),
-        (0.53, 0.53 * 1.06, 0.53 * 1.12),
-        (0.53, 0.59, 0.65),
-    ),
-    "Power_to_liquid.ELECTRICITY.efficiency": (
-        (1.53, 1.58, 1.63),
-        (1.53, 1.53 * 1.08, 1.53 * 1.16),
-        (1.53, 1.75, 1.95),
-    ),
-}
-
 UNIT_POWER_RATIO_MARGIN = 0.98
 """Largest unit power ratio at the last EIS for a design to enter the update fleet."""
 

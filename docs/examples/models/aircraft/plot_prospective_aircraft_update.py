@@ -789,8 +789,9 @@ fig7.savefig("./aircraft_update_propulsion_efficiency.png", dpi=150)
 # Primary energy per seat-km
 # --------------------------
 # The energy per seat-km of each architecture (final energy, design mission) is
-# multiplied by the primary energy per final energy of its carrier at the EIS year,
-# for the same technology scenario (:mod:`noads.application.primary_energy`). The
+# multiplied by the primary energy per final energy of its carrier at the EIS year
+# (:mod:`noads.application.primary_energy`), which depends on time only: the bands
+# come from aircraft technology only. The
 # architectures are compared per primary resource: oil for the Jet-A aircraft, biomass
 # for the Jet-A aircraft on each biofuel pathway, and electricity for the Jet-A
 # aircraft on e-fuel, the battery-electric and the two LH2 aircraft. Bands span the
@@ -798,7 +799,7 @@ fig7.savefig("./aircraft_update_propulsion_efficiency.png", dpi=150)
 # which are not in the optimized fleets, are shown by their Mid curve only
 # (dash-dotted).
 
-primary_factors = [primary_energy_factors(index, years) for index in range(3)]
+primary_factors = primary_energy_factors(years)
 
 
 def primary_curves(category, architecture, carrier):
@@ -807,7 +808,7 @@ def primary_curves(category, architecture, carrier):
         masked(
             1e-3
             * designs[category, architecture, index]["enrg_consumption"]
-            * primary_factors[index][carrier],
+            * primary_factors[carrier],
             designs[category, architecture, index]["feasible"],
         )
         for index in range(3)
@@ -823,7 +824,7 @@ def primary_figure(title, specs, ymax, reference=None):
         max_range = 1e-3 * categories_mission[category]["range"]
         if reference is not None:
             low, mid, high = (
-                current * primary_factors[1]["Fossil kerosene"][0]
+                current * primary_factors["Fossil kerosene"][0]
                 for current in category_conso[category]
             )
             ax.fill_between(

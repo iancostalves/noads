@@ -31,11 +31,9 @@ from noads.application.base_objects import initialize_base_objects
 from noads.application.base_objects import lh2_tank_tech_params_lower_mid_upper
 from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
 from noads.application.base_objects import (
-    update_pathway_efficiencies_lower_mid_upper_2025_2035_2050,
-)
-from noads.application.base_objects import (
     update_tech_params_lower_mid_upper_2020_2040_2060_2080,
 )
+from noads.application.primary_energy import primary_energy_factors
 from noads.application.scenario_setup import single_scenario_setup
 from noads.core.models.fleet.aircraft_design import AircraftDesign
 from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
@@ -487,21 +485,11 @@ def test_climb_at_powertrain_efficiency():
     assert float(consistent["mtow"]) > float(upstream["mtow"])
 
 
-def test_update_pathway_efficiency_bands():
-    """Mid is the paper, the scenarios share their 2025 value, and the gaps to Mid
-    never shrink, Lower below and Upper above."""
-    for name, (
-        lower,
-        mid,
-        upper,
-    ) in update_pathway_efficiencies_lower_mid_upper_2025_2035_2050.items():
-        assert lower[0] == mid[0] == upper[0], name
-        gaps_lower = np.subtract(mid, lower)
-        gaps_upper = np.subtract(upper, mid)
-        assert np.all(np.diff(gaps_lower) >= 0.0), name
-        assert np.all(np.diff(gaps_upper) >= 0.0), name
-        assert np.all(gaps_lower >= 0.0), name
-        assert np.all(gaps_upper >= 0.0), name
+def test_primary_energy_factors():
+    """Chained electricity per MJ of e-fuel and LH2, as in the paper pathways."""
+    factors = primary_energy_factors([2025.0, 2050.0, 2080.0])
+    np.testing.assert_allclose(factors["E-fuel"], [3.31, 2.80, 2.80], atol=0.01)
+    np.testing.assert_allclose(factors["LH2"], [1.63, 1.49, 1.49], atol=0.01)
 
 
 def test_engine_efficiency_factor():
@@ -516,3 +504,26 @@ def test_engine_efficiency_factor():
         dict(FC_SYSTEM), dict(REGIONAL)
     )
     assert float(same["mission_enrg"]) == float(fuel_cell["mission_enrg"])
+
+
+def test_update_pathways_are_those_of_the_paper():
+    """The technology scenarios of the update model vary aircraft technology only."""
+    inputs = []
+    for aircraft_model in ("paper", "update"):
+        scenario, *_ = single_scenario_setup(
+            "pathways",
+            "SSP2-26",
+            technology_index=0,
+            aircraft_model=aircraft_model,
+            compile_jit=False,
+        )
+        defaults = scenario.discipline.default_input_data
+        inputs.append({
+            name: np.asarray(value)
+            for name, value in defaults.items()
+            if name.endswith(".efficiency")
+        })
+    assert inputs[0].keys() == inputs[1].keys()
+    assert inputs[0]
+    for name, value in inputs[0].items():
+        np.testing.assert_allclose(inputs[1][name], value, err_msg=name)

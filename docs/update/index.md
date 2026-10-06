@@ -28,7 +28,7 @@ all the model updates are in place.
 | Aircraft design with GAM V3.0 | available | [Aircraft design](aircraft_design.md) |
 | Powertrain scale effects and maximum power per propulsor | available | [Aircraft design](aircraft_design.md) |
 | LH2 tank gravimetric index depending on tank size and technology | available | [Aircraft design](aircraft_design.md) |
-| Technology-dependent energy pathways and primary energy | available | [Energy pathways](energy_pathways.md) |
+| Primary energy of energy carriers and aircraft | available | [Energy pathways](energy_pathways.md) |
 | Geological hydrogen | planned | [Geological hydrogen](geological_hydrogen.md) |
 | Updated optimization results | planned | |
 
