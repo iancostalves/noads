@@ -502,3 +502,17 @@ def test_update_pathway_efficiency_bands():
         assert np.all(np.diff(gaps_upper) >= 0.0), name
         assert np.all(gaps_lower >= 0.0), name
         assert np.all(gaps_upper >= 0.0), name
+
+
+def test_engine_efficiency_factor():
+    """Better thermal engines burn less fuel, electric aircraft are not affected."""
+    base = GAM(**TECH).design_airplane(dict(LH2_TURBOFAN), dict(SHORT_MEDIUM))
+    better = GAM(**TECH, engine_efficiency_factor=120.0).design_airplane(
+        dict(LH2_TURBOFAN), dict(SHORT_MEDIUM)
+    )
+    assert float(better["mission_enrg"]) < float(base["mission_enrg"])
+    fuel_cell = GAM(**TECH).design_airplane(dict(FC_SYSTEM), dict(REGIONAL))
+    same = GAM(**TECH, engine_efficiency_factor=120.0).design_airplane(
+        dict(FC_SYSTEM), dict(REGIONAL)
+    )
+    assert float(same["mission_enrg"]) == float(fuel_cell["mission_enrg"])

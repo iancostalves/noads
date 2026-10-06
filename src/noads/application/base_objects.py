@@ -246,6 +246,16 @@ update_tech_params_lower_mid_upper_2020_2040_2060_2080 = {
         (0.06, 2.5, 4.0, 5.0),
         (0.06, 4.0, 6.5, 9.0),
     ),
+    # %, overall (thermal x propulsive) efficiency of thermal engines relative to
+    # today's (LEAP / GTF generation): LEAP gained 15 % fuel burn over the previous
+    # generation, UltraFan targets about 10 % and CFM RISE (open rotor) more than 20 %
+    # for a mid-2030s EIS; today's large turbofans reach about 40 % overall at
+    # cruise, about 50 % is achievable and 67 % is the ideal limit (Grönstedt 2019).
+    "engine_efficiency_factor": (
+        (100.0, 108.0, 115.0, 118.0),
+        (100.0, 115.0, 125.0, 130.0),
+        (100.0, 125.0, 135.0, 140.0),
+    ),
     # %, standard empty mass relative to today. About 10-20 % further savings are
     # supported by sources (787/A350 banked 20 % of the structure already), not 34-50 %
     "struct_weight_factor": (

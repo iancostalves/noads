@@ -131,6 +131,7 @@ class GAM:
         fuelcell_specific_power=1.0,
         lift_to_drag="model",
         struct_weight_factor=100.0,
+        engine_efficiency_factor=100.0,
         fuelcell_efficiency=50.0,
         electronics_specific_power=10.0,
         emotor_efficiency=90.0,
@@ -166,6 +167,9 @@ class GAM:
             fuelcell_specific_power: Fuel cell system specific power (kW/kg).
             lift_to_drag: ``"model"`` for the L/D regressions, or a forced value.
             struct_weight_factor: Factor on the standard MWE regression (%).
+            engine_efficiency_factor: Factor on the overall (thermal and
+                propulsive) efficiency of thermal engines, relative to today's
+                engines (%).
             fuelcell_efficiency: Fuel cell system efficiency (%).
             electronics_specific_power: Power electronics specific power (kW/kg).
             emotor_efficiency: Electric chain efficiency (motor, inverter,
@@ -394,6 +398,7 @@ class GAM:
         self.standard_af_mwe_factors = [-3.06255540e-07, 4.18303322e-01, -35]
         self.stdm_shift = 0.0  # Mass delta on standard MWE
         self.stdm_factor = 1e-2 * struct_weight_factor  # Mass factor on standard MWE
+        self.engine_eff_factor = 1e-2 * engine_efficiency_factor
 
     # ------------------------------------------------------------------------------
     # Low level sub-models
@@ -489,12 +494,15 @@ class GAM:
         """Overall efficiency of the propulsion system of the given architecture."""
         engine_type = power_system["engine_type"]
         if engine_type == self.piston:
-            return self.get_piston_eff()
+            return self.get_piston_eff() * self.engine_eff_factor
         if engine_type == self.turboprop:
-            return self.get_turboprop_eff(max_power)
+            return self.get_turboprop_eff(max_power) * self.engine_eff_factor
         if engine_type == self.turbofan:
-            return self.get_turbofan_eff(
-                tas, power_system["bpr"], max_power, power_system["energy_type"]
+            return (
+                self.get_turbofan_eff(
+                    tas, power_system["bpr"], max_power, power_system["energy_type"]
+                )
+                * self.engine_eff_factor
             )
         if engine_type == self.emotor:
             return self.get_emotor_eff(

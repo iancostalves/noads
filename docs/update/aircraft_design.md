@@ -127,6 +127,29 @@ The literature values are bundled in
 2026, with their source, scope and status). Most of them come from abstracts and
 summaries rather than full texts, and should be checked before being quoted.
 
+### Thermal engine efficiency
+
+The technology parameters of the main paper improve the structure, batteries and
+electric components, but not the thermal engines, whose overall (thermal and
+propulsive) efficiency stays at today's level. With the size effects of GAM V3.0, new
+turbofans would then be no more efficient than the 2019 fleet. The update model adds
+an engine efficiency factor on all thermal engines (turbofans, turboprops, piston
+engines, kerosene or hydrogen), relative to today's LEAP and GTF generation:
+
+| Scenario | 2040 | 2060 | 2080 |
+|---|---|---|---|
+| Lower | 108 % | 115 % | 118 % |
+| Mid | 115 % | 125 % | 130 % |
+| Upper | 125 % | 135 % | 140 % |
+
+The LEAP gained 15 % of fuel burn over the previous generation, the Rolls-Royce
+UltraFan targets about 10 % and the CFM RISE open rotor more than 20 % for an EIS in
+the mid-2030s. Today's large turbofans reach about 40 % overall efficiency at cruise,
+about 50 % is considered achievable and 67 % is the ideal limit, which bounds the
+Upper scenario (56 % in 2080 for a large turbofan). With this trend, new Mid Jet-A
+aircraft reach the efficiency of the 2019 fleet average by 2040 on all markets, and of
+its best quartile by 2060.
+
 ### Fuel cell efficiency
 
 The overall efficiency of fuel cell aircraft (hydrogen to thrust power at cruise) is

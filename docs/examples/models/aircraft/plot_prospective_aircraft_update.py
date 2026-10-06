@@ -287,6 +287,14 @@ tech_panels = [
         ["struct_weight_factor"],
     ),
     (
+        "Thermal engine efficiency\n(relative to today; paper: none)",
+        "%",
+        lambda: update_curves("engine_efficiency_factor"),
+        lambda: paper_constant(100.0),
+        [],
+        [],
+    ),
+    (
         "LH2 tank Gravimetric Index\n(0.3 to 3 t of LH2 per tank)",
         "%",
         lh2_tank_gi_curves,
