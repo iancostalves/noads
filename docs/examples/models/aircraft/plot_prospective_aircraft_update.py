@@ -795,9 +795,8 @@ fig7.savefig("./aircraft_update_propulsion_efficiency.png", dpi=150)
 # architectures are compared per primary resource: oil for the Jet-A aircraft, biomass
 # for the Jet-A aircraft on each biofuel pathway, and electricity for the Jet-A
 # aircraft on e-fuel, the battery-electric and the two LH2 aircraft. Bands span the
-# Lower to Upper scenarios (solid line for Lower and dotted line for Mid); turboprops,
-# which are not in the optimized fleets, are shown by their Mid curve only
-# (dash-dotted).
+# Lower to Upper scenarios (solid line for Lower and dotted line for Mid). Turboprops
+# are shown for comparison, although they are not in the optimized fleets.
 
 primary_factors = primary_energy_factors(years)
 
@@ -833,11 +832,9 @@ def primary_figure(title, specs, ymax, reference=None):
             )  # fmt: skip
             ax.hlines(mid, years[0], years[-1], colors="dimgray", ls=":", lw=1.5)
         for _label, architecture, carrier, color in specs:
-            curves = primary_curves(category, architecture, carrier)
-            if "Turboprop" in architecture:
-                ax.plot(years, curves[1], color=color, ls="-.", lw=1.5)
-            else:
-                plot_architecture(ax, curves, color)
+            plot_architecture(
+                ax, primary_curves(category, architecture, carrier), color
+            )
         ax.set_title(
             f"{category.replace('_', ' ')}\n({seat} seat, {max_range} km)",
             fontsize="large",
@@ -847,15 +844,10 @@ def primary_figure(title, specs, ymax, reference=None):
     axes[-1, -1].set_axis_off()
     axes[-1, 0].set_xlabel("Entry-Into-Service")
     axes[0, 0].set_ylabel("Primary energy per seat-km [MJ]")
-    handles = [
-        Patch(color=color, label=label)
-        for label, architecture, _, color in specs
-        if "Turboprop" not in architecture
-    ]
+    handles = [Patch(color=color, label=label) for label, _, _, color in specs]
     handles.extend([
         Line2D([0], [0], color="k", ls="-", lw=3, label="Lower"),
         Line2D([0], [0], color="k", ls=":", lw=3, label="Mid"),
-        Line2D([0], [0], color="k", ls="-.", lw=1.5, label="Turboprop (Mid)"),
     ])
     if reference is not None:
         handles.append(Patch(color="dimgray", alpha=0.4, label=reference))
@@ -866,8 +858,8 @@ def primary_figure(title, specs, ymax, reference=None):
 fig_oil, _ = primary_figure(
     "Primary energy: oil, update model\n[MJ oil / seat km]",
     [
-        ("Jet-A", "JetA-GasTurbine", "Fossil kerosene", "maroon"),
-        ("Jet-A turboprop", "JetA-Turboprop", "Fossil kerosene", "maroon"),
+        ("Jet-A turbofan", "JetA-GasTurbine", "Fossil kerosene", "maroon"),
+        ("Jet-A turboprop", "JetA-Turboprop", "Fossil kerosene", "darkgoldenrod"),
     ],
     ymax=4.0,
     reference="Current fleet",
@@ -877,13 +869,12 @@ fig_oil.savefig("./aircraft_update_primary_oil.png", dpi=150)
 fig_biomass, _ = primary_figure(
     "Primary energy: biomass, update model\n[MJ biomass / seat km]",
     [
-        (f"Jet-A {pathway}", architecture, pathway, color)
-        for pathway, color in (
-            ("HEFA", "olivedrab"),
-            ("ATJ", "yellowgreen"),
-            ("FT", "darkgreen"),
+        (f"Jet-A {name} {pathway}", architecture, pathway, color)
+        for name, architecture, colors in (
+            ("turbofan", "JetA-GasTurbine", ("olivedrab", "yellowgreen", "darkgreen")),
+            ("turboprop", "JetA-Turboprop", ("darkgoldenrod", "goldenrod", "khaki")),
         )
-        for architecture in ("JetA-GasTurbine", "JetA-Turboprop")
+        for pathway, color in zip(("HEFA", "ATJ", "FT"), colors)
     ],
     ymax=16.0,
 )
@@ -892,8 +883,8 @@ fig_biomass.savefig("./aircraft_update_primary_biomass.png", dpi=150)
 fig_electricity, _ = primary_figure(
     "Primary energy: electricity, update model\n[MJ electricity / seat km]",
     [
-        ("Jet-A e-fuel", "JetA-GasTurbine", "E-fuel", "darkorange"),
-        ("Jet-A turboprop e-fuel", "JetA-Turboprop", "E-fuel", "darkorange"),
+        ("Jet-A turbofan e-fuel", "JetA-GasTurbine", "E-fuel", "darkorange"),
+        ("Jet-A turboprop e-fuel", "JetA-Turboprop", "E-fuel", "darkgoldenrod"),
         ("Battery-Electric", "Battery-Electric", "Battery", "limegreen"),
         ("lH2-GasTurbine", "lH2-GasTurbine", "LH2", "orangered"),
         ("lH2-FuelCell", "lH2-FuelCell", "LH2", "royalblue"),

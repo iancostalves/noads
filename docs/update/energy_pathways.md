@@ -56,8 +56,9 @@ bands come from aircraft technology only. The architectures are compared per pri
 :name: fig-update-primary-oil
 :width: 100%
 
-Oil per seat-km of the Jet-A aircraft, compared with the 2019 fleet (grey).
-Turboprops, which are not in the optimized fleets, are shown by their Mid curve only.
+Oil per seat-km of the Jet-A aircraft, compared with the 2019 fleet (grey). Filled
+between the Upper and Lower scenarios, solid line for Lower and dotted line for Mid.
+Turboprops are shown for comparison, although they are not in the optimized fleets.
 ```
 
 ```{figure} figures/aircraft_update_primary_biomass.png
