@@ -26,3 +26,5 @@
 !/.coveragerc
 
 /.pytest_cache
+*.checkpoint.json
+*.checkpoint.tmp

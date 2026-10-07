@@ -41,6 +41,65 @@ EXTENDED_TIMELINE = (2100.0, 2080.0)
 """End year and last entry-into-service of the extended timeline (update model)."""
 
 
+CHECKPOINT_PERIOD = 25
+"""Number of optimizer iterations between two checkpoints."""
+
+
+def _load_checkpoint(design_space, checkpoint_path, max_iter):
+    """Warm-start the design space from a checkpoint, if any.
+
+    Args:
+        design_space: The design space, whose current value is set to the
+            checkpointed design.
+        checkpoint_path: The checkpoint file, or ``None`` to disable checkpoints.
+        max_iter: The total iteration budget.
+
+    Returns:
+        The number of iterations already done and the remaining budget.
+    """
+    if checkpoint_path is None or not Path(checkpoint_path).is_file():
+        return 0, max_iter
+    with Path(checkpoint_path).open() as file:
+        checkpoint = load(file)
+    design_space.set_current_value({
+        name: array(value) for name, value in checkpoint["x"].items()
+    })
+    n_iter = checkpoint["n_iter"]
+    LOGGER.info("Warm start from %s after %d iterations", checkpoint_path, n_iter)
+    return n_iter, max(max_iter - n_iter, 1)
+
+
+def _save_checkpoints(gemseo_scenario, checkpoint_path, n_iter_done):
+    """Save the current design every :data:`CHECKPOINT_PERIOD` iterations.
+
+    The file is written to a temporary path and then renamed, so that a process
+    killed while writing never leaves a corrupted checkpoint.
+    """
+    if checkpoint_path is None:
+        return
+    checkpoint_path = Path(checkpoint_path)
+    problem = gemseo_scenario.formulation.optimization_problem
+    database = problem.database
+
+    def save(x_vect):
+        n_iter = database.n_iterations
+        if n_iter % CHECKPOINT_PERIOD:
+            return
+        x_dict = problem.design_space.convert_array_to_dict(x_vect)
+        temporary_path = checkpoint_path.with_suffix(".tmp")
+        with temporary_path.open("w") as file:
+            dump(
+                {
+                    "x": {name: value.tolist() for name, value in x_dict.items()},
+                    "n_iter": n_iter_done + n_iter,
+                },
+                file,
+            )
+        temporary_path.replace(checkpoint_path)
+
+    database.add_new_iter_listener(save)
+
+
 def _timeline(aircraft_model, timeline):
     """End year and last entry-into-service of a timeline."""
     if timeline == "paper":
@@ -292,11 +351,19 @@ def single_policy_robust_scenario_optimization(
     save_figs=False,
     aircraft_model="paper",
     timeline="paper",
+    checkpoint_path=None,
 ):
     """Optimal decarbonization scenario robust to several background scenarios.
 
     See :func:`single_policy_scenario_optimization` for ``aircraft_model`` and
     ``timeline``.
+
+    If ``checkpoint_path`` is given, the current design is saved there every
+    :data:`CHECKPOINT_PERIOD` iterations, and an existing checkpoint is used as
+    starting point with the remaining iteration budget, so that a long optimization
+    can be resumed after its process was killed. The quasi-Newton approximation of
+    SLSQP restarts at each resume. The checkpoint is deleted once the optimum is
+    saved.
     """
     if fossil_kerosene_only:
         scenario_name += "-Fossil"
@@ -390,6 +457,8 @@ def single_policy_robust_scenario_optimization(
         )
     )
 
+    n_iter_done, max_iter = _load_checkpoint(design_space, checkpoint_path, 5000)
+
     gemseo_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
         formulation_name="DisciplinaryOpt",
@@ -421,8 +490,9 @@ def single_policy_robust_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
+    _save_checkpoints(gemseo_scenario, checkpoint_path, n_iter_done)
     gemseo_scenario.execute(
-        max_iter=5000,
+        max_iter=max_iter,
         algo_name="NLOPT_SLSQP",
         ftol_rel=1e-14,
         ftol_abs=1e-14,
@@ -453,6 +523,8 @@ def single_policy_robust_scenario_optimization(
         })
         with (results_folder / scenario_name / "opt_result.json").open("w") as r_file:
             dump(result, r_file)
+        if checkpoint_path is not None:
+            Path(checkpoint_path).unlink(missing_ok=True)
 
     if plot_optimum:
         plot_multi_scenario_result(

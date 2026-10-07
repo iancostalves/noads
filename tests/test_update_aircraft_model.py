@@ -527,3 +527,47 @@ def test_update_pathways_are_those_of_the_paper():
     assert inputs[0]
     for name, value in inputs[0].items():
         np.testing.assert_allclose(inputs[1][name], value, err_msg=name)
+
+
+def test_robust_optimization_checkpoint(tmp_path):
+    """A checkpointed optimization resumes from its last saved design."""
+    from gemseo import create_design_space
+    from gemseo import create_discipline
+    from gemseo import create_scenario
+
+    from noads.application import examples
+
+    def run(max_iter):
+        design_space = create_design_space()
+        for name in ("x", "y"):
+            design_space.add_variable(
+                name, lower_bound=-2.0, upper_bound=2.0, value=-1.5
+            )
+        discipline = create_discipline(
+            "AnalyticDiscipline", expressions={"f": "100*(y-x**2)**2+(1-x)**2"}
+        )
+        n_iter_done, remaining = examples._load_checkpoint(
+            design_space, checkpoint, max_iter
+        )
+        scenario = create_scenario(
+            discipline, "f", design_space, formulation_name="DisciplinaryOpt"
+        )
+        examples._save_checkpoints(scenario, checkpoint, n_iter_done)
+        scenario.execute(algo_name="NLOPT_SLSQP", max_iter=remaining)
+        database = scenario.formulation.optimization_problem.database
+        return n_iter_done, remaining, database.get_x_vect(1)
+
+    checkpoint = tmp_path / ".run.checkpoint.json"
+    examples.CHECKPOINT_PERIOD, period = 2, examples.CHECKPOINT_PERIOD
+    try:
+        run(4)
+        saved = json.loads(checkpoint.read_text())
+        assert saved["n_iter"] == 4
+        n_iter_done, remaining, x_start = run(10)
+    finally:
+        examples.CHECKPOINT_PERIOD = period
+    assert n_iter_done == 4
+    assert remaining == 6
+    assert not np.allclose(saved["x"]["x"], -1.5)
+    np.testing.assert_allclose(x_start, [saved["x"]["x"][0], saved["x"]["y"][0]])
+    assert json.loads(checkpoint.read_text())["n_iter"] > 4

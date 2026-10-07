@@ -100,6 +100,7 @@ def run(name, timeline="paper"):
             save_history_view=False,
             aircraft_model="update",
             timeline=timeline,
+            checkpoint_path=RESULTS_DIR / folder / f".{name}.checkpoint.json",
         )
     else:
         background, index, drop_in, fossil, low_demand, preferential = SINGLE[name]
