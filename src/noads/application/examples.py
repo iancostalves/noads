@@ -16,8 +16,11 @@
 
 """Utilities for launching scenario optimization examples."""
 
+import operator
 from json import dump
+from json import dumps
 from json import load
+from json import loads
 from logging import getLogger
 from os import environ
 from pathlib import Path
@@ -25,6 +28,7 @@ from pathlib import Path
 from gemseo import configure_logger
 from gemseo import create_scenario
 from numpy import array
+from numpy import savez_compressed
 
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
 from noads.application.scenario_setup import END_YEAR
@@ -100,6 +104,75 @@ def _save_checkpoints(gemseo_scenario, checkpoint_path, n_iter_done):
     database.add_new_iter_listener(save)
 
 
+HISTORY_FILE = "iterations.npz"
+"""Name of the file storing the design of every optimizer iteration of a result."""
+
+
+def _record_history(gemseo_scenario, history_path, n_iter_done=0):
+    """Append the design of every new optimizer iteration to a JSON lines file.
+
+    Each line is written as soon as the iteration starts, so that the history of a
+    killed (and possibly resumed) optimization is kept.
+
+    Args:
+        gemseo_scenario: The GEMSEO scenario.
+        history_path: The JSON lines file, or ``None`` to disable the history.
+        n_iter_done: The iterations done before a warm start.
+    """
+    if history_path is None:
+        return
+    history_path = Path(history_path)
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    if not n_iter_done:
+        # a new optimization: drop the history of a former killed one
+        history_path.unlink(missing_ok=True)
+    database = gemseo_scenario.formulation.optimization_problem.database
+
+    def save(x_vect):
+        with history_path.open("a") as file:
+            file.write(
+                dumps({
+                    "iteration": n_iter_done + database.n_iterations,
+                    "x": x_vect.tolist(),
+                })
+                + "\n"
+            )
+
+    database.add_new_iter_listener(save)
+
+
+def _finalize_history(history_path, design_space):
+    """Convert the JSON lines history into a compressed NumPy archive.
+
+    The archive holds the ``iteration`` numbers, the designs ``x`` (one row per
+    iteration) and, to split the rows, the design variable ``names`` and ``sizes``.
+    The JSON lines file is then deleted.
+
+    Args:
+        history_path: The JSON lines file, or ``None``.
+        design_space: The design space of the optimization.
+    """
+    if history_path is None or not Path(history_path).is_file():
+        return
+    history_path = Path(history_path)
+    with history_path.open() as file:
+        rows = [loads(line) for line in file if line.strip()]
+    # iterations redone after a warm start replace the lost ones
+    rows = sorted(
+        {row["iteration"]: row for row in rows}.values(),
+        key=operator.itemgetter("iteration"),
+    )
+    names = list(design_space.variable_names)
+    savez_compressed(
+        history_path.with_name(HISTORY_FILE),
+        iteration=array([row["iteration"] for row in rows]),
+        x=array([row["x"] for row in rows]),
+        names=array(names),
+        sizes=array([design_space.get_size(name) for name in names]),
+    )
+    history_path.unlink()
+
+
 def _timeline(aircraft_model, timeline):
     """End year and last entry-into-service of a timeline."""
     if timeline == "paper":
@@ -140,6 +213,7 @@ def single_policy_scenario_optimization(
     plot_computational_graphs=False,
     aircraft_model="paper",
     timeline="paper",
+    history_path=None,
 ):
     """Optimal decarbonization scenario based on a single objective.
 
@@ -162,6 +236,9 @@ def single_policy_scenario_optimization(
         timeline: ``"paper"`` (2025-2075, new aircraft until 2060) or, with the
             update model, ``"extended"`` (until 2100, new aircraft until 2080),
             whose results are stored in an ``update-2100`` subfolder.
+        history_path: A JSON lines file recording the design of every optimizer
+            iteration, converted into :data:`HISTORY_FILE` next to it when the
+            optimum is saved; ``None`` to not record the iterations.
 
     Returns:
         Dictionary containing optimal output values.
@@ -288,6 +365,7 @@ def single_policy_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
+    _record_history(gemseo_scenario, history_path)
     gemseo_scenario.execute(
         max_iter=2000,
         algo_name="NLOPT_SLSQP",
@@ -320,6 +398,7 @@ def single_policy_scenario_optimization(
         })
         with (results_folder / scenario_name / "opt_result.json").open("w") as r_file:
             dump(result, r_file)
+        _finalize_history(history_path, design_space)
 
     if plot_optimum:
         plot_single_scenario_result(
@@ -352,6 +431,7 @@ def single_policy_robust_scenario_optimization(
     aircraft_model="paper",
     timeline="paper",
     checkpoint_path=None,
+    history_path=None,
 ):
     """Optimal decarbonization scenario robust to several background scenarios.
 
@@ -363,7 +443,8 @@ def single_policy_robust_scenario_optimization(
     starting point with the remaining iteration budget, so that a long optimization
     can be resumed after its process was killed. The quasi-Newton approximation of
     SLSQP restarts at each resume. The checkpoint is deleted once the optimum is
-    saved.
+    saved. ``history_path`` records the design of every iteration, across resumes,
+    as in :func:`single_policy_scenario_optimization`.
     """
     if fossil_kerosene_only:
         scenario_name += "-Fossil"
@@ -491,6 +572,7 @@ def single_policy_robust_scenario_optimization(
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
     _save_checkpoints(gemseo_scenario, checkpoint_path, n_iter_done)
+    _record_history(gemseo_scenario, history_path, n_iter_done)
     gemseo_scenario.execute(
         max_iter=max_iter,
         algo_name="NLOPT_SLSQP",
@@ -525,6 +607,7 @@ def single_policy_robust_scenario_optimization(
             dump(result, r_file)
         if checkpoint_path is not None:
             Path(checkpoint_path).unlink(missing_ok=True)
+        _finalize_history(history_path, design_space)
 
     if plot_optimum:
         plot_multi_scenario_result(

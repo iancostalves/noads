@@ -571,3 +571,64 @@ def test_robust_optimization_checkpoint(tmp_path):
     assert not np.allclose(saved["x"]["x"], -1.5)
     np.testing.assert_allclose(x_start, [saved["x"]["x"][0], saved["x"]["y"][0]])
     assert json.loads(checkpoint.read_text())["n_iter"] > 4
+
+
+def test_optimization_history(tmp_path):
+    """Every optimizer iteration is recorded, then archived with the variables."""
+    from gemseo import create_design_space
+    from gemseo import create_discipline
+    from gemseo import create_scenario
+
+    from noads.application import examples
+
+    design_space = create_design_space()
+    design_space.add_variable("x", lower_bound=-2.0, upper_bound=2.0, value=-1.5)
+    design_space.add_variable("y", 2, lower_bound=-2.0, upper_bound=2.0, value=-1.5)
+
+    def rosenbrock(x=0.0, y=(0.0, 0.0)):
+        x, y = np.atleast_1d(x), np.atleast_1d(y)
+        f = 100.0 * (y[0] - x[0] ** 2) ** 2 + (1.0 - x[0]) ** 2 + y[1] ** 2
+        return f  # noqa: RET504
+
+    discipline = create_discipline("AutoPyDiscipline", py_func=rosenbrock)
+    scenario = create_scenario(
+        discipline, "f", design_space, formulation_name="DisciplinaryOpt"
+    )
+    history = tmp_path / "run" / "iterations.jsonl"
+    history.parent.mkdir()
+    history.write_text('{"iteration": 99, "x": [0.0, 0.0, 0.0]}\n')  # stale run
+    examples._record_history(scenario, history)
+    scenario.execute(algo_name="NLOPT_SLSQP", max_iter=6)
+    examples._finalize_history(history, design_space)
+
+    assert not history.exists()
+    archive = np.load(tmp_path / "run" / examples.HISTORY_FILE)
+    database = scenario.formulation.optimization_problem.database
+    assert archive["iteration"].tolist() == list(range(1, database.n_iterations + 1))
+    assert archive["x"].shape == (database.n_iterations, 3)
+    np.testing.assert_allclose(archive["x"][0], [-1.5, -1.5, -1.5])
+    assert archive["names"].tolist() == ["x", "y"]
+    assert archive["sizes"].tolist() == [1, 2]
+
+
+def test_update_entry_into_service_bounds_and_turboprops():
+    """Update fleets: Jet-A turboprops on short markets, EIS from 2035 / 2040."""
+    from noads.application.scenario_setup import first_entry_into_service
+
+    _, fleet = initialize_base_objects(technology_index=1, aircraft_model="update")
+    names = [a.name for f in fleet.fleets for a in f.operating_aircraft]
+    assert {n for n in names if "Turboprop" in n} == {
+        "JetA-Turboprop_general",
+        "JetA-Turboprop_commuter",
+        "JetA-Turboprop_regional",
+    }
+    _, paper_fleet = initialize_base_objects(technology_index=1)
+    assert not any("Turboprop" in a.name for a in paper_fleet.operating_aircraft)
+
+    assert first_entry_into_service("JetA-GasTurbine-v1_regional", "update") == 2035
+    assert first_entry_into_service("JetA-Turboprop_regional", "update") == 2035
+    assert first_entry_into_service("lH2-GasTurbine_regional", "update") == 2040
+    assert first_entry_into_service("Battery-Electric_general", "update") == 2040
+    # the paper bounds are unchanged
+    assert first_entry_into_service("JetA-GasTurbine-v1_regional") == 2032
+    assert first_entry_into_service("lH2-GasTurbine_regional") == 2035

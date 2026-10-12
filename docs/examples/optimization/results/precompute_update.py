@@ -24,7 +24,8 @@ Usage: ``python precompute_update.py [--extended] list`` prints the scenario nam
 (breakthrough variants first), and ``python precompute_update.py [--extended] <name>``
 computes one scenario (skipped if it already exists), so that scenarios can be run in
 parallel processes. With ``--extended``, the timeline is extended (until 2100, new
-aircraft until 2080) and the results go to the ``update-2100`` subfolder.
+aircraft until 2080) and the results go to the ``update-2100`` subfolder. The design
+of every optimizer iteration is saved in ``iterations.npz`` next to each optimum.
 """
 
 import logging
@@ -101,6 +102,7 @@ def run(name, timeline="paper"):
             aircraft_model="update",
             timeline=timeline,
             checkpoint_path=RESULTS_DIR / folder / f".{name}.checkpoint.json",
+            history_path=RESULTS_DIR / folder / name / "iterations.jsonl",
         )
     else:
         background, index, drop_in, fossil, low_demand, preferential = SINGLE[name]
@@ -119,6 +121,7 @@ def run(name, timeline="paper"):
             save_history_view=False,
             aircraft_model="update",
             timeline=timeline,
+            history_path=RESULTS_DIR / folder / name / "iterations.jsonl",
         )
     LOGGER.info("DONE %s", name)
 

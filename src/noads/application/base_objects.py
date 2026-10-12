@@ -326,7 +326,8 @@ fuelcell_engine_count = {
 
 # Turboprop architectures, compared with the fleet architectures in the update
 # prospective aircraft figures (GAM V3.0 turboshaft efficiency grows with size).
-# They are not part of the optimized fleets.
+# The Jet-A turboprop also enters the update fleets of the markets where turboprops
+# operate today (UPDATE_TURBOPROP_MARKETS).
 update_comparison_architectures = {
     "JetA-Turboprop": {
         "engine_count": 2,
@@ -341,6 +342,9 @@ update_comparison_architectures = {
         "energy_type": "liquid_h2",
     },
 }
+UPDATE_TURBOPROP_MARKETS = ("general", "commuter", "regional")
+"""Markets where the Jet-A turboprop enters the update fleets."""
+
 update_comparison_mission = {
     "JetA-Turboprop": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
     "lH2-Turboprop": {"speed": 0.5 * 340, "altitude": 20000 * 0.3048},
@@ -632,6 +636,8 @@ def initialize_base_objects(
     prop_systems = {
         "JetA-GasTurbine": PropulsionSystem("turbofan", {drop_in: 1.0}),
     }
+    if aircraft_model == "update":
+        prop_systems["JetA-Turboprop"] = PropulsionSystem("turboprop", {drop_in: 1.0})
     if not drop_in_only:
         energies.extend([lh2, battery])
         prop_systems.update({
@@ -667,9 +673,11 @@ def initialize_base_objects(
 
         # Add new aircraft to be entering the fleet
         for prop_name in prop_systems:
+            if "Turboprop" in prop_name and cat_name not in UPDATE_TURBOPROP_MARKETS:
+                continue
             mission = {
                 **categories_mission[cat_name],
-                **propulsion_mission[prop_name],
+                **{**propulsion_mission, **update_comparison_mission}[prop_name],
                 "category": cat_name,
             }
             if aircraft_model == "update":

@@ -42,6 +42,7 @@ propulsion_colors = {
     "Current": "dimgray",
     "JetA-GasTurbine-v1": "maroon",
     "JetA-GasTurbine-v2": "y",
+    "JetA-Turboprop": "darkgoldenrod",
     "Battery-Electric": "limegreen",
     "lH2-FuelCell": "royalblue",
     "lH2-GasTurbine": "orangered",
@@ -360,7 +361,7 @@ def _plot_fleet_carrier_data(
     axes, years, output_optimal, color, linestyle, linewidth, label=None
 ):
     """Plot fleet carrier ASK data."""
-    jet_a_ask = _aggregate_fleet_asks(output_optimal, ["JetA-GasTurbine", "Current"])
+    jet_a_ask = _aggregate_fleet_asks(output_optimal, ["JetA", "Current"])
     lh2_ask = _aggregate_fleet_asks(output_optimal, ["lH2-FuelCell", "lH2-GasTurbine"])
     battery_ask = _aggregate_fleet_asks(output_optimal, ["Battery-Electric"])
 
@@ -1285,12 +1286,8 @@ def plot_tech_scenario_fleet_carriers(
             upper_output = output_list[2]
             years = lower_output["year"]
 
-            lower_jet_a = _aggregate_fleet_asks(
-                lower_output, ["JetA-GasTurbine", "Current"]
-            )
-            upper_jet_a = _aggregate_fleet_asks(
-                upper_output, ["JetA-GasTurbine", "Current"]
-            )
+            lower_jet_a = _aggregate_fleet_asks(lower_output, ["JetA", "Current"])
+            upper_jet_a = _aggregate_fleet_asks(upper_output, ["JetA", "Current"])
 
             lower_lh2 = _aggregate_fleet_asks(
                 lower_output, ["lH2-FuelCell", "lH2-GasTurbine"]
@@ -1780,12 +1777,8 @@ def plot_multiple_multi_scenario_result(
             first_scenario = scenario_data[global_scenario_names[0]]
             last_scenario = scenario_data[global_scenario_names[-1]]
 
-            first_jet_a = _aggregate_fleet_asks(
-                first_scenario, ["JetA-GasTurbine", "Current"]
-            )
-            last_jet_a = _aggregate_fleet_asks(
-                last_scenario, ["JetA-GasTurbine", "Current"]
-            )
+            first_jet_a = _aggregate_fleet_asks(first_scenario, ["JetA", "Current"])
+            last_jet_a = _aggregate_fleet_asks(last_scenario, ["JetA", "Current"])
 
             first_lh2 = _aggregate_fleet_asks(
                 first_scenario, ["lH2-FuelCell", "lH2-GasTurbine"]
