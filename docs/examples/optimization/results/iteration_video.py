@@ -63,30 +63,31 @@ VIDEO_FILE = "iterations.mp4"
 FPS = 12
 HOLD_SECONDS = 3
 
-# Energy mix panels: produced energies stacked by pathway, then the final carriers
-# of the alternative aircraft
+# Energy mix panels, stacked outputs as (output, label, color): the production of
+# Jet-A, biofuel and gaseous hydrogen by pathway, then the use of gaseous hydrogen
 ENERGY_PANELS = {
-    "Jet-A": ("Fossil", "Biofuel", "Electrofuel"),
-    "Biofuel": ("HEFA", "ATJ", "FT"),
-    "Gaseous hydrogen": ("Electrolysis", "Gas_reforming"),
-    "LH2 and battery": ("H2_liquefaction", "Charging"),
-}
-PATHWAY_COLORS = {
-    "Fossil": "dimgray",
-    "Biofuel": "olivedrab",
-    "Electrofuel": "darkorange",
-    "HEFA": "olivedrab",
-    "ATJ": "yellowgreen",
-    "FT": "darkgreen",
-    "Electrolysis": "deepskyblue",
-    "Gas_reforming": "slategray",
-    "H2_liquefaction": "royalblue",
-    "Charging": "limegreen",
-}
-PATHWAY_LABELS = {
-    "Gas_reforming": "Gas reforming",
-    "H2_liquefaction": "Liquid H2",
-    "Charging": "Battery",
+    "Jet-A": (
+        ("Fossil.production", "Fossil", "dimgray"),
+        ("Biofuel.production", "Biofuel", "olivedrab"),
+        ("Electrofuel.production", "Electrofuel", "darkorange"),
+    ),
+    "Biofuel": (
+        ("HEFA.production", "HEFA", "olivedrab"),
+        ("ATJ.production", "ATJ", "yellowgreen"),
+        ("FT.production", "FT", "darkgreen"),
+    ),
+    "Gaseous hydrogen production": (
+        ("Electrolysis.production", "Electrolysis", "deepskyblue"),
+        ("Gas_reforming.production", "Gas reforming", "slategray"),
+    ),
+    "Gaseous hydrogen use": (
+        (
+            "Power_to_liquid.GAS-H2.consumption",
+            "E-fuel (power-to-liquid)",
+            "darkorange",
+        ),
+        ("H2_liquefaction.GAS-H2.consumption", "Liquefaction", "royalblue"),
+    ),
 }
 
 
@@ -119,16 +120,17 @@ def evaluate_iterations(folder, scenario, fleet):
     """Fleet and energy mixes of every iteration, cached next to the optimum."""
     cache = folder / OUTPUTS_FILE
     history = load(folder / HISTORY_FILE)
-    if cache.is_file():
-        outputs = dict(load(cache))
-        if len(outputs["iteration"]) == len(history["iteration"]):
-            return outputs
     names = [str(name) for name in history["names"]]
-    pathways = [p for panel in ENERGY_PANELS.values() for p in panel]
     keys = [f"{a.name}.ask" for a in fleet.operating_aircraft]
     keys += [f"{f.name}.ask_avoided" for f in fleet.fleets]
-    keys += [f"{p}.production" for p in pathways]
+    keys += [key for panel in ENERGY_PANELS.values() for key, _, _ in panel]
     keys += ["cumulative.CO2"]
+    if cache.is_file():
+        outputs = dict(load(cache))
+        if len(outputs["iteration"]) == len(history["iteration"]) and set(
+            outputs.get("evaluated", ())
+        ) == set(keys):
+            return outputs
     rows = {key: [] for key in keys}
     for i, x_vect in enumerate(history["x"]):
         x_dict = dict(
@@ -143,6 +145,7 @@ def evaluate_iterations(folder, scenario, fleet):
     outputs = {key: array(values) for key, values in rows.items() if values}
     outputs["year"] = array(data["year"])
     outputs["iteration"] = history["iteration"]
+    outputs["evaluated"] = array(keys)
     savez_compressed(cache, **outputs)
     return outputs
 
@@ -172,20 +175,23 @@ def render(folder, name, outputs, fleet, low_demand):
         market: max(sum(s for _, s in series).max(), 1e-9)
         for market, series in markets.items()
     }
-    # pathways absent from the scenario (e.g. hydrogen in drop-in runs) are skipped
+    # outputs absent from the scenario (e.g. hydrogen in drop-in runs) are skipped,
+    # and all energy panels share the same scale
     energy_panels = {
-        panel: [p for p in pathways if f"{p}.production" in outputs]
-        for panel, pathways in ENERGY_PANELS.items()
+        panel: [series for series in panel_series if series[0] in outputs]
+        for panel, panel_series in ENERGY_PANELS.items()
     }
-    energy_top = {
-        panel: max(
-            sum(outputs[f"{p}.production"] * 1e-12 for p in pathways).max()
-            if pathways
-            else 0.0,
-            1e-9,
-        )
-        for panel, pathways in energy_panels.items()
-    }
+    energy_top = max(
+        max(
+            (
+                sum(outputs[key] * 1e-12 for key, _, _ in series).max()
+                for series in energy_panels.values()
+                if series
+            ),
+            default=0.0,
+        ),
+        1e-9,
+    )
 
     def color(aircraft_name):
         if aircraft_name == "Avoided demand":
@@ -214,22 +220,21 @@ def render(folder, name, outputs, fleet, low_demand):
             ax.set_title(market.replace("_", " "))
             ax.legend(loc="upper left", fontsize="x-small", framealpha=0.5)
         axes[0, 0].set_ylabel("ASK [trillion seat km]")
-        for col, (panel, pathways) in enumerate(energy_panels.items()):
+        for col, (panel, series) in enumerate(energy_panels.items()):
             ax = axes[1, col]
+            ax.set_xlim(years[0], years[-1])
+            ax.set_ylim(0.0, 1.05 * energy_top)
             ax.set_title(panel)
-            if not pathways:
+            if not series:
                 continue
             ax.stackplot(
                 years,
-                [outputs[f"{p}.production"][k] * 1e-12 for p in pathways],
-                colors=[PATHWAY_COLORS[p] for p in pathways],
-                labels=[PATHWAY_LABELS.get(p, p) for p in pathways],
+                [outputs[key][k] * 1e-12 for key, _, _ in series],
+                colors=[c for _, _, c in series],
+                labels=[label for _, label, _ in series],
             )
-            ax.set_xlim(years[0], years[-1])
-            ax.set_ylim(0.0, 1.05 * energy_top[panel])
-            ax.set_title(panel)
             ax.legend(loc="upper left", fontsize="x-small", framealpha=0.5)
-        axes[1, 0].set_ylabel("Production [EJ / year]")
+        axes[1, 0].set_ylabel("Energy [EJ / year]")
         ax = axes[1, -1]
         ax.plot(iterations, 100.0 * co2, color="lightgray")
         ax.plot(iterations[: k + 1], 100.0 * co2[: k + 1], color="black")
