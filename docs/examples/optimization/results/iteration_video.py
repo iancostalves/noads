@@ -62,6 +62,29 @@ OUTPUTS_FILE = "iteration_outputs.npz"
 VIDEO_FILE = "iterations.mp4"
 FPS = 12
 HOLD_SECONDS = 3
+FIRST_ITERATION_SECONDS = 2.0
+"""Time the first iteration stays on screen."""
+RAMP_ITERATIONS = 60
+"""Iteration from which each one is shown for a single frame."""
+
+
+def frame_counts(n_iterations):
+    """Number of video frames of each iteration: slow first, then ever faster.
+
+    Most of the changes happen in the first iterations, so every iteration is shown
+    for a shorter time than the previous one (geometric decay), down to a single
+    frame at the ``RAMP_ITERATIONS``-th iteration.
+
+    Args:
+        n_iterations: The number of iterations.
+
+    Returns:
+        The number of frames of each iteration.
+    """
+    first = FIRST_ITERATION_SECONDS * FPS
+    decay = (1.0 / first) ** (1.0 / RAMP_ITERATIONS)
+    return [max(1, round(first * decay**k)) for k in range(n_iterations)]
+
 
 # Energy mix panels, stacked outputs as (output, label, color): the production of
 # Jet-A, biofuel and gaseous hydrogen by pathway, then the use of gaseous hydrogen
@@ -127,9 +150,9 @@ def evaluate_iterations(folder, scenario, fleet):
     keys += ["cumulative.CO2"]
     if cache.is_file():
         outputs = dict(load(cache))
-        if len(outputs["iteration"]) == len(history["iteration"]) and set(
+        if cache.stat().st_mtime >= (folder / HISTORY_FILE).stat().st_mtime and set(
             outputs.get("evaluated", ())
-        ) == set(keys):
+        ) == set(keys):  # the cache is not older than the iterations
             return outputs
     rows = {key: [] for key in keys}
     for i, x_vect in enumerate(history["x"]):
@@ -250,9 +273,10 @@ def render(folder, name, outputs, fleet, low_demand):
 
     writer = FFMpegWriter(fps=FPS, bitrate=4000)
     with writer.saving(fig, folder / VIDEO_FILE, dpi=100):
-        for k in range(len(iterations)):
+        for k, count in enumerate(frame_counts(len(iterations))):
             draw(k)
-            writer.grab_frame()
+            for _ in range(count):
+                writer.grab_frame()
         for _ in range(FPS * HOLD_SECONDS):
             writer.grab_frame()
     LOGGER.info("saved %s", folder / VIDEO_FILE)

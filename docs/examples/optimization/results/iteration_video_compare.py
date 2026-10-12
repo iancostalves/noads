@@ -34,6 +34,7 @@ from iteration_video import FPS
 from iteration_video import HOLD_SECONDS
 from iteration_video import RESULTS_DIR
 from iteration_video import evaluate_iterations
+from iteration_video import frame_counts
 from iteration_video import setup
 from matplotlib.animation import FFMpegWriter
 from matplotlib.pyplot import figure
@@ -187,9 +188,10 @@ def render(path, labels, runs, title):
 
     writer = FFMpegWriter(fps=FPS, bitrate=6000)
     with writer.saving(fig, path, dpi=80):
-        for k in range(max_iterations):
+        for k, count in enumerate(frame_counts(max_iterations)):
             draw(k)
-            writer.grab_frame()
+            for _ in range(count):
+                writer.grab_frame()
         for _ in range(FPS * HOLD_SECONDS):
             writer.grab_frame()
     LOGGER.info("saved %s", path)

@@ -632,3 +632,19 @@ def test_update_entry_into_service_bounds_and_turboprops():
     # the paper bounds are unchanged
     assert first_entry_into_service("JetA-GasTurbine-v1_regional") == 2032
     assert first_entry_into_service("lH2-GasTurbine_regional") == 2035
+
+
+def test_initial_entry_into_service():
+    """The update hydrogen gas turbine and fuel cell start at the same year."""
+    from noads.application.scenario_setup import initial_entry_into_service
+
+    for market in ("regional", "long_range"):
+        gas_turbine = initial_entry_into_service(f"lH2-GasTurbine_{market}", "update")
+        fuel_cell = initial_entry_into_service(f"lH2-FuelCell_{market}", "update")
+        assert gas_turbine == fuel_cell == 2040
+    assert initial_entry_into_service("JetA-GasTurbine-v1_regional", "update") == 2035
+    assert initial_entry_into_service("Battery-Electric_general", "update") == 2060
+    # the paper starting values are unchanged
+    assert initial_entry_into_service("lH2-GasTurbine_regional") == 2035
+    assert initial_entry_into_service("lH2-FuelCell_regional") == 2060
+    assert initial_entry_into_service("JetA-GasTurbine-v1_regional") == 2035

@@ -73,6 +73,27 @@ def first_entry_into_service(aircraft_name, aircraft_model="paper"):
     return 2032.0 if "JetA-GasTurbine-v1" in aircraft_name else 2035.0
 
 
+def initial_entry_into_service(aircraft_name, aircraft_model="paper"):
+    """Initial entry-into-service of a new aircraft (its design variable value).
+
+    The first Jet-A generation and the hydrogen gas turbine start early, the other
+    aircraft late. With the update model, the hydrogen gas turbine and the hydrogen
+    fuel cell start at the same year, the earliest entry-into-service.
+
+    Args:
+        aircraft_name: The aircraft name.
+        aircraft_model: ``"paper"`` or ``"update"``.
+
+    Returns:
+        The initial entry-into-service year.
+    """
+    first_eis = first_entry_into_service(aircraft_name, aircraft_model)
+    if aircraft_model == "update" and "lH2" in aircraft_name:
+        return first_eis
+    early = "JetA-GasTurbine-v1" in aircraft_name or "lH2-GasTurbine" in aircraft_name
+    return max(first_eis, 2035.0 if early else 2060.0)
+
+
 def _ar6_input_data(end_year, plot_data=False):
     """AR6 input data, loaded until 2100 only when the simulation needs it."""
     if end_year > 2080.0:
@@ -439,15 +460,7 @@ def single_scenario_setup(
                         else last_entry_into_service
                     ),
                     # value=2060.0,
-                    value=max(
-                        first_eis,
-                        2035.0
-                        if (
-                            "JetA-GasTurbine-v1" in aircraft.name
-                            or "lH2-GasTurbine" in aircraft.name
-                        )
-                        else 2060.0,
-                    ),
+                    value=initial_entry_into_service(aircraft.name, aircraft_model),
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.lifetime",
@@ -673,15 +686,7 @@ def multi_scenario_setup(
                     f"fixed.constant.{aircraft.name}.entry_into_service",
                     lower_bound=first_eis,
                     upper_bound=2060.0,
-                    value=max(
-                        first_eis,
-                        2035.0
-                        if (
-                            "JetA-GasTurbine-v1" in aircraft.name
-                            or "lH2-GasTurbine" in aircraft.name
-                        )
-                        else 2060.0,
-                    ),
+                    value=initial_entry_into_service(aircraft.name, aircraft_model),
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.max_share",
