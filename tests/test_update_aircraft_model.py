@@ -611,22 +611,14 @@ def test_optimization_history(tmp_path):
     assert archive["sizes"].tolist() == [1, 2]
 
 
-def test_update_entry_into_service_bounds_and_turboprops():
-    """Update fleets: Jet-A turboprops on short markets, EIS from 2035 / 2040."""
+def test_update_entry_into_service_bounds_and_no_turboprops():
+    """Update fleets: no turboprops, EIS from 2035 (Jet-A) / 2040 (alternatives)."""
     from noads.application.scenario_setup import first_entry_into_service
 
     _, fleet = initialize_base_objects(technology_index=1, aircraft_model="update")
-    names = [a.name for f in fleet.fleets for a in f.operating_aircraft]
-    assert {n for n in names if "Turboprop" in n} == {
-        "JetA-Turboprop_general",
-        "JetA-Turboprop_commuter",
-        "JetA-Turboprop_regional",
-    }
-    _, paper_fleet = initialize_base_objects(technology_index=1)
-    assert not any("Turboprop" in a.name for a in paper_fleet.operating_aircraft)
+    assert not any("Turboprop" in a.name for a in fleet.operating_aircraft)
 
     assert first_entry_into_service("JetA-GasTurbine-v1_regional", "update") == 2035
-    assert first_entry_into_service("JetA-Turboprop_regional", "update") == 2035
     assert first_entry_into_service("lH2-GasTurbine_regional", "update") == 2040
     assert first_entry_into_service("Battery-Electric_general", "update") == 2040
     # the paper bounds are unchanged
