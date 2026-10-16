@@ -51,6 +51,8 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "paper/latex_src",
+    # standalone comparison material (scripts, PR text), not documentation pages
+    "update/comparison",
     # Gallery source scripts and their README headers are consumed by
     # sphinx-gallery, not by the regular Sphinx reader.
     "examples",
