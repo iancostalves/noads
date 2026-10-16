@@ -30,7 +30,7 @@ all the model updates are in place.
 | LH2 tank gravimetric index depending on tank size and technology | available | [Aircraft design](aircraft_design.md) |
 | Primary energy of energy carriers and aircraft | available | [Energy pathways](energy_pathways.md) |
 | Geological hydrogen | planned | [Geological hydrogen](geological_hydrogen.md) |
-| Updated optimization results | planned | |
+| Updated optimization results (paper timeline) | available | `docs/update/comparison/update_vs_paper_comparison.pdf`, results in `docs/examples/optimization/results/update/` |
 
 ## Selecting the update models
 
