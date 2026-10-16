@@ -25,7 +25,8 @@ repos:
       ]
       # Leave the machine-generated optimization results untouched (reformatting
       # them only bloats the committed data).
-      exclude: \.ipynb|^docs/examples/optimization/results/.*\.json$
+      # Nor the bundled aircraft technology calibration data, kept as delivered.
+      exclude: \.ipynb|^docs/examples/optimization/results/.*\.json$|^src/noads/application/aircraft_tech_data/
     - id: check-toml
     - id: destroyed-symlinks
     - id: check-symlinks
@@ -43,8 +44,12 @@ repos:
     - id: ruff
       types_or: [ python, pyi, jupyter ]
       args: [ --exit-non-zero-on-fix ]
+      # The calibration scripts bundled with the aircraft technology data are
+      # kept as delivered, to reproduce the data.
+      exclude: ^src/noads/application/aircraft_tech_data/
     - id: ruff-format
       types_or: [ python, pyi, jupyter ]
+      exclude: ^src/noads/application/aircraft_tech_data/
 
 - repo: https://github.com/commitizen-tools/commitizen
   rev: v4.2.1
@@ -74,7 +79,7 @@ repos:
   hooks:
     - id: insert-license
       name: insert LGPL license
-      exclude: ^(docs.*\.py|src/noads/(application/(base_objects.py|(examples.py|scenario_setup.py))|core/models/(traffic.py|fleet/aircraft_operation.py)))$
+      exclude: ^(docs.*\.py|src/noads/application/aircraft_tech_data/.*|src/noads/(application/(base_objects.py|(examples.py|scenario_setup.py))|core/models/(traffic.py|fleet/aircraft_operation.py)))$
       files: \.py$
       args:
         - --license-filepath

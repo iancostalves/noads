@@ -42,6 +42,7 @@ propulsion_colors = {
     "Current": "dimgray",
     "JetA-GasTurbine-v1": "maroon",
     "JetA-GasTurbine-v2": "y",
+    "JetA-Turboprop": "darkgoldenrod",
     "Battery-Electric": "limegreen",
     "lH2-FuelCell": "royalblue",
     "lH2-GasTurbine": "orangered",
@@ -360,7 +361,7 @@ def _plot_fleet_carrier_data(
     axes, years, output_optimal, color, linestyle, linewidth, label=None
 ):
     """Plot fleet carrier ASK data."""
-    jet_a_ask = _aggregate_fleet_asks(output_optimal, ["JetA-GasTurbine", "Current"])
+    jet_a_ask = _aggregate_fleet_asks(output_optimal, ["JetA", "Current"])
     lh2_ask = _aggregate_fleet_asks(output_optimal, ["lH2-FuelCell", "lH2-GasTurbine"])
     battery_ask = _aggregate_fleet_asks(output_optimal, ["Battery-Electric"])
 
@@ -864,6 +865,89 @@ def plot_single_scenario_result(
             p_fig.write_html(f"{directory_path}/sankey_{scenario_name}_{year}.html")
 
 
+def plot_fleet_mix_variants(
+    variant_outputs,
+    fleet,
+    title=None,
+    save_fig=False,
+    directory_filename=".",
+):
+    """Plot the fleet mix of several variants of a scenario.
+
+    One row per variant and one column per market, with the available seat
+    kilometers stacked by aircraft (and by avoided demand, if any).
+
+    Args:
+        variant_outputs: Optimal outputs of the variants, by variant name.
+        fleet: The fleet of the scenarios.
+        title: The figure title.
+        save_fig: Whether to save the figure to ``directory_filename``.
+        directory_filename: The path of the figure file, if saved.
+
+    Returns:
+        The figure.
+    """
+    fig, axes = subplots(
+        len(variant_outputs),
+        len(fleet.fleets),
+        figsize=(4.0 * len(fleet.fleets), 3.4 * len(variant_outputs)),
+        layout="constrained",
+        sharex=True,
+        squeeze=False,
+    )
+    handles = {}
+    for row, (variant, output_optimal) in enumerate(variant_outputs.items()):
+        years = output_optimal["year"]
+        for col, fleet_i in enumerate(fleet.fleets):
+            # aircraft absent from the results (designs that never close) are skipped
+            aircraft_i = [
+                aircraft
+                for aircraft in fleet_i.operating_aircraft
+                if f"{aircraft.name}.ask" in output_optimal
+            ]
+            asks = [output_optimal[f"{a.name}.ask"] * 1e-12 for a in aircraft_i]
+            labels = [
+                a.name.replace(f"_{fleet_i.name}", "").replace("_", " ")
+                for a in aircraft_i
+            ]
+            colors = [
+                color
+                for a in aircraft_i
+                for prop_name, color in propulsion_colors.items()
+                if prop_name in a.name
+            ]
+            hatches = ["_"] * len(asks)
+            if f"{fleet_i.name}.ask_avoided" in output_optimal:
+                asks.append(output_optimal[f"{fleet_i.name}.ask_avoided"] * 1e-12)
+                labels.append("Avoided demand")
+                colors.append("tan")
+                hatches.append("xx")
+            polys = axes[row, col].stackplot(
+                years, asks, labels=labels, colors=colors, hatch=hatches
+            )
+            handles.update(dict(zip(labels, polys)))
+            if row == 0:
+                axes[row, col].set_title(fleet_i.name.replace("_", " "))
+            axes[row, col].set_ylim(ymin=0.0)
+        axes[row, 0].set_ylabel(f"{variant}\nASK [trillion pax km]")
+    for col in range(len(fleet.fleets)):
+        top = max(axes[row, col].get_ylim()[1] for row in range(axes.shape[0]))
+        for row in range(axes.shape[0]):
+            axes[row, col].set_ylim(0.0, top)
+    axes[-1, len(fleet.fleets) // 2].set_xlabel("Year")
+    fig.legend(
+        handles.values(),
+        handles.keys(),
+        loc="outside lower center",
+        ncols=len(handles),
+    )
+    if title:
+        fig.suptitle(title, fontsize="x-large")
+    if save_fig:
+        fig.savefig(directory_filename, dpi=150)
+    return fig
+
+
 def plot_scenario_comparison(
     scenario_outputs,
     year_endplots,
@@ -1202,12 +1286,8 @@ def plot_tech_scenario_fleet_carriers(
             upper_output = output_list[2]
             years = lower_output["year"]
 
-            lower_jet_a = _aggregate_fleet_asks(
-                lower_output, ["JetA-GasTurbine", "Current"]
-            )
-            upper_jet_a = _aggregate_fleet_asks(
-                upper_output, ["JetA-GasTurbine", "Current"]
-            )
+            lower_jet_a = _aggregate_fleet_asks(lower_output, ["JetA", "Current"])
+            upper_jet_a = _aggregate_fleet_asks(upper_output, ["JetA", "Current"])
 
             lower_lh2 = _aggregate_fleet_asks(
                 lower_output, ["lH2-FuelCell", "lH2-GasTurbine"]
@@ -1697,12 +1777,8 @@ def plot_multiple_multi_scenario_result(
             first_scenario = scenario_data[global_scenario_names[0]]
             last_scenario = scenario_data[global_scenario_names[-1]]
 
-            first_jet_a = _aggregate_fleet_asks(
-                first_scenario, ["JetA-GasTurbine", "Current"]
-            )
-            last_jet_a = _aggregate_fleet_asks(
-                last_scenario, ["JetA-GasTurbine", "Current"]
-            )
+            first_jet_a = _aggregate_fleet_asks(first_scenario, ["JetA", "Current"])
+            last_jet_a = _aggregate_fleet_asks(last_scenario, ["JetA", "Current"])
 
             first_lh2 = _aggregate_fleet_asks(
                 first_scenario, ["lH2-FuelCell", "lH2-GasTurbine"]

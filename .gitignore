@@ -26,3 +26,9 @@
 !/.coveragerc
 
 /.pytest_cache
+*.checkpoint.json
+*.checkpoint.tmp
+*.jsonl
+iteration_outputs.npz
+iterations.npz
+*.mp4

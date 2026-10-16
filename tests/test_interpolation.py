@@ -17,9 +17,11 @@
 import numpy as np
 import pytest
 from scipy.interpolate import CubicSpline
+from scipy.interpolate import PchipInterpolator
 
 from noads.core.models.interpolation import InterpolatedUnivariateSpline
 from noads.core.models.interpolation import interpolate_data
+from noads.core.models.interpolation import pchip_interpolate
 
 
 @pytest.fixture
@@ -124,3 +126,27 @@ def test_spline_tree_flatten_roundtrip(k, x_data, y_data):
     rebuilt = InterpolatedUnivariateSpline.tree_unflatten(aux_data, children)
     x = np.linspace(0.0, 6.0, 13)
     np.testing.assert_allclose(rebuilt(x), spline(x), atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "y_data",
+    [
+        [2.7, 9.2, 11.2, 11.4],
+        [0.225, 0.2, 0.16, 0.14],
+        [0.0, 1.0, 1.0, 3.0],
+        [1.0, 3.0, 2.0, 5.0],
+        [0.0, 0.0, 0.25, 0.25],
+    ],
+)
+def test_pchip_interpolate_matches_scipy(y_data):
+    x_data = np.array([2020.0, 2040.0, 2060.0, 2080.0])
+    x = np.linspace(2020.0, 2080.0, 241)
+    np.testing.assert_allclose(
+        np.asarray(pchip_interpolate(x, x_data, y_data)),
+        PchipInterpolator(x_data, y_data)(x),
+        rtol=1e-10,
+        atol=1e-12,
+    )
+    # constant extension outside the data
+    assert float(pchip_interpolate(2100.0, x_data, y_data)) == y_data[-1]
+    assert float(pchip_interpolate(2000.0, x_data, y_data)) == y_data[0]

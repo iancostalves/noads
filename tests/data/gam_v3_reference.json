@@ -1,0 +1,725 @@
+{
+ "tech": {
+  "battery_specific_energy": 575.0,
+  "emotor_specific_power": 15.0,
+  "electronics_specific_power": 20.0,
+  "fuelcell_specific_power": 2.5,
+  "lh2tank_gravimetric_index": 47.5,
+  "fuelcell_efficiency": 50.0,
+  "struct_weight_factor": 78.0
+ },
+ "designs": {
+  "general|JetA-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "kerosene",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 19,
+    "range": 500000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "general"
+   },
+   "mtow": 4394.900354437343,
+   "owe": 1976.972850831484,
+   "mission_fuel": 332.04650449324055,
+   "total_fuel": 612.9275036058582,
+   "mission_enrg": 13779149125.828556,
+   "enrg_consumption": 1450.4367500872163,
+   "total_power": 797365.0579619353,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 185.4337344097524,
+   "payload_max": 2075.75,
+   "propulsion_system_efficiency": 0.1260487481124134
+  },
+  "general|lH2-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "liquid_h2",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 19,
+    "range": 500000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "general"
+   },
+   "mtow": 4460.32663507846,
+   "owe": 2380.6979106791023,
+   "mission_fuel": 144.87002305044882,
+   "total_fuel": 274.62872439935836,
+   "mission_enrg": 16989186438.497196,
+   "enrg_consumption": 1788.335414578652,
+   "total_power": 810674.118119713,
+   "energy_storage_mass": 379.4212639727977,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 188.52886467900302,
+   "payload_max": 1937.802430803442,
+   "propulsion_system_efficiency": 0.10531205936536628
+  },
+  "general|lH2-FuelCell": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 19,
+    "range": 500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "general"
+   },
+   "mtow": 4154.634635927433,
+   "owe": 2290.3635629830906,
+   "mission_fuel": 38.966072567030835,
+   "total_fuel": 59.271072944341704,
+   "mission_enrg": 4339497158.985474,
+   "enrg_consumption": 456.7891746300499,
+   "total_power": 748496.2132665663,
+   "energy_storage_mass": 81.8876665678405,
+   "fuel_cell_system_mass": 332.66498367402943,
+   "propulsion_mass": 162.17417954108936,
+   "payload_max": 1838.274838083595,
+   "propulsion_system_efficiency": 0.36000000000000004
+  },
+  "general|Battery-Electric": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "battery"
+   },
+   "mission": {
+    "npax": 19,
+    "range": 500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "general"
+   },
+   "mtow": 12479.18290656329,
+   "owe": 10674.182906563288,
+   "mission_fuel": 0.0,
+   "total_fuel": 0.0,
+   "mission_enrg": 6243114549.4359455,
+   "enrg_consumption": 657.1699525722048,
+   "total_power": 2447327.7264879015,
+   "energy_storage_mass": 5747.263984736077,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 530.2543407390453,
+   "payload_max": 1805.0000000000018,
+   "propulsion_system_efficiency": 0.7200000000000001
+  },
+  "general|JetA-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "kerosene"
+   },
+   "mission": {
+    "npax": 19,
+    "range": 500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "general"
+   },
+   "mtow": 4129.261822108507,
+   "owe": 1952.6108497750506,
+   "mission_fuel": 240.5103593110708,
+   "total_fuel": 371.65097233345574,
+   "mission_enrg": 9992936693.748356,
+   "enrg_consumption": 1051.8880730261428,
+   "total_power": 743336.0767815091,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 247.20246274361816,
+   "payload_max": 2022.5016236113506,
+   "propulsion_system_efficiency": 0.14577319830229232
+  },
+  "general|lH2-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 19,
+    "range": 500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "general"
+   },
+   "mtow": 4046.0268441832545,
+   "owe": 2106.225406211959,
+   "mission_fuel": 86.20213174743625,
+   "total_fuel": 134.8014379712941,
+   "mission_enrg": 10065067289.189274,
+   "enrg_consumption": 1059.4807672830814,
+   "total_power": 726409.1187184915,
+   "energy_storage_mass": 186.23882877612996,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 241.57326506219601,
+   "payload_max": 1884.831238076319,
+   "propulsion_system_efficiency": 0.14444479534373078
+  },
+  "commuter|JetA-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "kerosene",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 50,
+    "range": 1500000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "commuter"
+   },
+   "mtow": 13827.72460123301,
+   "owe": 6347.089640795531,
+   "mission_fuel": 1734.7189020948683,
+   "total_fuel": 2230.634960437482,
+   "mission_enrg": 73075871350.01717,
+   "enrg_consumption": 974.3449513335622,
+   "total_power": 2723628.368518048,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 633.401946166988,
+   "payload_max": 6037.499999999999,
+   "propulsion_system_efficiency": 0.20319191683640275
+  },
+  "commuter|lH2-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "liquid_h2",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 50,
+    "range": 1500000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "commuter"
+   },
+   "mtow": 14091.757593160502,
+   "owe": 7834.9918884594645,
+   "mission_fuel": 772.1366470158937,
+   "total_fuel": 1006.7657047010371,
+   "mission_enrg": 91705578166.49535,
+   "enrg_consumption": 1222.741042219938,
+   "total_power": 2777761.493136955,
+   "energy_storage_mass": 1390.9263025474852,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 645.9910449155709,
+   "payload_max": 5983.618256868779,
+   "propulsion_system_efficiency": 0.17025025854132136
+  },
+  "commuter|lH2-FuelCell": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 50,
+    "range": 1500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "commuter"
+   },
+   "mtow": 13416.693651018484,
+   "owe": 7814.189298549714,
+   "mission_fuel": 296.5007240164361,
+   "total_fuel": 352.50435246877134,
+   "mission_enrg": 34647236270.55157,
+   "enrg_consumption": 461.9631502740209,
+   "total_power": 2639380.45749415,
+   "energy_storage_mass": 487.0125922265919,
+   "fuel_cell_system_mass": 1173.057981108511,
+   "propulsion_mass": 571.8657657903991,
+   "payload_max": 5527.214985059486,
+   "propulsion_system_efficiency": 0.36000000000000004
+  },
+  "commuter|JetA-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "kerosene"
+   },
+   "mission": {
+    "npax": 50,
+    "range": 1500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "commuter"
+   },
+   "mtow": 13041.904843649676,
+   "owe": 6314.545721170327,
+   "mission_fuel": 1247.724204113927,
+   "total_fuel": 1477.3591224793486,
+   "mission_enrg": 52582138575.71528,
+   "enrg_consumption": 701.0951810095371,
+   "total_power": 2562585.7713708845,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 852.2087565256662,
+   "payload_max": 6037.499999999999,
+   "propulsion_system_efficiency": 0.2210868802957935
+  },
+  "commuter|lH2-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 50,
+    "range": 1500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "commuter"
+   },
+   "mtow": 12722.226702925664,
+   "owe": 6934.014785410365,
+   "mission_fuel": 451.5538563652802,
+   "total_fuel": 538.2119175152961,
+   "mission_enrg": 53472732959.73966,
+   "enrg_consumption": 712.9697727965288,
+   "total_power": 2497102.0000778306,
+   "energy_storage_mass": 743.5822544619222,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 830.4315953747205,
+   "payload_max": 5681.3318077818985,
+   "propulsion_system_efficiency": 0.21950777316914694
+  },
+  "regional|JetA-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "kerosene",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 80,
+    "range": 4500000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "regional"
+   },
+   "mtow": 32443.240011328347,
+   "owe": 15394.405992611322,
+   "mission_fuel": 7255.210738529074,
+   "total_fuel": 8248.834018717027,
+   "mission_enrg": 308719499884.87885,
+   "enrg_consumption": 857.5541663468857,
+   "total_power": 6568989.4578926535,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 1527.67196695178,
+   "payload_max": 10120.0,
+   "propulsion_system_efficiency": 0.2846370242687913
+  },
+  "regional|lH2-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "liquid_h2",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 80,
+    "range": 4500000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "regional"
+   },
+   "mtow": 34112.46513653341,
+   "owe": 21399.46506307815,
+   "mission_fuel": 3400.961830493382,
+   "total_fuel": 3913.000073455091,
+   "mission_enrg": 407330777590.00256,
+   "enrg_consumption": 1131.4743821944517,
+   "total_power": 6916644.930976717,
+   "energy_storage_mass": 5406.118522536638,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 1608.5220769713294,
+   "payload_max": 10120.0,
+   "propulsion_system_efficiency": 0.2404947671487277
+  },
+  "regional|lH2-FuelCell": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 80,
+    "range": 4500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "regional"
+   },
+   "mtow": 29758.276674661316,
+   "owe": 19298.07375517927,
+   "mission_fuel": 1514.2366889886575,
+   "total_fuel": 1660.202919481863,
+   "mission_enrg": 180483905854.78867,
+   "enrg_consumption": 501.3441829299685,
+   "total_power": 6010765.813610613,
+   "energy_storage_mass": 2293.701401915732,
+   "fuel_cell_system_mass": 2671.451472715828,
+   "propulsion_mass": 1302.332592948966,
+   "payload_max": 10120.0,
+   "propulsion_system_efficiency": 0.36000000000000004
+  },
+  "regional|JetA-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "kerosene"
+   },
+   "mission": {
+    "npax": 80,
+    "range": 4500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "regional"
+   },
+   "mtow": 29380.807033934307,
+   "owe": 14885.624025020958,
+   "mission_fuel": 5228.376268308162,
+   "total_fuel": 5695.1830089128525,
+   "mission_enrg": 222639187369.6498,
+   "enrg_consumption": 618.4421871379161,
+   "total_power": 5932384.318987583,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 1972.8626921284288,
+   "payload_max": 10120.0,
+   "propulsion_system_efficiency": 0.269518519162752
+  },
+  "regional|lH2-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 80,
+    "range": 4500000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "regional"
+   },
+   "mtow": 28371.672534369394,
+   "owe": 17442.399906199156,
+   "mission_fuel": 1942.645928569249,
+   "total_fuel": 2129.2726281702335,
+   "mission_enrg": 232449630787.30533,
+   "enrg_consumption": 645.693418853626,
+   "total_power": 5722955.428806396,
+   "energy_storage_mass": 2941.7582362878225,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 1903.215410044918,
+   "payload_max": 10120.0,
+   "propulsion_system_efficiency": 0.26759233353857437
+  },
+  "short_medium|JetA-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "kerosene",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 120,
+    "range": 8000000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "short_medium"
+   },
+   "mtow": 62792.253772893266,
+   "owe": 29973.145547535423,
+   "mission_fuel": 17233.48113187217,
+   "total_fuel": 19619.108225357842,
+   "mission_enrg": 735040652841.2919,
+   "enrg_consumption": 765.667346709679,
+   "total_power": 12963091.577075781,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 3014.6724597850653,
+   "payload_max": 15179.999999999998,
+   "propulsion_system_efficiency": 0.3407495953403062
+  },
+  "short_medium|lH2-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "liquid_h2",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 120,
+    "range": 8000000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "short_medium"
+   },
+   "mtow": 67693.71841215639,
+   "owe": 44907.39523194505,
+   "mission_fuel": 8345.69387383579,
+   "total_fuel": 9586.32318021134,
+   "mission_enrg": 1001501064966.6912,
+   "enrg_consumption": 1043.23027600697,
+   "total_power": 14010291.37800039,
+   "energy_storage_mass": 13244.262288449878,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 3258.207297209393,
+   "payload_max": 15179.999999999998,
+   "propulsion_system_efficiency": 0.2874893721168864
+  },
+  "short_medium|lH2-FuelCell": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 120,
+    "range": 8000000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "short_medium"
+   },
+   "mtow": 64954.59407186478,
+   "owe": 45338.07436152558,
+   "mission_fuel": 5681.9909748513655,
+   "total_fuel": 6416.519710339196,
+   "mission_enrg": 681519567457.8928,
+   "enrg_consumption": 709.9162161019717,
+   "total_power": 13424578.26824277,
+   "energy_storage_mass": 8864.92854717915,
+   "fuel_cell_system_mass": 5966.47923033012,
+   "propulsion_mass": 2908.658624785934,
+   "payload_max": 15179.999999999998,
+   "propulsion_system_efficiency": 0.36000000000000004
+  },
+  "short_medium|JetA-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "kerosene"
+   },
+   "mission": {
+    "npax": 120,
+    "range": 8000000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "short_medium"
+   },
+   "mtow": 62787.762923402064,
+   "owe": 31267.80570088391,
+   "mission_fuel": 16346.067080283678,
+   "total_fuel": 18319.957222518064,
+   "mission_enrg": 698715472548.7665,
+   "enrg_consumption": 727.8286172382984,
+   "total_power": 12962133.958338723,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 4310.663153587064,
+   "payload_max": 15179.999999999998,
+   "propulsion_system_efficiency": 0.3070464821736199
+  },
+  "short_medium|lH2-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 120,
+    "range": 8000000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "short_medium"
+   },
+   "mtow": 59807.36005620409,
+   "owe": 39706.13556004502,
+   "mission_fuel": 6113.929305801451,
+   "total_fuel": 6901.224496159034,
+   "mission_enrg": 734262239739.6895,
+   "enrg_consumption": 764.8564997288432,
+   "total_power": 12327347.701339826,
+   "energy_storage_mass": 9534.58647495656,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 4099.559816957199,
+   "payload_max": 15179.999999999998,
+   "propulsion_system_efficiency": 0.3049019623952923
+  },
+  "long_range|JetA-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "kerosene",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 250,
+    "range": 15000000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "long_range"
+   },
+   "mtow": 207873.23682494464,
+   "owe": 94345.55720419633,
+   "mission_fuel": 77782.2643289568,
+   "total_fuel": 83527.67962074777,
+   "mission_enrg": 3326639047077.08,
+   "enrg_consumption": 887.1037458872214,
+   "total_power": 45670162.1952332,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 10620.967952379815,
+   "payload_max": 34500.0,
+   "propulsion_system_efficiency": 0.39132343052333246
+  },
+  "long_range|lH2-GasTurbine": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "liquid_h2",
+    "bpr": 12.0
+   },
+   "mission": {
+    "npax": 250,
+    "range": 15000000.0,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "long_range"
+   },
+   "mtow": 249859.75275631074,
+   "owe": 171970.9276123711,
+   "mission_fuel": 44292.86349261669,
+   "total_fuel": 47888.8251439373,
+   "mission_enrg": 5328384320161.638,
+   "enrg_consumption": 1420.9024853764365,
+   "total_power": 55796188.42084923,
+   "energy_storage_mass": 66162.19263307126,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 12975.857772290517,
+   "payload_max": 34500.0,
+   "propulsion_system_efficiency": 0.3276438171814526
+  },
+  "long_range|lH2-FuelCell": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 250,
+    "range": 15000000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "long_range"
+   },
+   "mtow": 290627.84108875,
+   "owe": 211844.37138954565,
+   "mission_fuel": 45554.45445142277,
+   "total_fuel": 48783.46969920437,
+   "mission_enrg": 5484788063338.716,
+   "enrg_consumption": 1462.6101502236575,
+   "total_power": 65912109.351641856,
+   "energy_storage_mass": 67398.21471600603,
+   "fuel_cell_system_mass": 29294.270822951938,
+   "propulsion_mass": 14280.95702618907,
+   "payload_max": 34500.0,
+   "propulsion_system_efficiency": 0.36000000000000004
+  },
+  "long_range|JetA-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "kerosene"
+   },
+   "mission": {
+    "npax": 250,
+    "range": 15000000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "long_range"
+   },
+   "mtow": 232139.24396357383,
+   "owe": 106213.61351268264,
+   "mission_fuel": 90131.99993702641,
+   "total_fuel": 95925.63045089014,
+   "mission_enrg": 3862971727492.709,
+   "enrg_consumption": 1030.1257939980558,
+   "total_power": 51486309.60959426,
+   "energy_storage_mass": 0.0,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 17122.19133528367,
+   "payload_max": 34500.0,
+   "propulsion_system_efficiency": 0.35173920532998026
+  },
+  "long_range|lH2-Turboprop": {
+   "power_system": {
+    "engine_count": 2,
+    "engine_type": "turboprop",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2"
+   },
+   "mission": {
+    "npax": 250,
+    "range": 15000000.0,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "long_range"
+   },
+   "mtow": 228545.38435997613,
+   "owe": 159328.79439374115,
+   "mission_fuel": 36623.543870102876,
+   "total_fuel": 39216.58996623431,
+   "mission_enrg": 4410072975409.165,
+   "enrg_consumption": 1176.0194601091107,
+   "total_power": 50618674.50117867,
+   "energy_storage_mass": 54180.815084928974,
+   "fuel_cell_system_mass": 0.0,
+   "propulsion_mass": 16833.652217833835,
+   "payload_max": 34500.0,
+   "propulsion_system_efficiency": 0.35134155804232586
+  }
+ }
+}

@@ -32,6 +32,7 @@ from noads.core.models.interpolation import interpolate_data
 from noads.core.models.traffic import AirTraffic
 from noads.core.scenarios.multiscenario import MultiScenario
 from noads.core.scenarios.temporalscenario import TemporalScenario
+from noads.gam_jax.models.gam_v3 import CLOSURE_TOLERANCE
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -41,11 +42,70 @@ refuel_eu_biofuel = [0.02, 0.04, 0.15, 0.24, 0.27, 0.35, 0.7, 1.0]
 refuel_eu_efuel = [0.01, 0.02, 0.05, 0.10, 0.15, 0.35, 0.7, 1.0]
 
 
+END_YEAR = {"paper": 2075.0, "update": 2075.0}
+"""Default last simulated year per aircraft model. The update model keeps the timeline
+of the paper so that the results are comparable; its technology parameters are
+defined until 2080, so ``end_year`` can be extended up to 2100."""
+
+LAST_ENTRY_INTO_SERVICE = {"paper": 2060.0, "update": 2060.0}
+"""Latest entry-into-service of new aircraft per aircraft model (except the first
+Jet-A generation). Technology parameters of the update model go up to 2080."""
+
+UPDATE_FIRST_ENTRY_INTO_SERVICE = {"JetA": 2035.0, "alternative": 2040.0}
+"""Earliest entry-into-service of new aircraft with the update model: Jet-A aircraft
+(turbofans and turboprops) and alternative architectures (hydrogen, battery)."""
+
+
+def first_entry_into_service(aircraft_name, aircraft_model="paper"):
+    """Earliest entry-into-service of a new aircraft (its design variable bound).
+
+    Args:
+        aircraft_name: The aircraft name.
+        aircraft_model: ``"paper"`` or ``"update"``.
+
+    Returns:
+        The earliest entry-into-service year.
+    """
+    if aircraft_model == "update":
+        return UPDATE_FIRST_ENTRY_INTO_SERVICE[
+            "JetA" if aircraft_name.startswith("JetA") else "alternative"
+        ]
+    return 2032.0 if "JetA-GasTurbine-v1" in aircraft_name else 2035.0
+
+
+def initial_entry_into_service(aircraft_name, aircraft_model="paper"):
+    """Initial entry-into-service of a new aircraft (its design variable value).
+
+    The first Jet-A generation and the hydrogen gas turbine start early, the other
+    aircraft late. With the update model, the hydrogen gas turbine and the hydrogen
+    fuel cell start at the same year, the earliest entry-into-service.
+
+    Args:
+        aircraft_name: The aircraft name.
+        aircraft_model: ``"paper"`` or ``"update"``.
+
+    Returns:
+        The initial entry-into-service year.
+    """
+    first_eis = first_entry_into_service(aircraft_name, aircraft_model)
+    if aircraft_model == "update" and "lH2" in aircraft_name:
+        return first_eis
+    early = "JetA-GasTurbine-v1" in aircraft_name or "lH2-GasTurbine" in aircraft_name
+    return max(first_eis, 2035.0 if early else 2060.0)
+
+
+def _ar6_input_data(end_year, plot_data=False):
+    """AR6 input data, loaded until 2100 only when the simulation needs it."""
+    if end_year > 2080.0:
+        return get_ar6_input_data(end_year=2100, plot_data=plot_data)
+    return get_ar6_input_data(plot_data=plot_data)
+
+
 def single_scenario_setup(
     name: str,
     background_scenario_name: str,
     start_year=2025,
-    end_year=2075,
+    end_year=None,
     time_step=1.0,
     interp_step=2.5,
     technology_index=0,
@@ -56,6 +116,8 @@ def single_scenario_setup(
     preferential_energy=False,
     plot_scenario_data=False,
     compile_jit=True,
+    aircraft_model="paper",
+    last_entry_into_service=None,
 ):
     """Set up a single-objective decarbonization scenario.
 
@@ -72,7 +134,8 @@ def single_scenario_setup(
         name: The name of the scenario.
         background_scenario_name: The AR6 background scenario (e.g. ``"SSP2-26"``).
         start_year: The first simulated year.
-        end_year: The last simulated year.
+        end_year: The last simulated year. Defaults to 2075 with both aircraft
+            models (:data:`END_YEAR`).
         time_step: The simulation time step in years.
         interp_step: The spacing in years of the control knots.
         technology_index: The aircraft technology scenario (0: Lower, 1: Mid,
@@ -87,14 +150,29 @@ def single_scenario_setup(
             conservative (5.0 %) fair share of biomass and electricity.
         plot_scenario_data: Whether to plot the AR6 background data.
         compile_jit: Whether to JIT-compile the assembled discipline.
+        aircraft_model: The aircraft design model, ``"paper"`` (GAM V2.0) or
+            ``"update"`` (GAM V3.0 with powertrain scale effects and
+            size-dependent LH2 tanks). The update model also constrains the power
+            per propulsor of electric and fuel cell designs to the maximum
+            available at their entry-into-service.
+        last_entry_into_service: The last entry-into-service of new aircraft
+            (except the first Jet-A generation). Defaults to 2060 with both aircraft
+            models (:data:`LAST_ENTRY_INTO_SERVICE`); up to 2080 with the update
+            model, whose technology parameters are defined until then.
 
     Returns:
         The temporal scenario, the design space, the constraints (mapping each
         constraint name to its bound and sign), the energy mix, and the fleet.
     """
     resources_fair_share = 8.6e-2 if preferential_energy else 5.0e-2
-    ar6_data, years_data = get_ar6_input_data(plot_data=plot_scenario_data)
-    energy_mix, fleet = initialize_base_objects(drop_in_only, technology_index)
+    if end_year is None:
+        end_year = END_YEAR[aircraft_model]
+    if last_entry_into_service is None:
+        last_entry_into_service = LAST_ENTRY_INTO_SERVICE[aircraft_model]
+    ar6_data, years_data = _ar6_input_data(end_year, plot_scenario_data)
+    energy_mix, fleet = initialize_base_objects(
+        drop_in_only, technology_index, aircraft_model, last_entry_into_service
+    )
 
     temporal_constraints = [
         f"{stream.name}.constraint" for stream in energy_mix.constrained_inputs
@@ -372,21 +450,17 @@ def single_scenario_setup(
                     upper_bound=1.0,
                     value=0.1,
                 )
+                first_eis = first_entry_into_service(aircraft.name, aircraft_model)
                 design_space.add_variable(
                     f"constant.{aircraft.name}.entry_into_service",
-                    lower_bound=(
-                        2032.0 if "JetA-GasTurbine-v1" in aircraft.name else 2035.0
-                    ),
+                    lower_bound=first_eis,
                     upper_bound=(
-                        2047.5 if "JetA-GasTurbine-v1" in aircraft.name else 2060.0
+                        2047.5
+                        if "JetA-GasTurbine-v1" in aircraft.name
+                        else last_entry_into_service
                     ),
                     # value=2060.0,
-                    value=2035.0
-                    if (
-                        "JetA-GasTurbine-v1" in aircraft.name
-                        or "lH2-GasTurbine" in aircraft.name
-                    )
-                    else 2060.0,
+                    value=initial_entry_into_service(aircraft.name, aircraft_model),
                 )
                 design_space.add_variable(
                     f"constant.{aircraft.name}.lifetime",
@@ -419,6 +493,20 @@ def single_scenario_setup(
             optimization_constraints.update({
                 f"{aircraft.name}.relative_efficiency_gain": (1.0, True),
             })
+        if aircraft_model == "update" and (
+            "Electric" in aircraft.name or "FuelCell" in aircraft.name
+        ):
+            optimization_constraints.update({
+                f"{aircraft.name}.unit_power_ratio": (1.0, False),
+                # the design must close: a differentiable gap, null if it does
+                f"{aircraft.name}.closure_gap": (CLOSURE_TOLERANCE, False),
+            })
+            if "FuelCell" in aircraft.name:
+                # as electric aircraft, fuel cell aircraft must be at least as
+                # energy efficient as the current fleet
+                optimization_constraints.update({
+                    f"{aircraft.name}.relative_efficiency_gain": (1.0, True),
+                })
 
     return temporal_scenario, design_space, optimization_constraints, energy_mix, fleet
 
@@ -427,7 +515,7 @@ def multi_scenario_setup(
     name: str,
     background_scenario_names: Sequence[str],
     start_year=2025,
-    end_year=2075,
+    end_year=None,
     time_step=2.0,
     interp_step=5.0,
     technology_index=0,
@@ -438,6 +526,8 @@ def multi_scenario_setup(
     drop_in_only=False,
     preferential_energy=False,
     plot_scenario_data=False,
+    aircraft_model="paper",
+    last_entry_into_service=None,
 ):
     """Set up a decarbonization scenario robust to several background scenarios.
 
@@ -448,6 +538,8 @@ def multi_scenario_setup(
     mix variables are scenario-specific, and ensemble-mean outputs (``mean.``
     prefix) are exposed for the robust objective.
     """
+    if end_year is None:
+        end_year = END_YEAR[aircraft_model]
     temporal_scenario, _, constraints, energy_mix, fleet = single_scenario_setup(
         name=name,
         background_scenario_name=background_scenario_names[0],
@@ -462,6 +554,8 @@ def multi_scenario_setup(
         drop_in_only=drop_in_only,
         preferential_energy=preferential_energy,
         plot_scenario_data=plot_scenario_data,
+        aircraft_model=aircraft_model,
+        last_entry_into_service=last_entry_into_service,
     )
     final_rates = temporal_scenario.final_rates
     meaned = [
@@ -488,7 +582,7 @@ def multi_scenario_setup(
     ])
     # all except controls
 
-    ar6_data, years_data = get_ar6_input_data(plot_data=False)
+    ar6_data, years_data = _ar6_input_data(end_year)
 
     multi_scenario = MultiScenario(
         name=name,
@@ -587,18 +681,12 @@ def multi_scenario_setup(
         fleet_tau = fleet_lifetimes[i] / 4.0
         for aircraft in fleet_i.operating_aircraft:
             if aircraft != fleet_i.operating_aircraft[0]:
+                first_eis = first_entry_into_service(aircraft.name, aircraft_model)
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.entry_into_service",
-                    lower_bound=(
-                        2032.0 if "JetA-GasTurbine-v1" in aircraft.name else 2035.0
-                    ),
+                    lower_bound=first_eis,
                     upper_bound=2060.0,
-                    value=2035.0
-                    if (
-                        "JetA-GasTurbine-v1" in aircraft.name
-                        or "lH2-GasTurbine" in aircraft.name
-                    )
-                    else 2060.0,
+                    value=initial_entry_into_service(aircraft.name, aircraft_model),
                 )
                 design_space.add_variable(
                     f"fixed.constant.{aircraft.name}.max_share",
