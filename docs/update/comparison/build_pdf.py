@@ -30,6 +30,9 @@ from pathlib import Path
 import comparison_data as cd
 import comparison_figures as cf
 import design_sweep
+import h2_design_study as h2
+import h2_figures as hf
+import h2_section as hs
 import numpy as np
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_JUSTIFY
@@ -500,7 +503,7 @@ def robust_rows():
     return rows
 
 
-def story(t, sweep):
+def story(t, sweep, study):
     """The document."""
     s = []
     # ---- numbers used in the text
@@ -552,6 +555,13 @@ def story(t, sweep):
     ]
     s += bullets([
         (
+            "<b>Fuel cell aircraft and the regional market.</b> The regional fuel cell aircraft enters in 2057 (Mid) "
+            "because the NOADS regional mission is 80 seats over 4500 km: in 2040 it would need about 17 MW, more than "
+            "3 times the power per propulsor available. A ZEROe-like aircraft (100 seats, 1850 km, 4 propulsors) designed "
+            "by the same model needs about 2.4 MW per propulsor in 2045, in line with Airbus, and is within the power limit "
+            "from 2042 (Mid; Section 2b). The commuter fuel cell aircraft enters in early 2041, as soon as it is feasible."
+        ),
+        (
             f"<b>Emissions are higher in every scenario.</b> For the Mid technology breakthrough scenarios, the "
             f"cumulative emissions go from {bt[0]:.0f} to {bt[1]:.0f} % of the budget (trend), "
             f"{ba[0]:.0f} to {ba[1]:.0f} % (availability); the increase ranges from {wide} points of budget over "
@@ -573,11 +583,11 @@ def story(t, sweep):
             "The LH2 gas turbine, the Jet-A new generation (v2) and the battery-electric aircraft gain share (see Part II, Fleet mix)."
         ),
         (
-            "<b>Why:</b> the small-turbofan penalty of GAM V3.0 and its refitted regressions make the general, commuter "
-            "and regional aircraft much less efficient than in the paper; the revised structure masses and fuel cell "
-            "technology, the maximum power per propulsor and the later entry-into-service bounds further delay or "
-            "remove the alternative architectures. No ablation study separates these contributions: the attribution "
-            "is a reading of the design results (Part I), not a measured decomposition."
+            "<b>Why:</b> a step-by-step change of the aircraft from the paper model to the update (Appendix D) shows that "
+            "GAM V3.0 (refitted regressions, efficiency loss of small turbofans) makes the new Jet-A and LH2 gas turbine "
+            "aircraft of the small markets 1.6 to 2.5 times more energy consuming, while the revised fuel cell technology "
+            "(system efficiency, thermal management mass and parasitic power) does the same for the fuel cell aircraft; GAM "
+            "V3.0 alone would favour them. This decomposition is made on the designs, not on the optimized emissions."
         ),
     ])
 
@@ -647,7 +657,8 @@ def story(t, sweep):
         p(
             "Energy per ASK of the new designs by entry into service (MJ per seat-km), compared with the 2019 fleet. "
             "'infeasible' means the design does not close or violates the power limit; 'n/a' means the architecture "
-            "is not available in the market in that model.",
+            "is not available in the market in that model. This table samples 2040 and 2060 only: Section 2b gives "
+            "the first feasible EIS at annual resolution (for example early 2041 for the commuter fuel cell aircraft).",
             SMALL,
         ),
         table(
@@ -679,6 +690,15 @@ def story(t, sweep):
             "The LH2 gas turbine is hardly affected in the large markets and is penalised in the small ones."
         )
     ]
+    s += hs.hydrogen_section(
+        study,
+        p,
+        bullets,
+        table,
+        figure,
+        WIDTH,
+        {"H1": H1, "H2": H2, "H3": H3, "SMALL": SMALL},
+    )
     s += [
         p("3. Energy: carriers, pathways and primary energy", H2),
         p(
@@ -871,10 +891,16 @@ def story(t, sweep):
     s += [PageBreak(), p("Discussion and limits", H1)]
     s += bullets([
         (
-            "<b>Attribution.</b> The increase of emissions comes from the combination of the model changes. The design table shows "
-            "where the new Jet-A aircraft lose efficiency (small markets, GAM V3 turbofan scale factor) and where the alternative "
-            "architectures are lost (power limit, fuel cell system). The share of each change in the emissions was not measured by "
-            "a switch-by-switch study; running one would require optimizations with each update enabled alone."
+            "<b>Attribution.</b> The increase of emissions comes from the combination of the model changes. Appendix D attributes "
+            "the change of the energy per seat-km of the new aircraft to each group of assumptions; the share of each group in the "
+            "cumulative emissions was not measured, as it would require one optimization per group."
+        ),
+        (
+            "<b>Market definitions.</b> Each market is designed for a single mission (seats and design range of its fleet). "
+            "The regional fuel cell result depends on the 4500 km design range; aircraft such as ZEROe (about 1850 km) are "
+            "closer to the commuter range with regional seats. A finer market partition, or a design range closer to the "
+            "typical regional stage length, would bring regional fuel cell aircraft earlier; this is a modelling choice "
+            "shared with the paper, not a change of the update."
         ),
         (
             "<b>Paper unchanged.</b> The paper model is the default and is guarded by <font face='Courier'>tests/test_gam_paper_baseline.py</font>; "
@@ -903,7 +929,7 @@ def story(t, sweep):
         ["What", "Where"],
         [
             "This document, its figures, scripts and tables",
-            "docs/update/comparison/ (update_vs_paper_comparison.pdf, figures/, results_summary.csv, build_pdf.py, comparison_data.py, comparison_figures.py, design_sweep.py, design_sweep.json, PR_DESCRIPTION.md)",
+            "docs/update/comparison/ (update_vs_paper_comparison.pdf, figures/, results_summary.csv, build_pdf.py, comparison_data.py, comparison_figures.py, design_sweep.py, design_sweep.json, h2_design_study.py, h2_design_study.json, h2_figures.py, h2_section.py, PR_DESCRIPTION.md)",
         ],
         [
             "Main paper optima (29)",
@@ -956,7 +982,7 @@ def story(t, sweep):
             "cd docs/examples/optimization/results<br/>"
             "python precompute_update.py &lt;name&gt;&nbsp;&nbsp;# recompute an update optimum (see the script for the list)<br/>"
             "cd docs/update/comparison<br/>"
-            "rm design_sweep.json&nbsp;&nbsp;# optional: recompute the design sweep<br/>"
+            "rm design_sweep.json h2_design_study.json&nbsp;&nbsp;# optional: recompute the design studies<br/>"
             "python build_pdf.py&nbsp;&nbsp;# figures, results_summary.csv and this PDF",
             CODE,
         ),
@@ -974,6 +1000,18 @@ def story(t, sweep):
             font=6.6,
         ),
     ]
+    s += [
+        PageBreak(),
+        *hs.steps_appendix(
+            study,
+            p,
+            bullets,
+            table,
+            figure,
+            WIDTH,
+            {"H1": H1, "H2": H2, "H3": H3, "SMALL": SMALL},
+        ),
+    ]
     return s
 
 
@@ -982,6 +1020,8 @@ def main():
     t = cd.table()
     write_csv(t)
     sweep = design_sweep.load()
+    study = h2.load()
+    hf.all_figures()
     doc = SimpleDocTemplate(
         str(PDF),
         pagesize=A4,
@@ -992,7 +1032,7 @@ def main():
         title="NOADS: update of the aircraft model versus the main paper",
         author="NOADS",
     )
-    doc.build(story(t, sweep), onFirstPage=page_decor, onLaterPages=page_decor)
+    doc.build(story(t, sweep, study), onFirstPage=page_decor, onLaterPages=page_decor)
     print("saved", PDF)  # noqa: T201
 
 

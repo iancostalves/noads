@@ -391,6 +391,63 @@ chain (above 94 %) and the e-motors (15 to 29 kW/kg at the design power, from th
 logistic projections of {cite:t}`u-pastra_2023`) are the most optimistic
 assumptions, but they weigh less than the fuel cell system.
 
+## Hydrogen aircraft per market: fuel cell versus gas turbine
+
+The fuel cell aircraft must satisfy three constraints at the entry into service (EIS)
+chosen by the optimizer: the design closes, its power per propulsor is within the
+maximum power of an electric propulsor at that EIS, and its energy per seat-km is at
+most that of the 2019 fleet of its market. The LH2 gas turbine only has to close.
+
+```{figure} figures/h2_designs_per_market.png
+:width: 100%
+
+LH2 fuel cell (blue) and LH2 gas turbine (red) aircraft per market and EIS: energy per
+seat-km, power per propulsor and MTOW. Solid where the Mid design satisfies the
+constraints, dotted elsewhere; band from Lower to Upper; dashed with dots: main paper
+(Mid); star: EIS in the update optimum (SSP2-2.6, Mid). The black line is the maximum
+power of an electric propulsor, which constrains the fuel cell aircraft only.
+```
+
+Each market is designed for a single mission: the regional market is 80 seats over
+4500 km. On this mission, the fuel cell aircraft of 2040 (Mid) needs about 17 MW,
+8.5 MW per propulsor, and stays above the power limit until 2057. A 100-seat aircraft
+over 1000 nmi (1850 km) with four propulsors, close to the Airbus ZEROe fuel cell
+concept, designed by the same model needs about 2.4 MW per propulsor in 2045, in line
+with the announced 2 to 2.5 MW, and is within the power limit from 2042 (Mid). The late
+entry of the regional fuel cell aircraft therefore comes from the regional mission,
+whose range is that of the 2019 regional fleet, while ZEROe has the range of the
+commuter market. The commuter fuel cell aircraft enters as soon as it is feasible, in
+early 2041 (Mid).
+
+```{figure} figures/h2_zeroe_check_mid.png
+:width: 100%
+
+Fuel cell aircraft of the update model (Mid) on the NOADS commuter and regional
+missions and on missions between them, among which one close to ZEROe. Shaded: power
+announced for ZEROe.
+```
+
+### From the paper aircraft model to the update
+
+The aircraft of the paper is turned into the aircraft of the update one group of
+assumptions at a time (EIS 2045, Mid). With the paper technology, GAM V3.0 more than
+doubles the energy per seat-km of the small thermal aircraft (small-turbofan efficiency
+loss, refitted regressions), but improves the fuel cell aircraft. The fuel cell
+penalty comes from its revised technology: system efficiency, specific power without
+heat rejection plus a sized thermal management system, and above all the parasitic
+power of the thermal management.
+
+```{figure} figures/gam_update_steps.png
+:width: 100%
+
+Energy per seat-km of the new aircraft from the paper model (left) to the update
+(right), adding one group of update assumptions at a time, EIS 2045, Mid technology.
+```
+
+The full analysis, with the first feasible EIS of the fuel cell aircraft per market and
+technology scenario, is in the comparison document
+(`docs/update/comparison/update_vs_paper_comparison.pdf`, section 2b and appendix D).
+
 ## Reproduce these figures
 
 ```{eval-rst}
