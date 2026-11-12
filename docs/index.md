@@ -72,12 +72,20 @@ Install NOADS, learn the core concepts, and run your first scenario optimization
 10 minutes.
 :::
 
-:::{grid-item-card} {octicon}`book` Extended paper
+:::{grid-item-card} {octicon}`book` Main paper
 :link: paper/index
 :link-type: doc
 
 The companion paper in web form: models, results, supplementary material, and the
 runnable examples that produce every figure.
+:::
+
+:::{grid-item-card} {octicon}`sync` Update paper
+:link: update/index
+:link-type: doc
+
+Updates to the models of the paper (GAM V3.0, powertrain scale effects, LH2 tank
+sizing), opt-in so that the paper results stay reproducible.
 :::
 
 :::{grid-item-card} {octicon}`tools` Extending the analysis
@@ -157,6 +165,7 @@ Open-access data sources used for calibration:
 
 getting_started/index
 paper/index
+update/index
 extending/index
 reference/index
 credits

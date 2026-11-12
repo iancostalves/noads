@@ -1,0 +1,642 @@
+# Copyright 2025 ISAE-SUPAERO, https://www.isae-supaero.fr/en/
+# Copyright 2025 IRT Saint Exupéry, https://www.irt-saintexupery.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License version 3 as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""Tests of the update aircraft model: powertrain scale effects and LH2 tanks."""
+
+import json
+from pathlib import Path
+
+import jax
+import numpy as np
+import pytest
+
+from noads._data import data_file
+from noads.application import lh2_tank_calibration as calibration
+from noads.application.base_objects import aircraft_tech_params
+from noads.application.base_objects import categories_mission
+from noads.application.base_objects import fuelcell_engine_count
+from noads.application.base_objects import initialize_base_objects
+from noads.application.base_objects import lh2_tank_tech_params_lower_mid_upper
+from noads.application.base_objects import tech_params_lower_mid_upper_2020_2040_2060
+from noads.application.base_objects import (
+    update_tech_params_lower_mid_upper_2020_2040_2060_2080,
+)
+from noads.application.primary_energy import primary_energy_factors
+from noads.application.scenario_setup import single_scenario_setup
+from noads.core.models.fleet.aircraft_design import AircraftDesign
+from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+from noads.core.models.fleet.aircraft_tech_parameter import LogisticTechParameter
+from noads.core.models.fleet.aircraft_tech_parameter import ScenarioTechParameter
+from noads.gam_jax.models.gam_v3 import CLOSURE_TOLERANCE
+from noads.gam_jax.models.gam_v3 import GAM
+from noads.gam_jax.models.gam_v3 import LH2_TANK_SIZE_LAW
+
+FC_SYSTEM = {
+    "engine_count": 4,
+    "engine_type": "emotor",
+    "thruster_type": "propeller",
+    "energy_type": "liquid_h2",
+}
+LH2_TURBOFAN = {
+    "engine_count": 2,
+    "engine_type": "turbofan",
+    "thruster_type": "fan",
+    "energy_type": "liquid_h2",
+    "bpr": 12.0,
+}
+REGIONAL = {
+    "npax": 80,
+    "range": 4500e3,
+    "speed": 170.0,
+    "altitude": 6096.0,
+    "category": "regional",
+}
+SHORT_MEDIUM = {
+    "npax": 120,
+    "range": 8000e3,
+    "speed": 272.0,
+    "altitude": 8534.4,
+    "category": "short_medium",
+}
+TECH = {
+    "emotor_specific_power": 15.0,
+    "electronics_specific_power": 20.0,
+    "fuelcell_specific_power": 3.5,
+    "fuelcell_efficiency": 50.0,
+    "lh2tank_gravimetric_index": 50.0,
+    "struct_weight_factor": 78.0,
+}
+SCENARIOS = ("lower", "mid", "upper")
+
+
+# ------------------------------------------------------------------------------
+# Powertrain scaling (ported from the powertrain scaling patch)
+# ------------------------------------------------------------------------------
+def test_default_arguments_are_legacy():
+    """Explicit legacy values give the same design as the defaults."""
+    legacy = GAM(
+        **TECH,
+        emotor_efficiency=90.0,
+        emotor_power_exponent=0.0,
+        emotor_loss_exponent=0.0,
+        fuelcell_tms_heat_rejection=None,
+        fuelcell_power_exponent=0.0,
+        fuelcell_efficiency_exponent=0.0,
+    ).design_airplane(dict(FC_SYSTEM), dict(REGIONAL))
+    default = GAM(**TECH).design_airplane(dict(FC_SYSTEM), dict(REGIONAL))
+    assert float(legacy["mtow"]) == pytest.approx(float(default["mtow"]))
+    assert float(default["electric_chain_efficiency"]) == pytest.approx(0.9)
+
+
+def test_engine_count_only_matters_with_scale_laws():
+    """Without scale laws the propulsor count has no effect on the design."""
+    mtow = []
+    for n in (2, 8):
+        system = {**FC_SYSTEM, "engine_count": n}
+        mtow.append(float(GAM(**TECH).design_airplane(system, dict(REGIONAL))["mtow"]))
+    assert mtow[0] == pytest.approx(mtow[1])
+
+    motor_mass = []
+    for n in (2, 8):
+        gam = GAM(**TECH, emotor_power_exponent=0.25)
+        system = {**FC_SYSTEM, "energy_type": "battery", "engine_count": n}
+        motor_mass.append(float(gam.propulsion_mass(system, 4.0e6)[0]))
+    assert motor_mass[1] < motor_mass[0]
+
+
+def test_scale_laws():
+    gam = GAM(
+        **TECH,
+        emotor_power_exponent=0.25,
+        emotor_loss_exponent=0.25,
+        emotor_efficiency=95.0,
+    )
+    ref = gam.reference_unit_power
+    assert float(gam.emotor_power_density(16 * ref)) == pytest.approx(
+        0.5 * float(gam.emotor_power_density(ref))
+    )
+    assert 1.0 - float(gam.electric_chain_efficiency(16 * ref)) == pytest.approx(
+        0.5 * 0.05
+    )
+
+
+def test_fuel_cell_tms_sizing():
+    """Gross power, heat load and mass follow the closed-form sizing."""
+    gam = GAM(
+        **TECH,
+        fuelcell_tms_heat_rejection=10.0,
+        fuelcell_tms_power_loss=0.1,
+        fuelcell_rated_efficiency_ratio=80.0,
+    )
+    total_power = 4.0e6
+    gross, heat, mass = gam.fuel_cell_sizing(FC_SYSTEM, total_power)
+    eta_rated = 0.5 * 0.8
+    heat_to_power = 1.0 / eta_rated - 1.0
+    expected_gross = total_power / 0.9 / (1.0 - 0.1 * heat_to_power)
+    assert float(gross) == pytest.approx(expected_gross)
+    assert float(heat) == pytest.approx(expected_gross * heat_to_power)
+    assert float(mass) == pytest.approx(
+        expected_gross / 3500.0 + expected_gross * heat_to_power / 10.0e3
+    )
+    assert float(gam.fuel_cell_mission_efficiency(1.0e6)) == pytest.approx(
+        0.5 - 0.1 * 0.5
+    )
+
+
+def test_unit_power_ratio():
+    design = GAM(**TECH, max_unit_power=2.0).design_airplane(
+        dict(FC_SYSTEM), dict(REGIONAL)
+    )
+    assert float(design["unit_power_ratio"]) == pytest.approx(
+        float(design["max_power"]) / 2.0e6
+    )
+
+
+def test_log_scale_tech_parameter():
+    parameter = AircraftTechParameter("p", (0.06, 3.0, 12.0), log_scale=True)
+    values = np.asarray(
+        parameter.value_at_entry_into_service(np.linspace(2020.0, 2060.0, 41))
+    )
+    np.testing.assert_allclose(values[[0, 20, 40]], [0.06, 3.0, 12.0], rtol=1e-6)
+    assert np.all(np.diff(values) > 0.0)
+
+
+UPDATE_PARAMS = {
+    param.name: [
+        {p.name: p for p in aircraft_tech_params(index, "update")}[param.name]
+        for index in range(3)
+    ]
+    for param in aircraft_tech_params(1, "update")
+}
+EIS = np.linspace(2020.0, 2100.0, 321)
+
+
+@pytest.mark.parametrize("name", list(UPDATE_PARAMS))
+def test_scenario_band_starts_at_zero_and_widens(name):
+    """Scenarios share their 2020 value, and Upper-to-Lower only widens."""
+    lower, mid, upper = (
+        np.asarray(param.value_at_entry_into_service(EIS))
+        for param in UPDATE_PARAMS[name]
+    )
+    sign = 1.0 if upper[-1] >= lower[-1] else -1.0
+    gap = sign * (upper - lower)
+    assert gap[0] == pytest.approx(0.0, abs=1e-9)
+    assert np.all(np.diff(gap) >= -1e-9)
+    assert np.all(sign * (mid - lower) >= -1e-9)
+    assert np.all(sign * (upper - mid) >= -1e-9)
+
+
+@pytest.mark.parametrize("name", list(UPDATE_PARAMS))
+def test_scenario_curves_are_monotonic(name):
+    for param in UPDATE_PARAMS[name]:
+        values = np.asarray(param.value_at_entry_into_service(EIS))
+        steps = np.diff(values)
+        assert np.all(steps >= -1e-9) or np.all(steps <= 1e-9)
+
+
+def test_scenario_tech_parameter_rejects_inconsistent_scenarios():
+    with pytest.raises(ValueError, match="2020 value"):
+        ScenarioTechParameter("p", ((1, 2, 3, 4), (2, 3, 4, 5), (2, 4, 5, 6)), 0)
+    with pytest.raises(ValueError, match="must not shrink"):
+        ScenarioTechParameter("p", ((1, 2, 3, 4), (1, 3, 4, 5), (1, 5, 5, 6)), 0)
+
+
+def test_update_params_match_calibration():
+    """2040 and 2060 values are those of the calibrations, unless revised."""
+    calibrated = json.loads(
+        Path(
+            data_file(
+                "noads.application",
+                "aircraft_tech_data",
+                "powertrain",
+                "calibrated_params.json",
+            )
+        ).read_text()
+    )
+    names = {
+        "emotor_efficiency": "electric_chain_efficiency",
+    }
+    # the fuel cell, TMS, Upper e-motor, maximum unit power and structure values are
+    # revised from the 2026 literature review
+    revised = {
+        "emotor_specific_power",
+        "max_unit_power",
+        "struct_weight_factor",
+        "fuelcell_specific_power",
+        "fuelcell_efficiency",
+        "fuelcell_tms_heat_rejection",
+        "fuelcell_tms_power_loss",
+    }
+    params = update_tech_params_lower_mid_upper_2020_2040_2060_2080
+    for name, calibrated_name in names.items():
+        for index, scenario in enumerate(SCENARIOS):
+            expected = calibrated[scenario][calibrated_name][1:]
+            np.testing.assert_allclose(params[name][index][1:3], expected)
+    # the other parameters are those of the paper
+    for name, values in tech_params_lower_mid_upper_2020_2040_2060.items():
+        if name in params and name not in names and name not in revised:
+            for index in range(3):
+                np.testing.assert_allclose(params[name][index][1:3], values[index][1:])
+
+
+# ------------------------------------------------------------------------------
+# LH2 tanks
+# ------------------------------------------------------------------------------
+@pytest.fixture(scope="module")
+def fitted():
+    return calibration.calibrate()
+
+
+def test_calibration_reproduces_hard_coded_values(fitted):
+    np.testing.assert_allclose(fitted.size_law, LH2_TANK_SIZE_LAW, atol=1e-4)
+    for index, scenario in enumerate(SCENARIOS):
+        np.testing.assert_allclose(
+            fitted.mass_factor[scenario],
+            lh2_tank_tech_params_lower_mid_upper["lh2tank_mass_factor"][index],
+            rtol=1e-3,
+            atol=0.05,
+        )
+        np.testing.assert_allclose(
+            fitted.fuel_system_ratio[scenario],
+            lh2_tank_tech_params_lower_mid_upper["lh2_fuel_system_ratio"][index],
+            rtol=1e-3,
+            atol=0.05,
+        )
+
+
+@pytest.mark.parametrize("index", [0, 1, 2])
+def test_tank_gi_monotonic(index):
+    """GI_tank increases with tank size and does not decrease with EIS."""
+    k = LogisticTechParameter(
+        "k", lh2_tank_tech_params_lower_mid_upper["lh2tank_mass_factor"][index]
+    )
+    masses = np.geomspace(10.0, 5.0e4, 30)
+    years = np.linspace(2020.0, 2100.0, 81)
+    a, b, c = LH2_TANK_SIZE_LAW
+    ratio = np.asarray(k.value_at_entry_into_service(years))[:, None] * (
+        a + b * masses[None, :] ** (-1.0 / 3.0) + c / masses[None, :]
+    )
+    gi = 1.0 / (1.0 + ratio)
+    assert np.all(np.diff(gi, axis=1) > 0.0)
+    assert np.all(np.diff(gi, axis=0) >= 0.0)
+
+
+def test_legacy_constant_gi_is_reproduced():
+    """b = c = s = 0 with 1 / (1 + k a) = GI gives the constant-GI design."""
+    legacy = GAM(**TECH).design_airplane(dict(LH2_TURBOFAN), dict(SHORT_MEDIUM))
+    sized = GAM(
+        **TECH,
+        lh2tank_mass_factor=1.0,
+        lh2tank_size_law=(1.0 / 0.5 - 1.0, 0.0, 0.0),
+    ).design_airplane(dict(LH2_TURBOFAN), dict(SHORT_MEDIUM))
+    for name in ("mtow", "owe", "energy_storage_mass", "mission_fuel"):
+        assert float(sized[name]) == pytest.approx(float(legacy[name]), rel=1e-8)
+    assert float(sized["gi_tank"]) == pytest.approx(0.5)
+
+
+def test_flyzero_narrowbody_2050(fitted):
+    """The Upper model reaches the FlyZero narrowbody 2050 tanks within 0.05.
+
+    Both aft tanks hold the same (estimated) LH2 mass, so the size law is compared
+    with their mean GI.
+    """
+    df = calibration.load_dataset()
+    rows = df[df.id.str.startswith("FZ-narrowbody-afttank") & df.tech_year.eq(2050)]
+    gi = calibration.tank_gravimetric_index(
+        fitted, "upper", rows.m.iloc[0], 2050.0 + calibration.FLYZERO_DELAY
+    )
+    assert gi == pytest.approx(rows.gi.mean(), abs=0.05)
+
+
+def test_tank_count_changes_gi():
+    """Splitting the fuel into more, smaller tanks lowers the tank GI."""
+    gi = []
+    for count in (1, 4):
+        design = GAM(**TECH, lh2tank_mass_factor=1.0).design_airplane(
+            {**LH2_TURBOFAN, "tank_count": count}, dict(SHORT_MEDIUM)
+        )
+        gi.append(float(design["gi_tank"]))
+    assert gi[1] < gi[0]
+
+
+# ------------------------------------------------------------------------------
+# Application wiring
+# ------------------------------------------------------------------------------
+def test_paper_tech_params_unchanged():
+    names = [param.name for param in aircraft_tech_params(1)]
+    assert "lh2tank_gravimetric_index" in names
+    update = {param.name: param for param in aircraft_tech_params(1, "update")}
+    assert "lh2tank_gravimetric_index" not in update
+    assert isinstance(update["lh2tank_mass_factor"], LogisticTechParameter)
+    assert update["max_unit_power"].log_scale
+
+
+def test_base_objects_with_update_model():
+    # Upper technology until 2080: fuel cell aircraft are feasible in all markets
+    _, fleet = initialize_base_objects(
+        technology_index=2, aircraft_model="update", last_entry_into_service=2080.0
+    )
+    designs = {
+        aircraft.name: aircraft
+        for aircraft in fleet.operating_aircraft
+        if isinstance(aircraft, AircraftDesign)
+    }
+    for category, count in fuelcell_engine_count.items():
+        design = designs[f"lH2-FuelCell_{category}"]
+        assert design.aircraft_model == "update"
+        assert design.power_system["engine_count"] == count
+        assert design.power_system["tank_count"] == 2
+        names = {parameter.name for parameter in design.technology_evolution}
+        assert {"max_unit_power", "fuelcell_tms_heat_rejection"} <= names
+    assert designs["JetA-GasTurbine-v1_regional"].power_system["engine_count"] == 2
+
+
+def test_unknown_aircraft_model():
+    with pytest.raises(ValueError, match="aircraft_model"):
+        initialize_base_objects(aircraft_model="v3")
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["lH2-FuelCell_regional", "lH2-FuelCell_general", "lH2-GasTurbine_long_range"],
+)
+def test_design_outputs_and_eis_gradient(name):
+    """The update outputs are differentiable in the EIS."""
+    _, fleet = initialize_base_objects(technology_index=1, aircraft_model="update")
+    design = next(
+        aircraft for aircraft in fleet.operating_aircraft if aircraft.name == name
+    )
+
+    def outputs(eis):
+        return design._gam_design({f"{name}.entry_into_service": eis})
+
+    data = outputs(2045.0)
+    assert 0.0 < float(data[f"{name}.gi_tank"]) < 1.0
+    for output in ("energy_per_ask", "unit_power_ratio", "gi_tank"):
+        gradient = float(
+            jax.grad(lambda eis, o=output: outputs(eis)[f"{name}.{o}"])(2045.0)
+        )
+        assert np.isfinite(gradient), output
+    assert (
+        float(jax.grad(lambda eis: outputs(eis)[f"{name}.unit_power_ratio"])(2045.0))
+        < 0.0
+    )
+
+
+def test_non_closing_design_is_finite_and_constrained():
+    """An immature battery aircraft does not close: finite values and gradients,
+    and a closure gap for the optimizer to constrain."""
+    tech = {
+        param.name: param.value_at_entry_into_service(2030.0)
+        for param in aircraft_tech_params(0, "update")
+    }
+    design = GAM(**tech).design_airplane(
+        {
+            "engine_count": 2,
+            "engine_type": "emotor",
+            "thruster_type": "propeller",
+            "energy_type": "battery",
+        },
+        {"npax": 19, "range": 500e3, "speed": 170.0, "category": "general"},
+    )
+    assert np.isfinite(float(design["mtow"]))
+    assert float(design["closure_gap"]) > CLOSURE_TOLERANCE
+    assert float(design["closed"]) == 0.0
+
+    def energy(eis):
+        tech_eis = {
+            param.name: param.value_at_entry_into_service(eis)
+            for param in aircraft_tech_params(0, "update")
+        }
+        return GAM(**tech_eis).design_airplane(
+            {
+                "engine_count": 2,
+                "engine_type": "emotor",
+                "thruster_type": "propeller",
+                "energy_type": "battery",
+            },
+            {"npax": 19, "range": 500e3, "speed": 170.0, "category": "general"},
+        )["closure_gap"]
+
+    assert np.isfinite(float(jax.grad(energy)(2030.0)))
+
+
+def test_scenario_setup_unit_power_constraints():
+    _, _, constraints, _, fleet = single_scenario_setup(
+        "update",
+        "SSP2-26",
+        technology_index=1,
+        aircraft_model="update",
+        compile_jit=False,
+    )
+    for aircraft in fleet.operating_aircraft:
+        name = f"{aircraft.name}.unit_power_ratio"
+        if "FuelCell" in aircraft.name or "Electric" in aircraft.name:
+            assert constraints[name] == (1.0, False)
+        else:
+            assert name not in constraints
+
+
+def _electric_and_fuel_cell(fleet):
+    return {
+        aircraft.name
+        for fleet_i in fleet.fleets
+        for aircraft in fleet_i.operating_aircraft
+        if "Electric" in aircraft.name or "FuelCell" in aircraft.name
+    }
+
+
+def test_update_fleet_drops_infeasible_designs():
+    """Electric and fuel cell designs enter a market only if feasible by the last
+    EIS, while the paper fleets are unchanged."""
+    _, lower = initialize_base_objects(False, 0, "update", 2060.0)
+    _, mid = initialize_base_objects(False, 1, "update", 2060.0)
+    _, extended = initialize_base_objects(False, 2, "update", 2080.0)
+    assert "lH2-FuelCell_long_range" not in _electric_and_fuel_cell(lower)
+    assert "lH2-FuelCell_general" in _electric_and_fuel_cell(mid)
+    assert "lH2-FuelCell_long_range" in _electric_and_fuel_cell(extended)
+    _, paper = initialize_base_objects(False, 0, "paper")
+    assert _electric_and_fuel_cell(paper) == {
+        "Battery-Electric_general",
+        *(f"lH2-FuelCell_{category}" for category in categories_mission),
+    }
+
+
+def test_climb_at_powertrain_efficiency():
+    """Take-off and climb drawn at the powertrain efficiency cost more energy than
+    the mechanical energy counted by upstream GAM V3.0, which stays the default."""
+    upstream = GAM(**TECH).design_airplane(dict(FC_SYSTEM), dict(REGIONAL))
+    consistent = GAM(**TECH, climb_at_powertrain_efficiency=True).design_airplane(
+        dict(FC_SYSTEM), dict(REGIONAL)
+    )
+    assert float(consistent["mission_enrg"]) > float(upstream["mission_enrg"])
+    assert float(consistent["mtow"]) > float(upstream["mtow"])
+
+
+def test_primary_energy_factors():
+    """Chained electricity per MJ of e-fuel and LH2, as in the paper pathways."""
+    factors = primary_energy_factors([2025.0, 2050.0, 2080.0])
+    np.testing.assert_allclose(factors["E-fuel"], [3.31, 2.80, 2.80], atol=0.01)
+    np.testing.assert_allclose(factors["LH2"], [1.63, 1.49, 1.49], atol=0.01)
+
+
+def test_engine_efficiency_factor():
+    """Better thermal engines burn less fuel, electric aircraft are not affected."""
+    base = GAM(**TECH).design_airplane(dict(LH2_TURBOFAN), dict(SHORT_MEDIUM))
+    better = GAM(**TECH, engine_efficiency_factor=120.0).design_airplane(
+        dict(LH2_TURBOFAN), dict(SHORT_MEDIUM)
+    )
+    assert float(better["mission_enrg"]) < float(base["mission_enrg"])
+    fuel_cell = GAM(**TECH).design_airplane(dict(FC_SYSTEM), dict(REGIONAL))
+    same = GAM(**TECH, engine_efficiency_factor=120.0).design_airplane(
+        dict(FC_SYSTEM), dict(REGIONAL)
+    )
+    assert float(same["mission_enrg"]) == float(fuel_cell["mission_enrg"])
+
+
+def test_update_pathways_are_those_of_the_paper():
+    """The technology scenarios of the update model vary aircraft technology only."""
+    inputs = []
+    for aircraft_model in ("paper", "update"):
+        scenario, *_ = single_scenario_setup(
+            "pathways",
+            "SSP2-26",
+            technology_index=0,
+            aircraft_model=aircraft_model,
+            compile_jit=False,
+        )
+        defaults = scenario.discipline.default_input_data
+        inputs.append({
+            name: np.asarray(value)
+            for name, value in defaults.items()
+            if name.endswith(".efficiency")
+        })
+    assert inputs[0].keys() == inputs[1].keys()
+    assert inputs[0]
+    for name, value in inputs[0].items():
+        np.testing.assert_allclose(inputs[1][name], value, err_msg=name)
+
+
+def test_robust_optimization_checkpoint(tmp_path):
+    """A checkpointed optimization resumes from its last saved design."""
+    from gemseo import create_design_space
+    from gemseo import create_discipline
+    from gemseo import create_scenario
+
+    from noads.application import examples
+
+    def run(max_iter):
+        design_space = create_design_space()
+        for name in ("x", "y"):
+            design_space.add_variable(
+                name, lower_bound=-2.0, upper_bound=2.0, value=-1.5
+            )
+        discipline = create_discipline(
+            "AnalyticDiscipline", expressions={"f": "100*(y-x**2)**2+(1-x)**2"}
+        )
+        n_iter_done, remaining = examples._load_checkpoint(
+            design_space, checkpoint, max_iter
+        )
+        scenario = create_scenario(
+            discipline, "f", design_space, formulation_name="DisciplinaryOpt"
+        )
+        examples._save_checkpoints(scenario, checkpoint, n_iter_done)
+        scenario.execute(algo_name="NLOPT_SLSQP", max_iter=remaining)
+        database = scenario.formulation.optimization_problem.database
+        return n_iter_done, remaining, database.get_x_vect(1)
+
+    checkpoint = tmp_path / ".run.checkpoint.json"
+    examples.CHECKPOINT_PERIOD, period = 2, examples.CHECKPOINT_PERIOD
+    try:
+        run(4)
+        saved = json.loads(checkpoint.read_text())
+        assert saved["n_iter"] == 4
+        n_iter_done, remaining, x_start = run(10)
+    finally:
+        examples.CHECKPOINT_PERIOD = period
+    assert n_iter_done == 4
+    assert remaining == 6
+    assert not np.allclose(saved["x"]["x"], -1.5)
+    np.testing.assert_allclose(x_start, [saved["x"]["x"][0], saved["x"]["y"][0]])
+    assert json.loads(checkpoint.read_text())["n_iter"] > 4
+
+
+def test_optimization_history(tmp_path):
+    """Every optimizer iteration is recorded, then archived with the variables."""
+    from gemseo import create_design_space
+    from gemseo import create_discipline
+    from gemseo import create_scenario
+
+    from noads.application import examples
+
+    design_space = create_design_space()
+    design_space.add_variable("x", lower_bound=-2.0, upper_bound=2.0, value=-1.5)
+    design_space.add_variable("y", 2, lower_bound=-2.0, upper_bound=2.0, value=-1.5)
+
+    def rosenbrock(x=0.0, y=(0.0, 0.0)):
+        x, y = np.atleast_1d(x), np.atleast_1d(y)
+        f = 100.0 * (y[0] - x[0] ** 2) ** 2 + (1.0 - x[0]) ** 2 + y[1] ** 2
+        return f  # noqa: RET504
+
+    discipline = create_discipline("AutoPyDiscipline", py_func=rosenbrock)
+    scenario = create_scenario(
+        discipline, "f", design_space, formulation_name="DisciplinaryOpt"
+    )
+    history = tmp_path / "run" / "iterations.jsonl"
+    history.parent.mkdir()
+    history.write_text('{"iteration": 99, "x": [0.0, 0.0, 0.0]}\n')  # stale run
+    examples._record_history(scenario, history)
+    scenario.execute(algo_name="NLOPT_SLSQP", max_iter=6)
+    examples._finalize_history(history, design_space)
+
+    assert not history.exists()
+    archive = np.load(tmp_path / "run" / examples.HISTORY_FILE)
+    database = scenario.formulation.optimization_problem.database
+    assert archive["iteration"].tolist() == list(range(1, database.n_iterations + 1))
+    assert archive["x"].shape == (database.n_iterations, 3)
+    np.testing.assert_allclose(archive["x"][0], [-1.5, -1.5, -1.5])
+    assert archive["names"].tolist() == ["x", "y"]
+    assert archive["sizes"].tolist() == [1, 2]
+
+
+def test_update_entry_into_service_bounds_and_no_turboprops():
+    """Update fleets: no turboprops, EIS from 2035 (Jet-A) / 2040 (alternatives)."""
+    from noads.application.scenario_setup import first_entry_into_service
+
+    _, fleet = initialize_base_objects(technology_index=1, aircraft_model="update")
+    assert not any("Turboprop" in a.name for a in fleet.operating_aircraft)
+
+    assert first_entry_into_service("JetA-GasTurbine-v1_regional", "update") == 2035
+    assert first_entry_into_service("lH2-GasTurbine_regional", "update") == 2040
+    assert first_entry_into_service("Battery-Electric_general", "update") == 2040
+    # the paper bounds are unchanged
+    assert first_entry_into_service("JetA-GasTurbine-v1_regional") == 2032
+    assert first_entry_into_service("lH2-GasTurbine_regional") == 2035
+
+
+def test_initial_entry_into_service():
+    """The update hydrogen gas turbine and fuel cell start at the same year."""
+    from noads.application.scenario_setup import initial_entry_into_service
+
+    for market in ("regional", "long_range"):
+        gas_turbine = initial_entry_into_service(f"lH2-GasTurbine_{market}", "update")
+        fuel_cell = initial_entry_into_service(f"lH2-FuelCell_{market}", "update")
+        assert gas_turbine == fuel_cell == 2040
+    assert initial_entry_into_service("JetA-GasTurbine-v1_regional", "update") == 2035
+    assert initial_entry_into_service("Battery-Electric_general", "update") == 2060
+    # the paper starting values are unchanged
+    assert initial_entry_into_service("lH2-GasTurbine_regional") == 2035
+    assert initial_entry_into_service("lH2-FuelCell_regional") == 2060
+    assert initial_entry_into_service("JetA-GasTurbine-v1_regional") == 2035

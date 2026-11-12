@@ -1,0 +1,1442 @@
+{
+ "commuter|Battery-Electric|0|2025": {
+  "d_energy_per_ask_d_eis": -0.0021466919290892375,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.05643221160697685,
+  "mission_energy": -4232.415870523262,
+  "mtow": -2571.3673178366066,
+  "owe": -7821.367317836608
+ },
+ "commuter|Battery-Electric|0|2040": {
+  "d_energy_per_ask_d_eis": -0.004319772573547117,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.10239341853297108,
+  "mission_energy": -7679.506389972829,
+  "mtow": -4668.768767533354,
+  "owe": -9918.768767533355
+ },
+ "commuter|Battery-Electric|0|2060": {
+  "d_energy_per_ask_d_eis": -0.013944143769622991,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.2612892514671469,
+  "mission_energy": -19596.693860036008,
+  "mtow": -11920.053771642457,
+  "owe": -17170.053771642455
+ },
+ "commuter|Battery-Electric|1|2025": {
+  "d_energy_per_ask_d_eis": -0.006525767118118827,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.07544499193614829,
+  "mission_energy": -5658.37439521112,
+  "mtow": -3438.99649453901,
+  "owe": -8688.99649453901
+ },
+ "commuter|Battery-Electric|1|2040": {
+  "d_energy_per_ask_d_eis": -0.021351367614349546,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.25232858734430547,
+  "mission_energy": -18924.644050822906,
+  "mtow": -11511.121214032346,
+  "owe": -16761.121214032348
+ },
+ "commuter|Battery-Electric|1|2060": {
+  "d_energy_per_ask_d_eis": -0.05633625810401586,
+  "energy_mass": 0.0,
+  "energy_per_ask": 0.7946008042971531,
+  "mission_energy": 59595.06032228647,
+  "mtow": 44394.13046911976,
+  "owe": 39144.13046911975
+ },
+ "commuter|Battery-Electric|2|2025": {
+  "d_energy_per_ask_d_eis": -0.012456914109707585,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.09760674931575863,
+  "mission_energy": -7320.5061986818955,
+  "mtow": -4450.331852930881,
+  "owe": -9700.33185293088
+ },
+ "commuter|Battery-Electric|2|2040": {
+  "d_energy_per_ask_d_eis": -0.33633471080573274,
+  "energy_mass": 0.0,
+  "energy_per_ask": 1.8726270507279072,
+  "mission_energy": 140447.02880459302,
+  "mtow": 112401.83696290074,
+  "owe": 107151.8369629007
+ },
+ "commuter|Battery-Electric|2|2060": {
+  "d_energy_per_ask_d_eis": -0.009711232138731093,
+  "energy_mass": 0.0,
+  "energy_per_ask": 0.39245382632457343,
+  "mission_energy": 29434.036974343002,
+  "mtow": 19853.61351806526,
+  "owe": 14603.613518065258
+ },
+ "commuter|JetA-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.0022429718638828835,
+  "energy_mass": 888.9015502546082,
+  "energy_per_ask": 0.488112846345051,
+  "mission_energy": 36608.463475878816,
+  "mtow": 13934.226570354602,
+  "owe": 7540.088701643158
+ },
+ "commuter|JetA-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0013407703487243081,
+  "energy_mass": 840.3869608815438,
+  "energy_per_ask": 0.46156276172371374,
+  "mission_energy": 34617.207129278526,
+  "mtow": 13122.772035084528,
+  "owe": 6791.034504081515
+ },
+ "commuter|JetA-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0004148705935540905,
+  "energy_mass": 808.923360791551,
+  "energy_per_ask": 0.4443384551501997,
+  "mission_energy": 33325.38413626497,
+  "mtow": 12599.858710034869,
+  "owe": 6308.592966105318
+ },
+ "commuter|JetA-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.004786554929713985,
+  "energy_mass": 861.7238468500237,
+  "energy_per_ask": 0.4732408640183669,
+  "mission_energy": 35493.064801377506,
+  "mtow": 13478.878445604612,
+  "owe": 7119.696391592424
+ },
+ "commuter|JetA-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.002252111146802142,
+  "energy_mass": 768.5662164518048,
+  "energy_per_ask": 0.42223917384200493,
+  "mission_energy": 31667.93803815036,
+  "mtow": 11932.959304596341,
+  "owe": 5693.608252692196
+ },
+ "commuter|JetA-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00013463533611928472,
+  "energy_mass": 727.0358513415674,
+  "energy_per_ask": 0.3994900809725201,
+  "mission_energy": 29961.756072939002,
+  "mtow": 11251.119616670254,
+  "owe": 5065.19603127932
+ },
+ "commuter|JetA-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.007035990395403508,
+  "energy_mass": 836.1216164292828,
+  "energy_per_ask": 0.45922801328117613,
+  "mission_energy": 34442.1009960882,
+  "mtow": 13051.72990505322,
+  "owe": 6725.47878288443
+ },
+ "commuter|JetA-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.002874377169558169,
+  "energy_mass": 707.8866071534654,
+  "energy_per_ask": 0.38899819956135967,
+  "mission_energy": 29174.86496710197,
+  "mtow": 10938.238469987895,
+  "owe": 4776.950963729516
+ },
+ "commuter|JetA-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 5.564011106958394e-05,
+  "energy_mass": 660.0216768917082,
+  "energy_per_ask": 0.3627661372370619,
+  "mission_energy": 27207.46029277964,
+  "mtow": 10160.300997483795,
+  "owe": 4060.596414096961
+ },
+ "commuter|lH2-FuelCell|0|2025": {
+  "d_energy_per_ask_d_eis": -0.24668436223520018,
+  "energy_mass": 1112.2372596162586,
+  "energy_per_ask": 1.7429380686205969,
+  "mission_energy": 130720.35514654474,
+  "mtow": 41875.022862863196,
+  "owe": 35301.06621445729
+ },
+ "commuter|lH2-FuelCell|0|2040": {
+  "d_energy_per_ask_d_eis": -0.020821553102604716,
+  "energy_mass": 523.0231116394128,
+  "energy_per_ask": 0.8200878574276229,
+  "mission_energy": 61506.58930707171,
+  "mtow": 19377.078675500572,
+  "owe": 13504.415601135273
+ },
+ "commuter|lH2-FuelCell|0|2060": {
+  "d_energy_per_ask_d_eis": -0.006285855632603627,
+  "energy_mass": 377.39397656128557,
+  "energy_per_ask": 0.5903919754513471,
+  "mission_energy": 44279.39815885103,
+  "mtow": 15110.62227714851,
+  "owe": 9411.541647217247
+ },
+ "commuter|lH2-FuelCell|1|2025": {
+  "d_energy_per_ask_d_eis": -0.14498389341782492,
+  "energy_mass": 764.5266612467894,
+  "energy_per_ask": 1.1989192341883237,
+  "mission_energy": 89918.94256412424,
+  "mtow": 28137.201519104277,
+  "owe": 21977.007686306835
+ },
+ "commuter|lH2-FuelCell|1|2040": {
+  "d_energy_per_ask_d_eis": -0.014140875033238173,
+  "energy_mass": 346.04117535603154,
+  "energy_per_ask": 0.5414684188531482,
+  "mission_energy": 40610.131413986106,
+  "mtow": 13762.559173149488,
+  "owe": 8100.766097520577
+ },
+ "commuter|lH2-FuelCell|1|2060": {
+  "d_energy_per_ask_d_eis": -0.0032462750263956702,
+  "energy_mass": 254.2633652146886,
+  "energy_per_ask": 0.39632708807039024,
+  "mission_energy": 29724.531605279262,
+  "mtow": 11383.588936816324,
+  "owe": 5831.268624864086
+ },
+ "commuter|lH2-FuelCell|2|2025": {
+  "d_energy_per_ask_d_eis": -0.11672583409202869,
+  "energy_mass": 602.7488832078806,
+  "energy_per_ask": 0.9451392424130891,
+  "mission_energy": 70885.44318098167,
+  "mtow": 22277.797238642866,
+  "owe": 16310.21506563921
+ },
+ "commuter|lH2-FuelCell|2|2040": {
+  "d_energy_per_ask_d_eis": -0.011426138687547549,
+  "energy_mass": 266.584262421707,
+  "energy_per_ask": 0.4161161970202481,
+  "mission_energy": 31208.7147765186,
+  "mtow": 11455.619077040861,
+  "owe": 5888.548634940187
+ },
+ "commuter|lH2-FuelCell|2|2060": {
+  "d_energy_per_ask_d_eis": -0.0021687668288469936,
+  "energy_mass": 195.34070620271237,
+  "energy_per_ask": 0.30331534665035553,
+  "mission_energy": 22748.65099877666,
+  "mtow": 9716.754002690715,
+  "owe": 4234.701664763948
+ },
+ "commuter|lH2-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.012171999494039628,
+  "energy_mass": 475.82458819703686,
+  "energy_per_ask": 0.7388198220925828,
+  "mission_energy": 55411.4866569437,
+  "mtow": 17677.194574567282,
+  "owe": 11809.146240994103
+ },
+ "commuter|lH2-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.004379755444235495,
+  "energy_mass": 404.08965531443965,
+  "energy_per_ask": 0.627797388367061,
+  "mission_energy": 47084.80412752956,
+  "mtow": 14803.609625036717,
+  "owe": 9028.641234339864
+ },
+ "commuter|lH2-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0010711790370099166,
+  "energy_mass": 371.88125397440393,
+  "energy_per_ask": 0.5779065491991525,
+  "mission_energy": 43342.99118993643,
+  "mtow": 13539.154705357681,
+  "owe": 7805.989950555455
+ },
+ "commuter|lH2-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.019496517623544804,
+  "energy_mass": 422.20917945247595,
+  "energy_per_ask": 0.6558530355564809,
+  "mission_energy": 49188.97766673606,
+  "mtow": 15521.905663403692,
+  "owe": 9723.422834957455
+ },
+ "commuter|lH2-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.004408375406586228,
+  "energy_mass": 331.95400393963985,
+  "energy_per_ask": 0.5160234393960891,
+  "mission_energy": 38701.75795470667,
+  "mtow": 11993.27038335585,
+  "owe": 6311.937187633128
+ },
+ "commuter|lH2-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00022101417965907167,
+  "energy_mass": 305.7575194550699,
+  "energy_per_ask": 0.47540046115979645,
+  "mission_energy": 35655.03458698472,
+  "mtow": 10991.774427688508,
+  "owe": 5344.453799812041
+ },
+ "commuter|lH2-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.02182369135142507,
+  "energy_mass": 387.8099620831803,
+  "energy_per_ask": 0.6025833834185472,
+  "mission_energy": 45193.75375639104,
+  "mtow": 14162.528380502044,
+  "owe": 8408.688710111106
+ },
+ "commuter|lH2-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.004380027374983657,
+  "energy_mass": 293.7490347358895,
+  "energy_per_ask": 0.4567733426689472,
+  "mission_energy": 34258.00070017103,
+  "mtow": 10536.0230789044,
+  "owe": 4904.295288195701
+ },
+ "commuter|lH2-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 6.11584293733989e-05,
+  "energy_mass": 269.47312078097633,
+  "energy_per_ask": 0.4191069596428467,
+  "mission_energy": 31433.021973213497,
+  "mtow": 9621.02574555497,
+  "owe": 4020.8226149281318
+ },
+ "general|Battery-Electric|0|2025": {
+  "d_energy_per_ask_d_eis": -0.008306740757534044,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.1460491430286267,
+  "mission_energy": -1387.4668587719539,
+  "mtow": -2318.129550897944,
+  "owe": -4123.129550897944
+ },
+ "general|Battery-Electric|0|2040": {
+  "d_energy_per_ask_d_eis": -0.03209964179705157,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.3879413569352817,
+  "mission_energy": -3685.442890885176,
+  "mtow": -6175.217230406663,
+  "owe": -7980.217230406664
+ },
+ "general|Battery-Electric|0|2060": {
+  "d_energy_per_ask_d_eis": -0.07508426108721597,
+  "energy_mass": 0.0,
+  "energy_per_ask": 1.0504071691246857,
+  "mission_energy": 9978.868106684515,
+  "mtow": 18280.994369252072,
+  "owe": 16475.994369252076
+ },
+ "general|Battery-Electric|1|2025": {
+  "d_energy_per_ask_d_eis": -0.03126465815990964,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.2235891470134256,
+  "mission_energy": -2124.096896627543,
+  "mtow": -3554.5150649159878,
+  "owe": -5359.515064915988
+ },
+ "general|Battery-Electric|1|2040": {
+  "d_energy_per_ask_d_eis": -0.12321225930854275,
+  "energy_mass": 0.0,
+  "energy_per_ask": 1.0051102388361495,
+  "mission_energy": 9548.54726894342,
+  "mtow": 17425.03725519771,
+  "owe": 15620.037255197709
+ },
+ "general|Battery-Electric|1|2060": {
+  "d_energy_per_ask_d_eis": -0.006794810073884432,
+  "energy_mass": 0.0,
+  "energy_per_ask": 0.3509530922973158,
+  "mission_energy": 3334.0543768244997,
+  "mtow": 5764.421345898287,
+  "owe": 3959.4213458982863
+ },
+ "general|Battery-Electric|2|2025": {
+  "d_energy_per_ask_d_eis": -0.08612908418724047,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.34876721719701737,
+  "mission_energy": -3313.288563371665,
+  "mtow": -5550.54982057543,
+  "owe": -7355.54982057543
+ },
+ "general|Battery-Electric|2|2040": {
+  "d_energy_per_ask_d_eis": -0.027594670143047017,
+  "energy_mass": 0.0,
+  "energy_per_ask": 0.43359910486628495,
+  "mission_energy": 4119.191496229707,
+  "mtow": 7168.357926127429,
+  "owe": 5363.357926127428
+ },
+ "general|Battery-Electric|2|2060": {
+  "d_energy_per_ask_d_eis": -0.0023750743144424985,
+  "energy_mass": 0.0,
+  "energy_per_ask": 0.25158528037974265,
+  "mission_energy": 2390.0601636075553,
+  "mtow": 4101.570728852851,
+  "owe": 2296.5707288528506
+ },
+ "general|JetA-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.0020738145002648896,
+  "energy_mass": 112.08222304744437,
+  "energy_per_ask": 0.4537561378245759,
+  "mission_energy": 4310.683309333471,
+  "mtow": 4302.505929749275,
+  "owe": 2299.0106987726895
+ },
+ "general|JetA-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0012360110513975268,
+  "energy_mass": 106.004631174171,
+  "energy_per_ask": 0.4292453750140078,
+  "mission_energy": 4077.8310626330735,
+  "mtow": 4065.55068950526,
+  "owe": 2072.785520863071
+ },
+ "general|JetA-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0003818171540162415,
+  "energy_mass": 102.07167560765481,
+  "energy_per_ask": 0.41338036421461544,
+  "mission_energy": 3927.1134600388464,
+  "mtow": 3912.4795954460146,
+  "owe": 1926.6592812301094
+ },
+ "general|JetA-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.004418035071694872,
+  "energy_mass": 108.67547313272993,
+  "energy_per_ask": 0.4400176194429184,
+  "mission_energy": 4180.1673847077245,
+  "mtow": 4169.620327423047,
+  "owe": 2172.1394833309805
+ },
+ "general|JetA-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.0020688129440268282,
+  "energy_mass": 97.03554477728848,
+  "energy_per_ask": 0.3930612771327225,
+  "mission_energy": 3734.0821327608637,
+  "mtow": 3716.7800320883866,
+  "owe": 1739.8539139816944
+ },
+ "general|JetA-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00012347926813334117,
+  "energy_mass": 91.8614912802247,
+  "energy_per_ask": 0.3721810300498563,
+  "mission_energy": 3535.7197854736346,
+  "mtow": 3516.0795869324875,
+  "owe": 1548.2928143677132
+ },
+ "general|JetA-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.006484703402791287,
+  "energy_mass": 105.47109037160466,
+  "energy_per_ask": 0.4270933050395184,
+  "mission_energy": 4057.386397875425,
+  "mtow": 4044.772868044499,
+  "owe": 2052.94977737356
+ },
+ "general|JetA-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.0026345395368479944,
+  "energy_mass": 89.47822751315364,
+  "energy_per_ask": 0.3625616101262992,
+  "mission_energy": 3444.3352961998426,
+  "mtow": 3423.755370162844,
+  "owe": 1460.1788807687258
+ },
+ "general|JetA-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 5.093229585450401e-05,
+  "energy_mass": 83.52648507388231,
+  "energy_per_ask": 0.3385345732741736,
+  "mission_energy": 3216.0784461046487,
+  "mtow": 3193.5290694715627,
+  "owe": 1240.4684174083454
+ },
+ "general|lH2-FuelCell|0|2025": {
+  "d_energy_per_ask_d_eis": -0.11407053014948776,
+  "energy_mass": 103.59294092447504,
+  "energy_per_ask": 1.2311120549226637,
+  "mission_energy": 11695.564521765305,
+  "mtow": 9192.072727118177,
+  "owe": 7228.163826574722
+ },
+ "general|lH2-FuelCell|0|2040": {
+  "d_energy_per_ask_d_eis": -0.01389136323279602,
+  "energy_mass": 56.75242191090268,
+  "energy_per_ask": 0.6719266085665685,
+  "mission_energy": 6383.3027813824,
+  "mtow": 5337.1891724244215,
+  "owe": 3445.330962237137
+ },
+ "general|lH2-FuelCell|0|2060": {
+  "d_energy_per_ask_d_eis": -0.004692380954368972,
+  "energy_mass": 43.409399992177114,
+  "energy_per_ask": 0.5105406746557121,
+  "mission_energy": 4850.136409229265,
+  "mtow": 4454.74642390798,
+  "owe": 2583.582141693531
+ },
+ "general|lH2-FuelCell|1|2025": {
+  "d_energy_per_ask_d_eis": -0.09101348634859353,
+  "energy_mass": 78.55712406568698,
+  "energy_per_ask": 0.9323458240399509,
+  "mission_energy": 8857.285328379534,
+  "mtow": 7120.273668937359,
+  "owe": 5194.865852758034
+ },
+ "general|lH2-FuelCell|1|2040": {
+  "d_energy_per_ask_d_eis": -0.011029016684417374,
+  "energy_mass": 40.894138657646245,
+  "energy_per_ask": 0.4810534410190315,
+  "mission_energy": 4570.0076896808,
+  "mtow": 4191.987667811529,
+  "owe": 2324.6492519051963
+ },
+ "general|lH2-FuelCell|1|2060": {
+  "d_energy_per_ask_d_eis": -0.002727323580768925,
+  "energy_mass": 31.219510636151018,
+  "energy_per_ask": 0.3636046474382888,
+  "mission_energy": 3454.2441506637433,
+  "mtow": 3596.6636808759695,
+  "owe": 1744.3682576896554
+ },
+ "general|lH2-FuelCell|2|2025": {
+  "d_energy_per_ask_d_eis": -0.0783272213616049,
+  "energy_mass": 65.40474135804276,
+  "energy_per_ask": 0.7749393361316639,
+  "mission_energy": 7361.9236932508065,
+  "mtow": 6078.192230020341,
+  "owe": 4173.046898611225
+ },
+ "general|lH2-FuelCell|2|2040": {
+  "d_energy_per_ask_d_eis": -0.009554909808964751,
+  "energy_mass": 32.60503499256775,
+  "energy_per_ask": 0.3810472969849346,
+  "mission_energy": 3619.9493213568785,
+  "mtow": 3617.749883538533,
+  "owe": 1763.249103764639
+ },
+ "general|lH2-FuelCell|2|2060": {
+  "d_energy_per_ask_d_eis": -0.0018811455274302584,
+  "energy_mass": 24.671112470579736,
+  "energy_per_ask": 0.2845856967575143,
+  "mission_energy": 2703.564119196385,
+  "mtow": 3144.427196278482,
+  "owe": 1302.277472184106
+ },
+ "general|lH2-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.006568931994537713,
+  "energy_mass": 52.467097317828625,
+  "energy_per_ask": 0.6065425681695416,
+  "mission_energy": 5762.154397610645,
+  "mtow": 4842.531890572784,
+  "owe": 2942.6024316759244
+ },
+ "general|lH2-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0027407479793966983,
+  "energy_mass": 46.87751137587979,
+  "energy_per_ask": 0.5421388849332421,
+  "mission_energy": 5150.3194068657995,
+  "mtow": 4317.158387079573,
+  "owe": 2427.314105703784
+ },
+ "general|lH2-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0007228630884297086,
+  "energy_mass": 44.064961490236726,
+  "energy_per_ask": 0.5097197476623646,
+  "mission_energy": 4842.337602792464,
+  "mtow": 4053.7744083331086,
+  "owe": 2169.0063837379057
+ },
+ "general|lH2-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.01150785408344428,
+  "energy_mass": 48.54670553442862,
+  "energy_per_ask": 0.5613750036742948,
+  "mission_energy": 5333.062534905801,
+  "mtow": 4473.778914467947,
+  "owe": 2580.9224876080953
+ },
+ "general|lH2-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.0032818369642281216,
+  "energy_mass": 40.503168882947506,
+  "energy_per_ask": 0.46865224002848244,
+  "mission_energy": 4452.196280270583,
+  "mtow": 3721.156635043137,
+  "owe": 1842.8187033901893
+ },
+ "general|lH2-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00017540334533724011,
+  "energy_mass": 37.79368237873872,
+  "energy_per_ask": 0.43740276752842633,
+  "mission_energy": 4155.32629152005,
+  "mtow": 3468.825072000895,
+  "owe": 1595.3797301044403
+ },
+ "general|lH2-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.013983136031901048,
+  "energy_mass": 45.75275234162129,
+  "energy_per_ask": 0.529175255264834,
+  "mission_energy": 5027.164925015923,
+  "mtow": 4211.751347036015,
+  "owe": 2323.9369668775835
+ },
+ "general|lH2-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.00357685171617803,
+  "energy_mass": 36.54670910623318,
+  "energy_per_ask": 0.42301835620385586,
+  "mission_energy": 4018.6743839366304,
+  "mtow": 3352.8966713932973,
+  "owe": 1481.7033578506348
+ },
+ "general|lH2-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 5.715920599944803e-05,
+  "energy_mass": 33.81879566286435,
+  "energy_per_ask": 0.3915448627295817,
+  "mission_energy": 3719.676195931026,
+  "mtow": 3099.7289462042313,
+  "owe": 1233.4629702763734
+ },
+ "long_range|Battery-Electric|0|2025": {
+  "d_energy_per_ask_d_eis": -0.00026558453193520934,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.009331266774693064,
+  "mission_energy": -34992.25040509899,
+  "mtow": -2216.0205767148836,
+  "owe": -32216.020576714887
+ },
+ "long_range|Battery-Electric|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0004323640489218958,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.014540292288932194,
+  "mission_energy": -54526.09608349572,
+  "mtow": -3453.301562749076,
+  "owe": -33453.30156274907
+ },
+ "long_range|Battery-Electric|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0006844720906904017,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.025647468090320768,
+  "mission_energy": -96178.00533870287,
+  "mtow": -6091.552080909868,
+  "owe": -36091.55208090986
+ },
+ "long_range|Battery-Electric|1|2025": {
+  "d_energy_per_ask_d_eis": -0.000748020991872123,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.011710833865728415,
+  "mission_energy": -43915.62699648155,
+  "mtow": -2781.230419372675,
+  "owe": -32781.230419372674
+ },
+ "long_range|Battery-Electric|1|2040": {
+  "d_energy_per_ask_d_eis": -0.000977924880524836,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.024589755095473967,
+  "mission_energy": -92211.58160802737,
+  "mtow": -5840.316842355868,
+  "owe": -35840.31684235587
+ },
+ "long_range|Battery-Electric|1|2060": {
+  "d_energy_per_ask_d_eis": -0.0013583734845347493,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.04782941130749025,
+  "mission_energy": -179360.29240308845,
+  "mtow": -11360.368429346943,
+  "owe": -41360.368429346956
+ },
+ "long_range|Battery-Electric|2|2025": {
+  "d_energy_per_ask_d_eis": -0.0012454516333608417,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.014125114402019827,
+  "mission_energy": -52969.17900757435,
+  "mtow": -3354.6858257410504,
+  "owe": -33354.68582574105
+ },
+ "long_range|Battery-Electric|2|2040": {
+  "d_energy_per_ask_d_eis": -0.0016130004301299213,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.035401144730072664,
+  "mission_energy": -132754.29273777248,
+  "mtow": -8408.314074313788,
+  "owe": -38408.314074313785
+ },
+ "long_range|Battery-Electric|2|2060": {
+  "d_energy_per_ask_d_eis": -0.002269452114929505,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.07401663432786142,
+  "mission_energy": -277562.37872948026,
+  "mtow": -17580.57053122739,
+  "owe": -47580.57053122738
+ },
+ "long_range|JetA-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.0062140944936941,
+  "energy_mass": 90790.69629060413,
+  "energy_per_ask": 1.0352034153113057,
+  "mission_energy": 3882012.807417396,
+  "mtow": 249959.4542412486,
+  "owe": 122425.7112490094
+ },
+ "long_range|JetA-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0038378198444894056,
+  "energy_mass": 84224.39250409242,
+  "energy_per_ask": 0.9603607995617626,
+  "mission_energy": 3601352.998356609,
+  "mtow": 231295.02788886186,
+  "owe": 110818.0633353653
+ },
+ "long_range|JetA-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0012049079750790068,
+  "energy_mass": 79865.413812482,
+  "energy_per_ask": 0.9106748389960014,
+  "mission_energy": 3415030.646235005,
+  "mtow": 218956.87741918032,
+  "owe": 103164.2500056051
+ },
+ "long_range|JetA-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.013525189040864749,
+  "energy_mass": 87138.80601908035,
+  "energy_per_ask": 0.9935797715984478,
+  "mission_energy": 3725924.143494179,
+  "mtow": 239567.45313555645,
+  "owe": 115958.43417091465
+ },
+ "long_range|JetA-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.006606876571505259,
+  "energy_mass": 74201.72397088792,
+  "energy_per_ask": 0.8461142510252155,
+  "mission_energy": 3172928.441344558,
+  "mtow": 202987.37579092642,
+  "owe": 93280.89673702655
+ },
+ "long_range|JetA-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00031033952943271953,
+  "energy_mass": 69434.00950987353,
+  "energy_per_ask": 0.7918134283033875,
+  "mission_energy": 2969300.356137703,
+  "mtow": 188130.12492157074,
+  "owe": 83554.0851254942
+ },
+ "long_range|JetA-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.020186062758142054,
+  "energy_mass": 83637.403033385,
+  "energy_per_ask": 0.9536700920482295,
+  "mission_energy": 3576262.8451808603,
+  "mtow": 229631.13251773515,
+  "owe": 109784.98200357347
+ },
+ "long_range|JetA-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.0067420666155973774,
+  "energy_mass": 67291.38243043196,
+  "energy_per_ask": 0.7674131418073106,
+  "mission_energy": 2877799.2817774145,
+  "mtow": 181365.27311813444,
+  "owe": 79095.40101465805
+ },
+ "long_range|JetA-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 0.00013505214639107906,
+  "energy_mass": 61789.46150320264,
+  "energy_per_ask": 0.7047457040101363,
+  "mission_energy": 2642796.3900380107,
+  "mtow": 164316.33918272867,
+  "owe": 67966.96690840405
+ },
+ "long_range|lH2-FuelCell|0|2025": {
+  "d_energy_per_ask_d_eis": -2.2441692688277812,
+  "energy_mass": 717295.5246530165,
+  "energy_per_ask": 23.025297932504735,
+  "mission_energy": 86344867.24689275,
+  "mtow": 3840005.513863611,
+  "owe": 3042438.7690147366
+ },
+ "long_range|lH2-FuelCell|0|2040": {
+  "d_energy_per_ask_d_eis": -0.4732818847098744,
+  "energy_mass": 244993.05691623615,
+  "energy_per_ask": 7.86680167186523,
+  "mission_energy": 29500506.269494608,
+  "mtow": 1419838.8405116713,
+  "owe": 1127578.1254205832
+ },
+ "long_range|lH2-FuelCell|0|2060": {
+  "d_energy_per_ask_d_eis": -0.10225360310452762,
+  "energy_mass": 92601.8284758487,
+  "energy_per_ask": 2.9728512977502777,
+  "mission_energy": 11148192.36656354,
+  "mtow": 590672.904355004,
+  "owe": 461508.03879147937
+ },
+ "long_range|lH2-FuelCell|1|2025": {
+  "d_energy_per_ask_d_eis": -2.5913719503117267,
+  "energy_mass": 436484.6377834323,
+  "energy_per_ask": 14.014699345783718,
+  "mission_energy": 52555122.546688944,
+  "mtow": 2413552.1324767815,
+  "owe": 1916399.9945204617
+ },
+ "long_range|lH2-FuelCell|1|2040": {
+  "d_energy_per_ask_d_eis": -0.12248732249615418,
+  "energy_mass": 49436.109124302566,
+  "energy_per_ask": 1.587461794735757,
+  "mission_energy": 5952981.730259089,
+  "mtow": 306114.4907671492,
+  "owe": 223179.72025496274
+ },
+ "long_range|lH2-FuelCell|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00955008365869517,
+  "energy_mass": 24679.090037849,
+  "energy_per_ask": 0.7922057745633754,
+  "mission_energy": 2970771.6546126576,
+  "mtow": 165359.03576414255,
+  "owe": 108926.28486099282
+ },
+ "long_range|lH2-FuelCell|2|2025": {
+  "d_energy_per_ask_d_eis": -2.492052209388073,
+  "energy_mass": 263523.66853802896,
+  "energy_per_ask": 8.462258128721928,
+  "mission_energy": 31733467.98270723,
+  "mtow": 1503265.3468678389,
+  "owe": 1191185.755484477
+ },
+ "long_range|lH2-FuelCell|2|2040": {
+  "d_energy_per_ask_d_eis": -0.03805566774783492,
+  "energy_mass": 24868.31459372528,
+  "energy_per_ask": 0.7984693645588303,
+  "mission_energy": 2994260.117095614,
+  "mtow": 159070.43206670132,
+  "owe": 102439.0617929015
+ },
+ "long_range|lH2-FuelCell|2|2060": {
+  "d_energy_per_ask_d_eis": -0.004320755342927502,
+  "energy_mass": 15393.5631171765,
+  "energy_per_ask": 0.49399504142799655,
+  "mission_energy": 1852481.405354987,
+  "mtow": 109338.31247088505,
+  "owe": 62847.93981714506
+ },
+ "long_range|lH2-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.4115764181442423,
+  "energy_mass": 255549.80631027932,
+  "energy_per_ask": 8.192167339764966,
+  "mission_energy": 30720627.52411862,
+  "mtow": 1517285.890030323,
+  "owe": 1210932.0215378853
+ },
+ "long_range|lH2-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.15305364692286036,
+  "energy_mass": 133243.00397167998,
+  "energy_per_ask": 4.272342914584723,
+  "mission_energy": 16021285.929692708,
+  "mtow": 791429.9664786892,
+  "owe": 617336.4357375691
+ },
+ "long_range|lH2-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.02324862490641465,
+  "energy_mass": 83555.57238049067,
+  "energy_per_ask": 2.6794079802177997,
+  "mission_energy": 10047779.925816748,
+  "mtow": 496089.5424920423,
+  "owe": 375729.0837623825
+ },
+ "long_range|lH2-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.7258816607540793,
+  "energy_mass": 154567.15824051356,
+  "energy_per_ask": 4.955890793353983,
+  "mission_energy": 18584590.47507743,
+  "mtow": 918025.0635645885,
+  "owe": 720871.5418419783
+ },
+ "long_range|lH2-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.05444597103744999,
+  "energy_mass": 43000.99082707384,
+  "energy_per_ask": 1.3793564262017652,
+  "mission_energy": 5172586.598256619,
+  "mtow": 245726.19895317935,
+  "owe": 169231.18923661686
+ },
+ "long_range|lH2-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.0013292360656963402,
+  "energy_mass": 31771.978177895755,
+  "energy_per_ask": 1.019348335048076,
+  "mission_energy": 3822556.2564302855,
+  "mtow": 176515.94494243248,
+  "owe": 112167.06547660615
+ },
+ "long_range|lH2-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.6824903122916516,
+  "energy_mass": 93945.4346458106,
+  "energy_per_ask": 3.012514044429657,
+  "mission_energy": 11296927.666611215,
+  "mtow": 558085.2189247556,
+  "owe": 426488.66100323555
+ },
+ "long_range|lH2-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.022560184103432815,
+  "energy_mass": 27975.785375922635,
+  "energy_per_ask": 0.8976747123081428,
+  "mission_energy": 3366280.171155535,
+  "mtow": 151974.42691534144,
+  "owe": 91733.0868986026
+ },
+ "long_range|lH2-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 0.00011945383610881666,
+  "energy_mass": 22707.398431910762,
+  "energy_per_ask": 0.7287536955069909,
+  "mission_energy": 2732826.3581512156,
+  "mtow": 119665.68712623272,
+  "owe": 65123.31176990537
+ },
+ "regional|Battery-Electric|0|2025": {
+  "d_energy_per_ask_d_eis": -0.0006739406151586808,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.0216817157413351,
+  "mission_energy": -7805.417666880637,
+  "mtow": -1629.3340497777633,
+  "owe": -10429.334049777763
+ },
+ "regional|Battery-Electric|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0011459934960990794,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.03510057561329469,
+  "mission_energy": -12636.207220786086,
+  "mtow": -2638.5496937117155,
+  "owe": -11438.549693711719
+ },
+ "regional|Battery-Electric|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0020921569571706582,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.06673164294819645,
+  "mission_energy": -24023.39146135072,
+  "mtow": -5017.491053134342,
+  "owe": -13817.491053134338
+ },
+ "regional|Battery-Electric|1|2025": {
+  "d_energy_per_ask_d_eis": -0.0019255643757236888,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.02765981898123425,
+  "mission_energy": -9957.534833244328,
+  "mtow": -2078.939444614838,
+  "owe": -10878.939444614838
+ },
+ "regional|Battery-Electric|1|2040": {
+  "d_energy_per_ask_d_eis": -0.003046538935743079,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.06405888174927359,
+  "mission_energy": -23061.19742973849,
+  "mtow": -4816.474864542777,
+  "owe": -13616.474864542779
+ },
+ "regional|Battery-Electric|1|2060": {
+  "d_energy_per_ask_d_eis": -0.006167053377182071,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.1519672197415263,
+  "mission_energy": -54708.19910694947,
+  "mtow": -11428.033410651076,
+  "owe": -20228.033410651078
+ },
+ "regional|Battery-Electric|2|2025": {
+  "d_energy_per_ask_d_eis": -0.003312131840543739,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.03393956937741497,
+  "mission_energy": -12218.244975869387,
+  "mtow": -2551.231784943853,
+  "owe": -11351.231784943851
+ },
+ "regional|Battery-Electric|2|2040": {
+  "d_energy_per_ask_d_eis": -0.006242756827954859,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.10203309448367819,
+  "mission_energy": -36731.914014124144,
+  "mtow": -7672.492319533189,
+  "owe": -16472.49231953318
+ },
+ "regional|Battery-Electric|2|2060": {
+  "d_energy_per_ask_d_eis": -0.8627053848576322,
+  "energy_mass": 0.0,
+  "energy_per_ask": 4.7557278217779455,
+  "mission_energy": 1712062.0158400605,
+  "mtow": 545372.764871124,
+  "owe": 536572.764871124
+ },
+ "regional|JetA-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.002953015690130568,
+  "energy_mass": 5181.522206735961,
+  "energy_per_ask": 0.6090922179033542,
+  "mission_energy": 219273.1984452075,
+  "mtow": 33014.09585878541,
+  "owe": 18294.28775082151
+ },
+ "regional|JetA-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0017716523692489058,
+  "energy_mass": 4882.693229099759,
+  "energy_per_ask": 0.5740684432202601,
+  "mission_energy": 206664.63955929363,
+  "mtow": 30813.383360978194,
+  "owe": 16435.50048394224
+ },
+ "regional|JetA-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0005489742006082784,
+  "energy_mass": 4688.419860049082,
+  "energy_per_ask": 0.5512912304191412,
+  "mission_energy": 198464.84295089083,
+  "mtow": 29404.949824347863,
+  "owe": 15249.326677072368
+ },
+ "regional|JetA-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.006316049827090296,
+  "energy_mass": 5014.251259611222,
+  "energy_per_ask": 0.5894892822588582,
+  "mission_energy": 212216.14161318896,
+  "mtow": 31777.066353824226,
+  "owe": 17248.659635376658
+ },
+ "regional|JetA-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.0029822291748177352,
+  "energy_mass": 4438.959479930084,
+  "energy_per_ask": 0.5220350125122267,
+  "mission_energy": 187932.60450440162,
+  "mtow": 27621.595743563466,
+  "owe": 13751.332739482425
+ },
+ "regional|JetA-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.0001781845186041886,
+  "energy_mass": 4182.226502726172,
+  "energy_per_ask": 0.49191587245232715,
+  "mission_energy": 177089.71408283777,
+  "mtow": 25815.18132457184,
+  "owe": 12238.553963529908
+ },
+ "regional|JetA-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.009299332483391307,
+  "energy_mass": 4856.373695372155,
+  "energy_per_ask": 0.5709830116635402,
+  "mission_energy": 205553.88419887444,
+  "mtow": 30621.555248209574,
+  "owe": 16273.784857283727
+ },
+ "regional|JetA-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.0038014769832096116,
+  "energy_mass": 4063.9339457792016,
+  "energy_per_ask": 0.47803479457676357,
+  "mission_energy": 172092.5260476349,
+  "mtow": 24992.547060177043,
+  "owe": 11551.200453089888
+ },
+ "regional|JetA-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 7.33694773286135e-05,
+  "energy_mass": 3768.755997814986,
+  "energy_per_ask": 0.4433880103356704,
+  "mission_energy": 159619.68372084133,
+  "mtow": 22965.940714550317,
+  "owe": 9862.120913682265
+ },
+ "regional|lH2-FuelCell|0|2025": {
+  "d_energy_per_ask_d_eis": -1.899637297792864,
+  "energy_mass": 24351.491414696873,
+  "energy_per_ask": 8.081586467558445,
+  "mission_energy": 2909371.1283210404,
+  "mtow": 392800.47623731516,
+  "owe": 357306.9977552354
+ },
+ "regional|lH2-FuelCell|0|2040": {
+  "d_energy_per_ask_d_eis": -0.07920069830282912,
+  "energy_mass": 4595.026298600303,
+  "energy_per_ask": 1.5268781752009732,
+  "mission_energy": 549676.1430723503,
+  "mtow": 68396.96721203916,
+  "owe": 54560.37794866017
+ },
+ "regional|lH2-FuelCell|0|2060": {
+  "d_energy_per_ask_d_eis": -0.01385890431467987,
+  "energy_mass": 2544.724323070355,
+  "energy_per_ask": 0.8449136235721402,
+  "mission_energy": 304168.90448597044,
+  "mtow": 40605.42669341059,
+  "owe": 29015.856032667893
+ },
+ "regional|lH2-FuelCell|1|2025": {
+  "d_energy_per_ask_d_eis": -0.7802917242277685,
+  "energy_mass": 9293.83672528738,
+  "energy_per_ask": 3.087060269652497,
+  "mission_energy": 1111341.697074899,
+  "mtow": 142125.91767380183,
+  "owe": 123138.64583001396
+ },
+ "regional|lH2-FuelCell|1|2040": {
+  "d_energy_per_ask_d_eis": -0.023757249793053326,
+  "energy_mass": 2128.9834802947776,
+  "energy_per_ask": 0.7071684470913239,
+  "mission_energy": 254580.64095287657,
+  "mtow": 32867.64537250868,
+  "owe": 21733.92147802487
+ },
+ "regional|lH2-FuelCell|1|2060": {
+  "d_energy_per_ask_d_eis": -0.004433552407105617,
+  "energy_mass": 1459.1981020529793,
+  "energy_per_ask": 0.48413045159969964,
+  "mission_energy": 174286.96257589187,
+  "mtow": 24754.02980711359,
+  "owe": 14354.309813191925
+ },
+ "regional|lH2-FuelCell|2|2025": {
+  "d_energy_per_ask_d_eis": -0.4630744634712524,
+  "energy_mass": 5346.746648232977,
+  "energy_per_ask": 1.776751860569123,
+  "mission_energy": 639630.6698048842,
+  "mtow": 79182.34130089139,
+  "owe": 64521.855809245906
+ },
+ "regional|lH2-FuelCell|2|2040": {
+  "d_energy_per_ask_d_eis": -0.016245576950057624,
+  "energy_mass": 1516.019111135053,
+  "energy_per_ask": 0.5032570252501908,
+  "mission_energy": 181172.52909006865,
+  "mtow": 24643.409617997004,
+  "owe": 14181.475594492666
+ },
+ "regional|lH2-FuelCell|2|2060": {
+  "d_energy_per_ask_d_eis": -0.002674991212407926,
+  "energy_mass": 1064.4880686392494,
+  "energy_per_ask": 0.3527350139150534,
+  "mission_energy": 126984.60500941923,
+  "mtow": 19801.969175969858,
+  "owe": 9834.885912196398
+ },
+ "regional|lH2-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.07968312051359051,
+  "energy_mass": 4707.07635258666,
+  "energy_per_ask": 1.5575414327524217,
+  "mission_energy": 560714.9157908718,
+  "mtow": 71841.3836600012,
+  "owe": 57616.927964477974
+ },
+ "regional|lH2-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.01709767757479556,
+  "energy_mass": 2974.9503271879353,
+  "energy_per_ask": 0.9848801274627277,
+  "mission_energy": 354556.8458865819,
+  "mtow": 44065.975810718526,
+  "owe": 31837.79222559657
+ },
+ "regional|lH2-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.002700171369293194,
+  "energy_mass": 2505.193582426345,
+  "energy_per_ask": 0.8296329240263438,
+  "mission_energy": 298667.8526494838,
+  "mtow": 36344.31656915379,
+  "owe": 24657.575008326905
+ },
+ "regional|lH2-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.08756407290095805,
+  "energy_mass": 3275.5602406656253,
+  "energy_per_ask": 1.0843076861648828,
+  "mission_energy": 390350.76701935777,
+  "mtow": 48768.44467333461,
+  "owe": 36193.82075124097
+ },
+ "regional|lH2-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.009214461610329015,
+  "energy_mass": 2031.147522613838,
+  "energy_per_ask": 0.6730135168764084,
+  "mission_energy": 242284.86607550705,
+  "mtow": 28413.245284788634,
+  "owe": 17272.943295378085
+ },
+ "regional|lH2-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00040388574332495295,
+  "energy_mass": 1790.8860877589098,
+  "energy_per_ask": 0.5935605438217773,
+  "mission_energy": 213681.7957758398,
+  "mtow": 24605.622782241517,
+  "owe": 13742.246069616918
+ },
+ "regional|lH2-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.058759974891680826,
+  "energy_mass": 2648.6233444707423,
+  "energy_per_ask": 0.8769801295870668,
+  "mission_energy": 315712.84665134404,
+  "mtow": 38860.58839244763,
+  "owe": 27008.501493170414
+ },
+ "regional|lH2-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.007488349667529752,
+  "energy_mass": 1683.5549368438178,
+  "energy_per_ask": 0.5580517954491678,
+  "mission_energy": 200898.64636170043,
+  "mtow": 22948.06640561089,
+  "owe": 12208.392700454648
+ },
+ "regional|lH2-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 7.426230955688626e-05,
+  "energy_mass": 1499.4185658057788,
+  "energy_per_ask": 0.4971125405954389,
+  "mission_energy": 178960.514614358,
+  "mtow": 20164.48717293271,
+  "owe": 9637.0266246973
+ },
+ "short_medium|Battery-Electric|0|2025": {
+  "d_energy_per_ask_d_eis": -0.0003882604606792968,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.01321310552343821,
+  "mission_energy": -12684.581302500681,
+  "mtow": -1499.7302818013611,
+  "owe": -15299.730281801352
+ },
+ "short_medium|Battery-Electric|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0006403256174977979,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.020857349802504456,
+  "mission_energy": -20023.055810404276,
+  "mtow": -2367.809129547217,
+  "owe": -16167.809129547219
+ },
+ "short_medium|Battery-Electric|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0010609589557047934,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.0376887553778535,
+  "mission_energy": -36181.20516273936,
+  "mtow": -4279.183308155763,
+  "owe": -18079.183308155763
+ },
+ "short_medium|Battery-Electric|1|2025": {
+  "d_energy_per_ask_d_eis": -0.0010976996113790133,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.016675422744504193,
+  "mission_energy": -16008.405834724024,
+  "mtow": -1892.9102210499352,
+  "owe": -15692.910221049933
+ },
+ "short_medium|Battery-Electric|1|2040": {
+  "d_energy_per_ask_d_eis": -0.001525937366978292,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.03614884114874614,
+  "mission_energy": -34702.88750279629,
+  "mtow": -4104.310490868461,
+  "owe": -17904.31049086846
+ },
+ "short_medium|Battery-Electric|1|2060": {
+  "d_energy_per_ask_d_eis": -0.002364425662584593,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.07452375565593049,
+  "mission_energy": -71542.80542969327,
+  "mtow": -8462.180465949386,
+  "owe": -22262.180465949383
+ },
+ "short_medium|Battery-Electric|2|2025": {
+  "d_energy_per_ask_d_eis": -0.0018472639612335685,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.020229313458260165,
+  "mission_energy": -19420.140919929756,
+  "mtow": -2296.489414665829,
+  "owe": -16096.489414665826
+ },
+ "short_medium|Battery-Electric|2|2040": {
+  "d_energy_per_ask_d_eis": -0.00268996130593509,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.0536604245639983,
+  "mission_energy": -51514.00758143836,
+  "mtow": -6092.929822871345,
+  "owe": -19892.929822871352
+ },
+ "short_medium|Battery-Electric|2|2060": {
+  "d_energy_per_ask_d_eis": -0.004667333398439871,
+  "energy_mass": 0.0,
+  "energy_per_ask": -0.12553392436797747,
+  "mission_energy": -120512.56739325836,
+  "mtow": -14254.949452871311,
+  "owe": -28054.94945287131
+ },
+ "short_medium|JetA-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.005087827319281152,
+  "energy_mass": 18020.18804202116,
+  "energy_per_ask": 0.7995433866102535,
+  "mission_energy": 767561.6511458432,
+  "mtow": 74001.7221198246,
+  "owe": 39653.59663441809
+ },
+ "short_medium|JetA-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.0029859441543732042,
+  "energy_mass": 16673.441280344327,
+  "energy_per_ask": 0.7398423270321135,
+  "mission_energy": 710248.6339508289,
+  "mtow": 68082.61698828296,
+  "owe": 35271.498839305765
+ },
+ "short_medium|JetA-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.0009104356722997423,
+  "energy_mass": 15814.41719992636,
+  "energy_per_ask": 0.7017571932214403,
+  "mission_energy": 673686.9054925826,
+  "mtow": 64342.04442748127,
+  "owe": 32511.197776743986
+ },
+ "short_medium|JetA-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.010753372513028582,
+  "energy_mass": 17262.719122723178,
+  "energy_per_ask": 0.7659660391347372,
+  "mission_energy": 735327.3975693476,
+  "mtow": 70664.28086174969,
+  "owe": 37180.661097446275
+ },
+ "short_medium|JetA-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.004834931503592764,
+  "energy_mass": 14732.2840628746,
+  "energy_per_ask": 0.6537752615822982,
+  "mission_energy": 627624.2511190062,
+  "mtow": 59668.16353924794,
+  "owe": 29072.065214544364
+ },
+ "short_medium|JetA-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.0002816178845032964,
+  "energy_mass": 13644.858801403956,
+  "energy_per_ask": 0.6055529348399658,
+  "mission_energy": 581330.817446367,
+  "mtow": 55013.806262829195,
+  "owe": 25658.355952498656
+ },
+ "short_medium|JetA-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.01564016213394463,
+  "energy_mass": 16556.267303040608,
+  "energy_per_ask": 0.7346475937026529,
+  "mission_energy": 705261.6899545467,
+  "mtow": 67570.79641308964,
+  "owe": 34893.39590627012
+ },
+ "short_medium|JetA-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.0059341299592783,
+  "energy_mass": 13153.213410835604,
+  "energy_per_ask": 0.5837488471701899,
+  "mission_energy": 560398.8932833823,
+  "mtow": 52923.2786256947,
+  "owe": 24128.702757640054
+ },
+ "short_medium|JetA-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 0.00011085714957236414,
+  "energy_mass": 11953.259980970712,
+  "energy_per_ask": 0.5305270276463131,
+  "mission_energy": 509305.9465404606,
+  "mtow": 47856.61193414653,
+  "owe": 20430.835798522643
+ },
+ "short_medium|lH2-FuelCell|0|2025": {
+  "d_energy_per_ask_d_eis": -3.1219844895109823,
+  "energy_mass": 173038.52978566466,
+  "energy_per_ask": 21.63372679046627,
+  "mission_energy": 20768377.718847618,
+  "mtow": 1649266.2949506207,
+  "owe": 1440183.4704734192
+ },
+ "short_medium|lH2-FuelCell|0|2040": {
+  "d_energy_per_ask_d_eis": -0.31887297330318637,
+  "energy_mass": 28700.73935445492,
+  "energy_per_ask": 3.589387736249823,
+  "mission_energy": 3445812.22679983,
+  "mtow": 287238.6826613202,
+  "owe": 241040.30785947072
+ },
+ "short_medium|lH2-FuelCell|0|2060": {
+  "d_energy_per_ask_d_eis": -0.03420383267983758,
+  "energy_mass": 11900.145825709766,
+  "energy_per_ask": 1.4883121981802028,
+  "mission_energy": 1428779.7102529947,
+  "mtow": 120005.43656443783,
+  "owe": 92771.6634255817
+ },
+ "short_medium|lH2-FuelCell|1|2025": {
+  "d_energy_per_ask_d_eis": -3.290130151945145,
+  "energy_mass": 76572.98430432439,
+  "energy_per_ask": 9.575165322178497,
+  "mission_energy": 9192158.709291358,
+  "mtow": 754945.6257982674,
+  "owe": 654714.3468411508
+ },
+ "short_medium|lH2-FuelCell|1|2040": {
+  "d_energy_per_ask_d_eis": -0.05387602368682285,
+  "energy_mass": 8034.904845705327,
+  "energy_per_ask": 1.005257330886835,
+  "mission_energy": 965047.0376513617,
+  "mtow": 77579.72383882197,
+  "owe": 54710.56539684157
+ },
+ "short_medium|lH2-FuelCell|1|2060": {
+  "d_energy_per_ask_d_eis": -0.00654839233940808,
+  "energy_mass": 4689.14756818735,
+  "energy_per_ask": 0.5862108145690725,
+  "mission_energy": 562762.3819863095,
+  "mtow": 50117.94577776383,
+  "owe": 31023.544909440636
+ },
+ "short_medium|lH2-FuelCell|2|2025": {
+  "d_energy_per_ask_d_eis": -1.777871518453869,
+  "energy_mass": 32889.54449618078,
+  "energy_per_ask": 4.1134926563954135,
+  "mission_energy": 3948952.950139597,
+  "mtow": 325817.8688706596,
+  "owe": 274892.3268303127
+ },
+ "short_medium|lH2-FuelCell|2|2040": {
+  "d_energy_per_ask_d_eis": -0.025628738211504395,
+  "energy_mass": 4797.068682093414,
+  "energy_per_ask": 0.5999092988854978,
+  "mission_energy": 575912.9269300778,
+  "mtow": 49125.02243090989,
+  "owe": 29909.444644544117
+ },
+ "short_medium|lH2-FuelCell|2|2060": {
+  "d_energy_per_ask_d_eis": -0.0030912727625329894,
+  "energy_mass": 3152.0591401877573,
+  "energy_per_ask": 0.39375235389421337,
+  "mission_energy": 378002.2597384448,
+  "mtow": 36870.92876436656,
+  "owe": 19511.18494572919
+ },
+ "short_medium|lH2-GasTurbine|0|2025": {
+  "d_energy_per_ask_d_eis": -0.3345374282728847,
+  "energy_mass": 32759.455774222482,
+  "energy_per_ask": 4.085052071887597,
+  "mission_energy": 3921649.9890120933,
+  "mtow": 338337.88903564814,
+  "owe": 286870.8258841186
+ },
+ "short_medium|lH2-GasTurbine|0|2040": {
+  "d_energy_per_ask_d_eis": -0.05016184794970431,
+  "energy_mass": 15358.871094593902,
+  "energy_per_ask": 1.9168436685527703,
+  "mission_energy": 1840169.9218106593,
+  "mtow": 147670.816774043,
+  "owe": 116215.30280197697
+ },
+ "short_medium|lH2-GasTurbine|0|2060": {
+  "d_energy_per_ask_d_eis": -0.009531698309929683,
+  "energy_mass": 11248.739825432163,
+  "energy_per_ask": 1.4045120999859735,
+  "mission_energy": 1348331.6159865344,
+  "mtow": 103531.904804941,
+  "owe": 76803.3410537348
+ },
+ "short_medium|lH2-GasTurbine|1|2025": {
+  "d_energy_per_ask_d_eis": -0.24345150651368808,
+  "energy_mass": 17450.522586595907,
+  "energy_per_ask": 2.177359276563875,
+  "mission_energy": 2090264.90550132,
+  "mtow": 171675.59775409615,
+  "owe": 137813.9704757378
+ },
+ "short_medium|lH2-GasTurbine|1|2040": {
+  "d_energy_per_ask_d_eis": -0.02278742351588858,
+  "energy_mass": 7303.4115199949665,
+  "energy_per_ask": 0.9122609393576154,
+  "mission_energy": 875770.5017833108,
+  "mtow": 64567.19744728392,
+  "owe": 42374.57665991724
+ },
+ "short_medium|lH2-GasTurbine|1|2060": {
+  "d_energy_per_ask_d_eis": -0.0008150027610648509,
+  "energy_mass": 5878.774922411934,
+  "energy_per_ask": 0.7344110886900183,
+  "mission_energy": 705034.6451424174,
+  "mtow": 51241.6916724782,
+  "owe": 30686.601688555205
+ },
+ "short_medium|lH2-GasTurbine|2|2025": {
+  "d_energy_per_ask_d_eis": -0.22132684140698233,
+  "energy_mass": 12387.255060563251,
+  "energy_per_ask": 1.5464809851297867,
+  "mission_energy": 1484621.7457245952,
+  "mtow": 115377.10925708139,
+  "owe": 87339.32192822969
+ },
+ "short_medium|lH2-GasTurbine|2|2040": {
+  "d_energy_per_ask_d_eis": -0.01372586773933651,
+  "energy_mass": 5307.9448939187,
+  "energy_per_ask": 0.663135296099151,
+  "mission_energy": 636609.8842551849,
+  "mtow": 46006.868201604884,
+  "owe": 26107.854435073717
+ },
+ "short_medium|lH2-GasTurbine|2|2060": {
+  "d_energy_per_ask_d_eis": 8.163889281329849e-05,
+  "energy_mass": 4504.442263871216,
+  "energy_per_ask": 0.5628187378420737,
+  "mission_energy": 540305.9883283908,
+  "mtow": 38543.64309926126,
+  "owe": 19568.19182637403
+ }
+}

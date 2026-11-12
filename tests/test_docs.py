@@ -60,6 +60,9 @@ def test_references_bib_has_no_duplicate_keys():
     assert not dupes, f"duplicate BibTeX keys (case-insensitive): {sorted(dupes)}"
 
 
+UPDATE_KEY_PREFIX = "u-"
+
+
 def test_cited_keys_are_defined():
     """Every ``{cite}`` key used in the docs must exist in references.bib."""
     defined = {k.lower() for k in _bib_keys()}
@@ -67,7 +70,9 @@ def test_cited_keys_are_defined():
     pattern = re.compile(r"\{cite(?::[a-z]+)?\}`([^`]+)`")
     for md in _markdown_files():
         for group in pattern.findall(md.read_text(encoding="utf-8")):
-            for key in (k.strip() for k in group.split(",")):
+            for cited in (k.strip() for k in group.split(",")):
+                # The update paper has its own bibliography, with keyprefix "u-"
+                key = cited.removeprefix(UPDATE_KEY_PREFIX)
                 if key and key.lower() not in defined:
                     missing.setdefault(key, md.relative_to(DOCS).as_posix())
     assert not missing, f"undefined citation keys: {missing}"

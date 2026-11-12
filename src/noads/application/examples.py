@@ -16,8 +16,11 @@
 
 """Utilities for launching scenario optimization examples."""
 
+import operator
 from json import dump
+from json import dumps
 from json import load
+from json import loads
 from logging import getLogger
 from os import environ
 from pathlib import Path
@@ -25,8 +28,11 @@ from pathlib import Path
 from gemseo import configure_logger
 from gemseo import create_scenario
 from numpy import array
+from numpy import savez_compressed
 
 from noads.application.background_scenario_data import co2_budget_2p0deg_66percent
+from noads.application.scenario_setup import END_YEAR
+from noads.application.scenario_setup import LAST_ENTRY_INTO_SERVICE
 from noads.application.scenario_setup import multi_scenario_setup
 from noads.application.scenario_setup import single_scenario_setup
 from noads.application.visualization import plot_multi_scenario_result
@@ -35,14 +41,160 @@ from noads.application.visualization import plot_single_scenario_result
 LOGGER = getLogger(__name__)
 
 
-def _results_dir() -> Path:
+EXTENDED_TIMELINE = (2100.0, 2080.0)
+"""End year and last entry-into-service of the extended timeline (update model)."""
+
+
+CHECKPOINT_PERIOD = 25
+"""Number of optimizer iterations between two checkpoints."""
+
+
+def _load_checkpoint(design_space, checkpoint_path, max_iter):
+    """Warm-start the design space from a checkpoint, if any.
+
+    Args:
+        design_space: The design space, whose current value is set to the
+            checkpointed design.
+        checkpoint_path: The checkpoint file, or ``None`` to disable checkpoints.
+        max_iter: The total iteration budget.
+
+    Returns:
+        The number of iterations already done and the remaining budget.
+    """
+    if checkpoint_path is None or not Path(checkpoint_path).is_file():
+        return 0, max_iter
+    with Path(checkpoint_path).open() as file:
+        checkpoint = load(file)
+    design_space.set_current_value({
+        name: array(value) for name, value in checkpoint["x"].items()
+    })
+    n_iter = checkpoint["n_iter"]
+    LOGGER.info("Warm start from %s after %d iterations", checkpoint_path, n_iter)
+    return n_iter, max(max_iter - n_iter, 1)
+
+
+def _save_checkpoints(gemseo_scenario, checkpoint_path, n_iter_done):
+    """Save the current design every :data:`CHECKPOINT_PERIOD` iterations.
+
+    The file is written to a temporary path and then renamed, so that a process
+    killed while writing never leaves a corrupted checkpoint.
+    """
+    if checkpoint_path is None:
+        return
+    checkpoint_path = Path(checkpoint_path)
+    problem = gemseo_scenario.formulation.optimization_problem
+    database = problem.database
+
+    def save(x_vect):
+        n_iter = database.n_iterations
+        if n_iter % CHECKPOINT_PERIOD:
+            return
+        x_dict = problem.design_space.convert_array_to_dict(x_vect)
+        temporary_path = checkpoint_path.with_suffix(".tmp")
+        with temporary_path.open("w") as file:
+            dump(
+                {
+                    "x": {name: value.tolist() for name, value in x_dict.items()},
+                    "n_iter": n_iter_done + n_iter,
+                },
+                file,
+            )
+        temporary_path.replace(checkpoint_path)
+
+    database.add_new_iter_listener(save)
+
+
+HISTORY_FILE = "iterations.npz"
+"""Name of the file storing the design of every optimizer iteration of a result."""
+
+
+def _record_history(gemseo_scenario, history_path, n_iter_done=0):
+    """Append the design of every new optimizer iteration to a JSON lines file.
+
+    Each line is written as soon as the iteration starts, so that the history of a
+    killed (and possibly resumed) optimization is kept.
+
+    Args:
+        gemseo_scenario: The GEMSEO scenario.
+        history_path: The JSON lines file, or ``None`` to disable the history.
+        n_iter_done: The iterations done before a warm start.
+    """
+    if history_path is None:
+        return
+    history_path = Path(history_path)
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    if not n_iter_done:
+        # a new optimization: drop the history of a former killed one
+        history_path.unlink(missing_ok=True)
+    database = gemseo_scenario.formulation.optimization_problem.database
+
+    def save(x_vect):
+        with history_path.open("a") as file:
+            file.write(
+                dumps({
+                    "iteration": n_iter_done + database.n_iterations,
+                    "x": x_vect.tolist(),
+                })
+                + "\n"
+            )
+
+    database.add_new_iter_listener(save)
+
+
+def _finalize_history(history_path, design_space):
+    """Convert the JSON lines history into a compressed NumPy archive.
+
+    The archive holds the ``iteration`` numbers, the designs ``x`` (one row per
+    iteration) and, to split the rows, the design variable ``names`` and ``sizes``.
+    The JSON lines file is then deleted.
+
+    Args:
+        history_path: The JSON lines file, or ``None``.
+        design_space: The design space of the optimization.
+    """
+    if history_path is None or not Path(history_path).is_file():
+        return
+    history_path = Path(history_path)
+    with history_path.open() as file:
+        rows = [loads(line) for line in file if line.strip()]
+    # iterations redone after a warm start replace the lost ones
+    rows = sorted(
+        {row["iteration"]: row for row in rows}.values(),
+        key=operator.itemgetter("iteration"),
+    )
+    names = list(design_space.variable_names)
+    savez_compressed(
+        history_path.with_name(HISTORY_FILE),
+        iteration=array([row["iteration"] for row in rows]),
+        x=array([row["x"] for row in rows]),
+        names=array(names),
+        sizes=array([design_space.get_size(name) for name in names]),
+    )
+    history_path.unlink()
+
+
+def _timeline(aircraft_model, timeline):
+    """End year and last entry-into-service of a timeline."""
+    if timeline == "paper":
+        return END_YEAR[aircraft_model], LAST_ENTRY_INTO_SERVICE[aircraft_model]
+    if timeline == "extended" and aircraft_model == "update":
+        return EXTENDED_TIMELINE
+    msg = f"Unknown timeline {timeline!r} for the {aircraft_model!r} aircraft model."
+    raise ValueError(msg)
+
+
+def _results_dir(aircraft_model="paper", timeline="paper") -> Path:
     """Return the directory storing optimization results.
 
     Set the ``NOADS_RESULTS_DIR`` environment variable to share pre-computed
     results across working directories; defaults to ``results`` in the current
-    working directory.
+    working directory. Results of the update aircraft model are stored in its
+    ``update`` subfolder, so that they never overwrite the paper results.
     """
-    return Path(environ.get("NOADS_RESULTS_DIR", "results"))
+    directory = Path(environ.get("NOADS_RESULTS_DIR", "results"))
+    if aircraft_model != "update":
+        return directory
+    return directory / ("update-2100" if timeline == "extended" else "update")
 
 
 def single_policy_scenario_optimization(
@@ -59,6 +211,9 @@ def single_policy_scenario_optimization(
     save_history_view=False,
     save_figs=False,
     plot_computational_graphs=False,
+    aircraft_model="paper",
+    timeline="paper",
+    history_path=None,
 ):
     """Optimal decarbonization scenario based on a single objective.
 
@@ -76,6 +231,14 @@ def single_policy_scenario_optimization(
         save_history_view: Save optimization history visualization.
         save_figs: Save generated figures to files.
         plot_computational_graphs: Plot computational dependency graphs.
+        aircraft_model: Aircraft design model, ``"paper"`` or ``"update"``. The
+            results of the update model are stored in an ``update`` subfolder.
+        timeline: ``"paper"`` (2025-2075, new aircraft until 2060) or, with the
+            update model, ``"extended"`` (until 2100, new aircraft until 2080),
+            whose results are stored in an ``update-2100`` subfolder.
+        history_path: A JSON lines file recording the design of every optimizer
+            iteration, converted into :data:`HISTORY_FILE` next to it when the
+            optimum is saved; ``None`` to not record the iterations.
 
     Returns:
         Dictionary containing optimal output values.
@@ -101,7 +264,8 @@ def single_policy_scenario_optimization(
 
     configure_logger()
 
-    results_folder = _results_dir()
+    results_folder = _results_dir(aircraft_model, timeline)
+    end_year, last_entry_into_service = _timeline(aircraft_model, timeline)
 
     # If loading existing results, read from file and return
     if load_optimum:
@@ -119,7 +283,6 @@ def single_policy_scenario_optimization(
                 # Optionally plot loaded results
                 if plot_optimum:
                     start_year = 2025.0
-                    end_year = 2075.0
                     _, _, _, energy_mix, fleet = single_scenario_setup(
                         name=scenario_name,
                         background_scenario_name=global_scenario_name,
@@ -132,6 +295,8 @@ def single_policy_scenario_optimization(
                         drop_in_only=drop_in_only,
                         fossil_kerosene_only=fossil_kerosene_only,
                         preferential_energy=preferential_energy,
+                        aircraft_model=aircraft_model,
+                        last_entry_into_service=last_entry_into_service,
                     )
                     plot_single_scenario_result(
                         scenario_name=scenario_name,
@@ -152,7 +317,6 @@ def single_policy_scenario_optimization(
 
     # Standard optimization execution (existing code)
     start_year = 2025.0
-    end_year = 2075.0
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         single_scenario_setup(
             name=scenario_name,
@@ -166,6 +330,8 @@ def single_policy_scenario_optimization(
             drop_in_only=drop_in_only,
             fossil_kerosene_only=fossil_kerosene_only,
             preferential_energy=preferential_energy,
+            aircraft_model=aircraft_model,
+            last_entry_into_service=last_entry_into_service,
         )
     )
 
@@ -199,6 +365,7 @@ def single_policy_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
+    _record_history(gemseo_scenario, history_path)
     gemseo_scenario.execute(
         max_iter=2000,
         algo_name="NLOPT_SLSQP",
@@ -231,6 +398,7 @@ def single_policy_scenario_optimization(
         })
         with (results_folder / scenario_name / "opt_result.json").open("w") as r_file:
             dump(result, r_file)
+        _finalize_history(history_path, design_space)
 
     if plot_optimum:
         plot_single_scenario_result(
@@ -260,8 +428,24 @@ def single_policy_robust_scenario_optimization(
     save_optimum=False,
     save_history_view=False,
     save_figs=False,
+    aircraft_model="paper",
+    timeline="paper",
+    checkpoint_path=None,
+    history_path=None,
 ):
-    """Optimal decarbonization scenario robust to several background scenarios."""
+    """Optimal decarbonization scenario robust to several background scenarios.
+
+    See :func:`single_policy_scenario_optimization` for ``aircraft_model`` and
+    ``timeline``.
+
+    If ``checkpoint_path`` is given, the current design is saved there every
+    :data:`CHECKPOINT_PERIOD` iterations, and an existing checkpoint is used as
+    starting point with the remaining iteration budget, so that a long optimization
+    can be resumed after its process was killed. The quasi-Newton approximation of
+    SLSQP restarts at each resume. The checkpoint is deleted once the optimum is
+    saved. ``history_path`` records the design of every iteration, across resumes,
+    as in :func:`single_policy_scenario_optimization`.
+    """
     if fossil_kerosene_only:
         scenario_name += "-Fossil"
     elif drop_in_only:
@@ -281,7 +465,8 @@ def single_policy_robust_scenario_optimization(
 
     configure_logger()
 
-    results_folder = _results_dir()
+    results_folder = _results_dir(aircraft_model, timeline)
+    end_year, last_entry_into_service = _timeline(aircraft_model, timeline)
 
     # If loading existing results, read from file and return
     if load_optimum:
@@ -299,7 +484,6 @@ def single_policy_robust_scenario_optimization(
                 # Optionally plot loaded results
                 if plot_optimum:
                     start_year = 2025.0
-                    end_year = 2075.0
                     _, _, _, energy_mix, fleet = multi_scenario_setup(
                         scenario_name,
                         background_scenario_names=global_scenario_names,
@@ -312,6 +496,8 @@ def single_policy_robust_scenario_optimization(
                         demand_aversion=low_demand_formulation,
                         drop_in_only=drop_in_only,
                         preferential_energy=preferential_energy,
+                        aircraft_model=aircraft_model,
+                        last_entry_into_service=last_entry_into_service,
                     )
                     plot_multi_scenario_result(
                         scenario_names=global_scenario_names,
@@ -319,7 +505,7 @@ def single_policy_robust_scenario_optimization(
                         output_optimal={**input_optimal, **output_optimal},
                         energy_mix=energy_mix,
                         fleet=fleet,
-                        year_endplots=2075.0,
+                        year_endplots=end_year,
                         low_demand=low_demand_formulation,
                         save_figs=save_figs,
                         directory_path=str(results_folder / scenario_name),
@@ -333,7 +519,6 @@ def single_policy_robust_scenario_optimization(
             )
 
     start_year = 2025.0
-    end_year = 2075.0
     aeromax_scenario, design_space, constraints, energy_mix, fleet = (
         multi_scenario_setup(
             scenario_name,
@@ -348,8 +533,12 @@ def single_policy_robust_scenario_optimization(
             fossil_kerosene_only=fossil_kerosene_only,
             drop_in_only=drop_in_only,
             preferential_energy=preferential_energy,
+            aircraft_model=aircraft_model,
+            last_entry_into_service=last_entry_into_service,
         )
     )
+
+    n_iter_done, max_iter = _load_checkpoint(design_space, checkpoint_path, 5000)
 
     gemseo_scenario = create_scenario(
         disciplines=aeromax_scenario.discipline,
@@ -382,8 +571,10 @@ def single_policy_robust_scenario_optimization(
         if "cumulative" in name or "Electric" in name:
             gemseo_scenario.formulation.optimization_problem.constraints[-1] *= 0.1
 
+    _save_checkpoints(gemseo_scenario, checkpoint_path, n_iter_done)
+    _record_history(gemseo_scenario, history_path, n_iter_done)
     gemseo_scenario.execute(
-        max_iter=5000,
+        max_iter=max_iter,
         algo_name="NLOPT_SLSQP",
         ftol_rel=1e-14,
         ftol_abs=1e-14,
@@ -414,6 +605,9 @@ def single_policy_robust_scenario_optimization(
         })
         with (results_folder / scenario_name / "opt_result.json").open("w") as r_file:
             dump(result, r_file)
+        if checkpoint_path is not None:
+            Path(checkpoint_path).unlink(missing_ok=True)
+        _finalize_history(history_path, design_space)
 
     if plot_optimum:
         plot_multi_scenario_result(
@@ -422,7 +616,7 @@ def single_policy_robust_scenario_optimization(
             output_optimal={**input_optimal, **output_optimal},
             energy_mix=energy_mix,
             fleet=fleet,
-            year_endplots=2075.0,
+            year_endplots=end_year,
             low_demand=low_demand_formulation,
             save_figs=save_figs,
             directory_path=str(results_folder / scenario_name),

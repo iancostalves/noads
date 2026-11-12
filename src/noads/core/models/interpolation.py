@@ -17,7 +17,9 @@
 
 from __future__ import annotations
 
+from jax.numpy import abs  # noqa: A004
 from jax.numpy import array
+from jax.numpy import asarray
 from jax.numpy import atleast_1d
 from jax.numpy import clip
 from jax.numpy import concatenate
@@ -27,8 +29,60 @@ from jax.numpy import diff
 from jax.numpy import digitize
 from jax.numpy import interp
 from jax.numpy import ones
+from jax.numpy import sign
+from jax.numpy import where
 from jax.numpy import zeros
 from jax.numpy.linalg import solve
+
+
+def _pchip_end_slope(h0, h1, m0, m1):
+    """Three-point end slope of scipy's PchipInterpolator, shape preserving."""
+    d = ((2.0 * h0 + h1) * m0 - h0 * m1) / (h0 + h1)
+    d = where(sign(d) != sign(m0), 0.0, d)
+    return where((sign(m0) != sign(m1)) & (abs(d) > 3.0 * abs(m0)), 3.0 * m0, d)
+
+
+def pchip_interpolate(x, x_data, y_data):
+    """Monotone piecewise cubic Hermite (PCHIP) interpolation with JAX.
+
+    Reproduces scipy's ``PchipInterpolator`` (Fritsch-Carlson slopes) inside
+    ``[x_data[0], x_data[-1]]``: the interpolant is monotonic wherever the data
+    are, and never overshoots them. Outside, it is extended with the end values.
+
+    Args:
+        x: The points to interpolate at.
+        x_data: The increasing data abscissas (at least 3).
+        y_data: The data ordinates.
+
+    Returns:
+        The interpolated values.
+    """
+    x_data = asarray(x_data, dtype=float)
+    y_data = asarray(y_data, dtype=float)
+    h = diff(x_data)
+    m = diff(y_data) / h
+    w1 = 2.0 * h[1:] + h[:-1]
+    w2 = h[1:] + 2.0 * h[:-1]
+    same_sign = m[:-1] * m[1:] > 0.0
+    safe_m0 = where(same_sign, m[:-1], 1.0)
+    safe_m1 = where(same_sign, m[1:], 1.0)
+    interior = where(same_sign, (w1 + w2) / (w1 / safe_m0 + w2 / safe_m1), 0.0)
+    slopes = concatenate([
+        atleast_1d(_pchip_end_slope(h[0], h[1], m[0], m[1])),
+        interior,
+        atleast_1d(_pchip_end_slope(h[-1], h[-2], m[-1], m[-2])),
+    ])
+
+    x = clip(asarray(x, dtype=float), x_data[0], x_data[-1])
+    index = clip(digitize(x, x_data) - 1, 0, len(h) - 1)
+    width = h[index]
+    t = (x - x_data[index]) / width
+    return (
+        (2.0 * t**3 - 3.0 * t**2 + 1.0) * y_data[index]
+        + (t**3 - 2.0 * t**2 + t) * width * slopes[index]
+        + (-2.0 * t**3 + 3.0 * t**2) * y_data[index + 1]
+        + (t**3 - t**2) * width * slopes[index + 1]
+    )
 
 
 def interpolate_data(x, x_data, y_data, cubic=False):

@@ -23,12 +23,20 @@ from jax.numpy import array
 
 from noads.core.model import JAXModel
 from noads.core.models.fleet.aircraft_operation import AircraftOperation
+from noads.gam_jax.models import gam_v3
 from noads.gam_jax.models.generic_airplane_model import GAM
+
+AIRCRAFT_MODELS = ("paper", "update")
+"""Available aircraft design models."""
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from noads.core.models.fleet.aircraft_tech_parameter import AircraftTechParameter
+
+
+UPDATE_GAM_OPTIONS = {"climb_at_powertrain_efficiency": True}
+"""Modelling options of the GAM V3.0 port used by the update aircraft model."""
 
 
 class AircraftDesign(AircraftOperation):
@@ -41,6 +49,12 @@ class AircraftDesign(AircraftOperation):
     efficiency gain relative to the reference aircraft) feed the fleet operation
     models, so that a later entry-into-service yields a more efficient but
     later-deployed aircraft.
+
+    With ``aircraft_model="update"``, the aircraft is designed with the GAM V3.0 port
+    (:mod:`noads.gam_jax.models.gam_v3`), which also models powertrain scale
+    effects and size-dependent LH2 tanks. The design then also outputs the power
+    per propulsor and its ratio to the maximum available at entry-into-service,
+    and, for LH2 aircraft, the realized tank gravimetric indices.
     """
 
     reference_aircraft: AircraftOperation
@@ -55,6 +69,9 @@ class AircraftDesign(AircraftOperation):
     technology_evolution: list[AircraftTechParameter]
     """List of time-evolving technology parameters."""
 
+    aircraft_model: str
+    """Aircraft design model: ``"paper"`` (GAM V2.0) or ``"update"`` (GAM V3.0)."""
+
     def __init__(
         self,
         name,
@@ -63,8 +80,13 @@ class AircraftDesign(AircraftOperation):
         power_system,
         aircraft_tech_params,
         reference_aircraft,
+        aircraft_model="paper",
     ):
         """Initialize AircraftDesign."""
+        if aircraft_model not in AIRCRAFT_MODELS:
+            msg = f"aircraft_model must be one of {AIRCRAFT_MODELS}"
+            raise ValueError(msg)
+        self.aircraft_model = aircraft_model
         self.reference_aircraft = reference_aircraft
         self.mission = mission
         self.power_system = power_system
@@ -90,6 +112,9 @@ class AircraftDesign(AircraftOperation):
         output_names.extend([
             f"{self.name}.{tech_param.name}" for tech_param in self.technology_evolution
         ])
+        output_names.extend(
+            f"{self.name}.{output}" for output in self._update_outputs()
+        )
 
         return JAXModel(
             function=self._gam_design,
@@ -109,8 +134,10 @@ class AircraftDesign(AircraftOperation):
             f"{self.name}.{tech_param_name}": value
             for tech_param_name, value in tech_params.items()
         }
-        model = GAM(**tech_params)
-        final_design = model.design_airplane(self.power_system, self.mission)
+        gam_class = gam_v3.GAM if self.aircraft_model == "update" else GAM
+        options = UPDATE_GAM_OPTIONS if self.aircraft_model == "update" else {}
+        model = gam_class(**tech_params, **options)
+        final_design = model.design_airplane(dict(self.power_system), self.mission)
 
         output_data.update({
             f"{self.name}.energy_per_ask": final_design["enrg_consumption"] * 1.0e-3,
@@ -122,7 +149,22 @@ class AircraftDesign(AircraftOperation):
             f"{self.name}.relative_efficiency_gain": self.reference_aircraft.energy_per_ask  # noqa: E501
             / (final_design["enrg_consumption"] * 1.0e-3),
         })
+        for output in self._update_outputs():
+            value = final_design[output]
+            # power per propulsor in MW
+            output_data[f"{self.name}.{output}"] = (
+                value * 1.0e-6 if output == "max_power" else value
+            )
         return output_data
+
+    def _update_outputs(self):
+        """Additional design outputs of the update aircraft model."""
+        if self.aircraft_model != "update":
+            return []
+        outputs = ["max_power", "unit_power_ratio", "closure_gap"]
+        if self.power_system["energy_type"] == "liquid_h2":
+            outputs.extend(["gi_tank", "gi_system"])
+        return outputs
 
     def control_model(self):
         """Time-dependent control of the aircraft market share."""

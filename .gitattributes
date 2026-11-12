@@ -14,6 +14,8 @@
 *.idx binary
 *.jpg binary
 *.npy binary
+*.npz binary
+*.mp4 binary
 *.out binary
 *.pack binary
 *.pdf binary
